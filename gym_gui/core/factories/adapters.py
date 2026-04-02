@@ -171,6 +171,17 @@ except Exception:  # pragma: no cover - mosaic_multigrid optional
     MOSAIC_MULTIGRID_ADAPTERS: dict[Any, Any] = {}
     MosaicMultiGridAdapter = None  # type: ignore[misc, assignment]
 
+try:  # Optional dependency - MalmoEnv (Microsoft Malmo, Java-based Minecraft)
+    from gym_gui.core.adapters.mosaic_malmo import (  # pragma: no cover - optional
+        MALMOENV_ADAPTERS,
+        MOSAIC_MALMO_ADAPTERS,  # legacy alias
+        MalmoEnvAdapter,
+    )
+except Exception:  # pragma: no cover - malmoenv optional
+    MALMOENV_ADAPTERS: dict[Any, Any] = {}
+    MOSAIC_MALMO_ADAPTERS: dict[Any, Any] = {}
+    MalmoEnvAdapter = None  # type: ignore[misc, assignment]
+
 try:  # Optional dependency - INI MultiGrid (cooperative exploration local package)
     from gym_gui.core.adapters.ini_multigrid import (  # pragma: no cover - optional
         INI_MULTIGRID_ADAPTERS,
@@ -281,6 +292,7 @@ def _registry() -> Mapping[GameId, type[EnvironmentAdapter]]:
         **DRAUGHTS_ADAPTERS,
         **BABAISAI_ADAPTERS,
         **MOSAIC_MULTIGRID_ADAPTERS,
+        **MOSAIC_MALMO_ADAPTERS,
         **INI_MULTIGRID_ADAPTERS,
         **MELTINGPOT_ADAPTERS,
         **OVERCOOKED_ADAPTERS,

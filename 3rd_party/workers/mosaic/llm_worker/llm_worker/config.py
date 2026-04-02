@@ -20,7 +20,8 @@ ENV_NAMES = ("babyai", "minigrid", "multigrid", "mosaic_multigrid", "minihack", 
 
 # Valid LLM client names
 # OpenRouter provides unified access to all major model providers
-CLIENT_NAMES = ("openrouter", "openai", "anthropic", "google", "vllm")
+# Zhipu AI (api.z.ai / bigmodel.cn) uses OpenAI-compatible API
+CLIENT_NAMES = ("openrouter", "openai", "anthropic", "google", "vllm", "zhipu")
 
 # Valid agent types
 AGENT_TYPES = ("naive", "cot", "robust_naive", "robust_cot", "few_shot", "dummy")

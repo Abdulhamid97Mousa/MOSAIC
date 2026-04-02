@@ -23,7 +23,7 @@ tyro>=0.5.0
 tenacity>=8.0.0
 moviepy>=1.0.3
 matplotlib>=3.10.8
-
+syllabus-rl>=0.7
 # Optional extras can be included via separate files:
 # -r cleanrl_extras_atari.txt  (for Atari environments)
 # -r cleanrl_extras_jax.txt    (for JAX-accelerated algorithms)

@@ -78,10 +78,10 @@ class Soccer1DEnv:
 
     def __init__(self):
         self.action_space = spaces.Dict(
-            {i: spaces.Discrete(2) for i in range(2)}
+            {i: spaces.Discrete(2) for i in range(2)}  # type: ignore[arg-type]
         )
         self.observation_space = spaces.Dict(
-            {i: spaces.Box(-1.0, 5.0, shape=(4,), dtype=np.float32)
+            {i: spaces.Box(-1.0, 5.0, shape=(4,), dtype=np.float32)  # type: ignore[arg-type]
              for i in range(2)}
         )
         self.metadata    = {"render_modes": []}

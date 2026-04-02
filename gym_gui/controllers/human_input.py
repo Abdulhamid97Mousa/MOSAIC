@@ -15,7 +15,7 @@ For multi-keyboard support on Linux, uses evdev to bypass X11 keyboard merging.
 import logging
 import sys
 from dataclasses import dataclass
-from typing import Callable, Dict, Iterable, List, Optional, Set, Tuple, cast
+from typing import Any, Callable, Dict, Iterable, List, Optional, Set, Tuple, cast
 
 import gymnasium.spaces as spaces
 from qtpy import QtCore, QtWidgets
@@ -875,6 +875,43 @@ class ViZDoomKeyCombinationResolver(KeyCombinationResolver):
         return None
 
 
+class MalmoEnvKeyCombinationResolver(KeyCombinationResolver):
+    """Resolve key combinations for MalmoEnv (Microsoft Malmo / Minecraft) environments.
+
+    MalmoEnv action indices (matches MALMOENV_ACTIONS in adapters/mosaic_malmo.py):
+    0: move forward  (W / Up)
+    1: move backward (S / Down)
+    2: strafe left   (A / Left)
+    3: strafe right  (D / Right)
+    4: turn left     (Q)
+    5: turn right    (E)
+    6: jump          (Space)
+    7: attack        (F)
+    """
+
+    def resolve(self, pressed_keys: Set[int]) -> Optional[int]:
+        _key_f = _get_qt_key("Key_F")
+
+        if _KEY_SPACE in pressed_keys:
+            return 6  # jump
+        if _key_f in pressed_keys:
+            return 7  # attack / break block
+        if _KEY_Q in pressed_keys:
+            return 4  # turn left
+        if _KEY_E in pressed_keys:
+            return 5  # turn right
+        if pressed_keys & _KEYS_LEFT:
+            return 2  # strafe left
+        if pressed_keys & _KEYS_RIGHT:
+            return 3  # strafe right
+        if pressed_keys & _KEYS_UP:
+            return 0  # move forward
+        if pressed_keys & _KEYS_DOWN:
+            return 1  # move backward
+
+        return None
+
+
 # Map environment families to their resolvers
 def get_key_combination_resolver(
     game_id: GameId,
@@ -947,6 +984,9 @@ def get_key_combination_resolver(
     if family == EnvironmentFamily.GRIDDLY:
         # Griddly environments (5 actions: NOOP, UP, DOWN, LEFT, RIGHT)
         return GriddlyKeyCombinationResolver()
+    if family == EnvironmentFamily.MALMOENV:
+        # MalmoEnv (Microsoft Malmo / Minecraft) environments
+        return MalmoEnvKeyCombinationResolver()
 
     # Fallback: check by game ID prefix/name for games not in the mapping
     game_name = game_id.value if hasattr(game_id, 'value') else str(game_id)
@@ -1195,6 +1235,18 @@ _MULTIGRID_MAPPINGS: Dict[GameId, Tuple[ShortcutMapping, ...]] = {
     GameId.MOSAIC_MULTIGRID_COLLECT2VS2_INDAGOBS: _INI_MULTIGRID_ACTIONS,
     GameId.MOSAIC_MULTIGRID_SOCCER_2VS2_TEAMOBS: _INI_MULTIGRID_ACTIONS,
     GameId.MOSAIC_MULTIGRID_COLLECT2VS2_TEAMOBS: _INI_MULTIGRID_ACTIONS,
+    GameId.MOSAIC_MULTIGRID_BASKETBALL_INDAGOBS: _MOSAIC_MULTIGRID_ACTIONS,
+    GameId.MOSAIC_MULTIGRID_BASKETBALL_TEAMOBS: _MOSAIC_MULTIGRID_ACTIONS,
+    GameId.MOSAIC_MULTIGRID_BASKETBALL_SOLO_GREEN: _MOSAIC_MULTIGRID_ACTIONS,
+    GameId.MOSAIC_MULTIGRID_BASKETBALL_SOLO_BLUE: _MOSAIC_MULTIGRID_ACTIONS,
+    # American Football environments (v6.3.0)
+    GameId.MOSAIC_MULTIGRID_AMERICAN_FOOTBALL_1V1: _MOSAIC_MULTIGRID_ACTIONS,
+    GameId.MOSAIC_MULTIGRID_AMERICAN_FOOTBALL_2V2: _MOSAIC_MULTIGRID_ACTIONS,
+    GameId.MOSAIC_MULTIGRID_AMERICAN_FOOTBALL_3V3: _MOSAIC_MULTIGRID_ACTIONS,
+    GameId.MOSAIC_MULTIGRID_AMERICAN_FOOTBALL_2V2_TEAMOBS: _MOSAIC_MULTIGRID_ACTIONS,
+    GameId.MOSAIC_MULTIGRID_AMERICAN_FOOTBALL_3V3_TEAMOBS: _MOSAIC_MULTIGRID_ACTIONS,
+    GameId.MOSAIC_MULTIGRID_AMERICAN_FOOTBALL_SOLO_GREEN: _MOSAIC_MULTIGRID_ACTIONS,
+    GameId.MOSAIC_MULTIGRID_AMERICAN_FOOTBALL_SOLO_BLUE: _MOSAIC_MULTIGRID_ACTIONS,
     # INI multigrid environments (7 actions, no STILL - same as MiniGrid)
     GameId.INI_MULTIGRID_BLOCKED_UNLOCK_PICKUP: _INI_MULTIGRID_ACTIONS,
     GameId.INI_MULTIGRID_EMPTY_5X5: _INI_MULTIGRID_ACTIONS,
@@ -1717,6 +1769,129 @@ _JUMANJI_MAPPINGS: Dict[GameId, Tuple[ShortcutMapping, ...]] = {
     # that are better suited for mouse-based interaction (Tier 3)
     # Tetris uses MultiDiscrete which needs special handling (Tier 2)
 }
+
+
+# ============================================================================
+# Qt key-name to Linux keycode mapping (for bridge subprocess)
+# ============================================================================
+
+# Reverse mapping: Qt key enum value -> key name string
+_QT_KEY_ENUM_TO_NAME: Dict[int, str] = {}
+
+
+def _build_qt_key_enum_map() -> Dict[int, str]:
+    """Build a mapping from Qt key integer values to key name strings."""
+    if _QT_KEY_ENUM_TO_NAME:
+        return _QT_KEY_ENUM_TO_NAME
+
+    key_names = [
+        "Key_Escape", "Key_1", "Key_2", "Key_3", "Key_Q", "Key_W", "Key_E",
+        "Key_R", "Key_A", "Key_S", "Key_D", "Key_F", "Key_G", "Key_H",
+        "Key_Z", "Key_X", "Key_C", "Key_Space", "Key_F1", "Key_Up",
+        "Key_Down", "Key_Left", "Key_Right", "Key_Return",
+    ]
+    for name in key_names:
+        try:
+            val = _qt_key(name)
+            _QT_KEY_ENUM_TO_NAME[val] = name
+        except (AttributeError, TypeError):
+            pass
+    return _QT_KEY_ENUM_TO_NAME
+
+
+def build_key_action_map_for_game(
+    game_id,
+    env_family=None,
+    action_space=None,
+) -> Optional[List[Dict[str, Any]]]:
+    """Convert Qt ``ShortcutMapping`` entries to a portable Linux keycode map.
+
+    Looks up the same mapping dicts the Qt shortcut system uses, then converts
+    each ``QKeySequence`` to a Linux keycode via ``QT_KEY_TO_LINUX`` in
+    ``evdev_input.py``.
+
+    Args:
+        game_id: The ``GameId`` enum value.
+        env_family: Optional ``EnvironmentFamily`` for BabyAI fallback.
+        action_space: Optional Gymnasium action space for generic fallback.
+
+    Returns:
+        A list of ``{"keycodes": [int, ...], "action": int}`` entries,
+        or None if no mappings found.
+    """
+    import sys
+
+    from gym_gui.config.paths import HUMAN_WORKER_PKG_DIR
+    _hw = str(HUMAN_WORKER_PKG_DIR)
+    if _hw not in sys.path:
+        sys.path.insert(0, _hw)
+    from human_worker.evdev_input import QT_KEY_TO_LINUX
+
+    # Look up the ShortcutMapping tuple for this game
+    mappings = None
+    mapping_sources = [
+        _TOY_TEXT_MAPPINGS,
+        _MINIG_GRID_MAPPINGS,
+        _MULTIGRID_MAPPINGS,
+        _BOX_2D_MAPPINGS,
+        _ALE_MAPPINGS,
+        _VIZDOOM_MAPPINGS,
+        _MINIHACK_MAPPINGS,
+        _NETHACK_MAPPINGS,
+        _CRAFTER_MAPPINGS,
+        _BABAISAI_MAPPINGS,
+        _PROCGEN_MAPPINGS,
+        _JUMANJI_MAPPINGS,
+    ]
+    for source in mapping_sources:
+        mappings = source.get(game_id)
+        if mappings is not None:
+            break
+
+    if mappings is None:
+        if env_family == EnvironmentFamily.BABYAI:
+            mappings = _STANDARD_MINIGRID_ACTIONS
+    if mappings is None and action_space is not None:
+        try:
+            from gymnasium import spaces
+            if isinstance(action_space, spaces.Discrete):
+                n = action_space.n
+                if n <= 4:
+                    mappings = _TOY_TEXT_MAPPINGS.get(GameId.FROZEN_LAKE)
+                elif n <= 7:
+                    mappings = _STANDARD_MINIGRID_ACTIONS
+        except ImportError:
+            pass
+
+    if not mappings:
+        return None
+
+    # Convert to Linux keycodes
+    enum_map = _build_qt_key_enum_map()
+    result = []
+    for mapping in mappings:
+        keycodes = []
+        for seq in mapping.key_sequences:
+            if len(seq) == 0:
+                continue
+            combo = seq[0]
+            # PyQt6 returns QKeyCombination; PyQt5 returns int
+            if hasattr(combo, 'key'):
+                key_int = combo.key()
+                # key() may return an enum with .value or a plain int
+                if hasattr(key_int, 'value'):
+                    key_int = key_int.value
+                else:
+                    key_int = int(key_int)
+            else:
+                key_int = int(combo)
+            qt_name = enum_map.get(key_int)
+            if qt_name and qt_name in QT_KEY_TO_LINUX:
+                keycodes.append(QT_KEY_TO_LINUX[qt_name])
+        if keycodes:
+            result.append({"keycodes": keycodes, "action": mapping.action})
+
+    return result if result else None
 
 
 class HumanInputController(QtCore.QObject, LogConstantMixin):

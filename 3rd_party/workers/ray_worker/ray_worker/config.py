@@ -45,7 +45,7 @@ try:
     _USING_GYM_PATHS = True
 except ImportError:
     # Fallback for standalone worker execution
-    _REPO_ROOT = Path(__file__).resolve().parent.parent.parent.parent
+    _REPO_ROOT = Path(__file__).resolve().parent.parent.parent.parent.parent
     VAR_ROOT = _REPO_ROOT / "var"
     VAR_TRAINER_DIR = VAR_ROOT / "trainer"
     VAR_TENSORBOARD_DIR = VAR_TRAINER_DIR / "runs"
@@ -91,6 +91,7 @@ class PettingZooAPIType(str, Enum):
 
     AEC = "aec"        # Agent Environment Cycle (turn-based)
     PARALLEL = "parallel"  # Simultaneous actions
+    GYM = "gym"        # Standard Gymnasium/Gym API (single agent)
 
 
 @dataclass(frozen=True)

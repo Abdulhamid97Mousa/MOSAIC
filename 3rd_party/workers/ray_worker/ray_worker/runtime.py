@@ -44,6 +44,11 @@ from ray.rllib.utils.from_config import from_config
 from ray.rllib.utils.replay_buffers.multi_agent_replay_buffer import MultiAgentReplayBuffer, ReplayBuffer
 from ray.tune.registry import register_env
 
+try:
+    import gymnasium as gym
+except ImportError:
+    import gym
+
 
 # =============================================================================
 # Ray RLlib Bug Workaround: ABCMeta type check in replay buffer creation
@@ -225,6 +230,13 @@ def _wrap_env_for_ray(env: Any, api_type: PettingZooAPIType, worker_index: int =
         - PettingZooEnv for AEC environments
         - ParallelPettingZooEnv for Parallel environments
     """
+    # Handle standard Gym environments (single agent)
+    if api_type == PettingZooAPIType.GYM:
+        # TODO: Add FastLane wrapper for Gym environments
+        # from .fastlane import maybe_wrap_gym_env
+        # return maybe_wrap_gym_env(env, worker_index=worker_index)
+        return env
+
     # Detect actual environment type - some envs (like Classic games) are always AEC
     # regardless of what the config says. AEC envs have agent_selection attribute.
     is_aec_env = hasattr(env, "agent_selection") or hasattr(env, "agent_iter")
@@ -265,10 +277,19 @@ class EnvironmentFactory:
         "classic": PettingZooAPIType.AEC,        # Turn-based games
         "butterfly": PettingZooAPIType.PARALLEL, # Mixed, but mostly parallel
         "mpe": PettingZooAPIType.PARALLEL,       # Continuous, simultaneous
+        "gym": PettingZooAPIType.GYM,            # Standard Gym
     }
 
     # Families that only support AEC (turn-based games)
     AEC_ONLY_FAMILIES = {"classic"}
+
+    @staticmethod
+    def create_gym_env(env_id: str, **kwargs) -> Any:
+        """Create a standard Gym/Gymnasium environment."""
+        if "render_mode" in kwargs and kwargs["render_mode"] == "rgb_array":
+             # Ensure we don't pass render_mode if env doesn't support it or if it's already set
+             pass
+        return gym.make(env_id, **kwargs)
 
     @staticmethod
     def create_sisl_env(env_id: str, api_type: PettingZooAPIType, **kwargs) -> Any:
@@ -430,6 +451,8 @@ class EnvironmentFactory:
             env = cls.create_butterfly_env(env_id, api_type, **kwargs)
         elif family_lower == "mpe":
             env = cls.create_mpe_env(env_id, api_type, **kwargs)
+        elif family_lower == "gym":
+            env = cls.create_gym_env(env_id, **kwargs)
         else:
             raise ValueError(f"Unknown environment family: {family}")
 
@@ -667,6 +690,11 @@ class RayWorkerRuntime:
         if self._agent_ids:
             return self._agent_ids
 
+        # Standard Gym environments are single-agent
+        if self.config.environment.api_type == PettingZooAPIType.GYM:
+            self._agent_ids = {"default_policy"}
+            return self._agent_ids
+
         # Create a temporary env to get agent IDs
         # Use render_mode=None to avoid opening pygame windows
         temp_kwargs = dict(self.config.environment.env_kwargs)
@@ -709,6 +737,10 @@ class RayWorkerRuntime:
         Returns:
             Configured algorithm config with multi-agent settings
         """
+        # Skip multi-agent config for Gym environments (single agent)
+        if self.config.environment.api_type == PettingZooAPIType.GYM:
+            return base_config
+
         agent_ids = self._get_agent_ids()
         policy_config = self.config.policy_configuration
 

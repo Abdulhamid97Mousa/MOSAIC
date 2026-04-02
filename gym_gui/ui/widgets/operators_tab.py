@@ -710,8 +710,8 @@ class OperatorsTab(QtWidgets.QWidget):
             self._step_player_0_btn.setEnabled(False)
         else:
             self._step_player_1_btn.setEnabled(False)
-        self._step_count += 1
-        self._step_count_label.setText(f"Steps: {self._step_count}")
+        # Note: _step_count is incremented only after the step actually completes
+        # (via set_step_count), to keep it in sync with the render container's Step counter.
         self.step_player_requested.emit(player_id, seed)
 
     def get_current_seed(self) -> int:

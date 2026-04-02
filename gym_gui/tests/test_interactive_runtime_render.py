@@ -351,11 +351,11 @@ class TestInteractiveRuntimeDirect:
         frame = env.render()
 
         assert frame is not None, "MiniGrid render returned None"
-        print(f"Frame shape: {frame.shape}")
-        print(f"Frame dtype: {frame.dtype}")
+        print(f"Frame shape: {frame.shape}")  # type: ignore[union-attr]
+        print(f"Frame dtype: {frame.dtype}")  # type: ignore[union-attr]
 
-        assert len(frame.shape) == 3, f"Expected 3D array, got shape: {frame.shape}"
-        assert frame.shape[2] == 3, f"Expected RGB (3 channels), got: {frame.shape[2]}"
+        assert len(frame.shape) == 3, f"Expected 3D array, got shape: {frame.shape}"  # type: ignore[union-attr]
+        assert frame.shape[2] == 3, f"Expected RGB (3 channels), got: {frame.shape[2]}"  # type: ignore[union-attr]
 
         env.close()
 

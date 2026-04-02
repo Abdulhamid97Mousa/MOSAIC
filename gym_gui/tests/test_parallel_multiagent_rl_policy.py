@@ -202,7 +202,7 @@ class TestExecuteParallelMultiagentStepMapping:
         """Document the bug that was fixed: string keys are not int keys."""
         actions = {"agent_0": 7, "agent_1": 2}
         # Before the fix, the code did: actions.get(agent, 0) for agent in [0, 1]
-        old_result = [actions.get(agent, 0) for agent in [0, 1]]
+        old_result = [actions.get(agent, 0) for agent in [0, 1]]  # type: ignore[call-overload]
         assert old_result == [0, 0], (
             "The old approach silently produced STILL for every agent"
         )

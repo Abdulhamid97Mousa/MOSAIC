@@ -33,7 +33,7 @@ def _base_form(qt_app) -> CleanRlTrainForm:
     if env_index < 0:
         env_index = 0
     form._env_combo.setCurrentIndex(env_index)
-    form._test_selected_env = form._env_combo.currentData()
+    form._test_selected_env = form._env_combo.currentData()  # type: ignore[attr-defined]
     form._timesteps_spin.setValue(4096)
     form._seed_spin.setValue(123)
     form._agent_id_input.setText("agent-cleanrl-test")
@@ -54,7 +54,7 @@ def test_get_config_includes_worker_metadata(qt_app) -> None:
     assert worker_meta.get("module") == "cleanrl_worker.cli"
     assert worker_meta.get("worker_id") == "cleanrl-test-worker"
     assert worker_meta.get("config", {}).get("algo") == "ppo"
-    assert worker_meta.get("config", {}).get("env_id") == form._test_selected_env
+    assert worker_meta.get("config", {}).get("env_id") == form._test_selected_env  # type: ignore[attr-defined]
     assert worker_meta.get("config", {}).get("seed") == 123
     # arguments key is no longer present (removed dry-run checkbox)
     assert "arguments" not in worker_meta

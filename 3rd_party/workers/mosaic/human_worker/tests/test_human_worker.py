@@ -401,7 +401,7 @@ class TestHumanInteractiveRuntime(unittest.TestCase):
         self.assertEqual(runtime._action_space_n, 0)
         self.assertEqual(runtime._action_labels, [])
         self.assertEqual(runtime._step_index, 0)
-        self.assertEqual(runtime._episode_index, 0)
+        self.assertEqual(runtime._episode_index, -1)  # starts at -1 so first reset makes it 0
         self.assertEqual(runtime._total_reward, 0.0)
 
     def test_emit_method(self) -> None:

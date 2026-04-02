@@ -330,7 +330,7 @@ class CleanRlTrainForm(QtWidgets.QDialog, LogConstantMixin):
     ) -> None:
         super().__init__(parent)
         self._logger = _LOGGER
-        self.setWindowTitle("CleanRl Agent Train Form")
+        self.setWindowTitle("CleanRL Agent Train Form")
         self.setModal(True)
         self.resize(720, 420)
 
@@ -530,7 +530,7 @@ class CleanRlTrainForm(QtWidgets.QDialog, LogConstantMixin):
         help_layout.addWidget(self._algo_help_text)
         left_column.addWidget(help_box)
 
-        analytics_group = QtWidgets.QGroupBox("Analytics & Tracking", self)
+        analytics_group = QtWidgets.QGroupBox("Analytics Tracking", self)
         analytics_layout = QtWidgets.QVBoxLayout(analytics_group)
         analytics_layout.setContentsMargins(8, 8, 8, 8)
         analytics_layout.setSpacing(6)

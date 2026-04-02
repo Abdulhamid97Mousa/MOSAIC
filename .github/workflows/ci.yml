@@ -64,7 +64,8 @@ jobs:
             libnss3 libnspr4 libasound2t64 \
             libxcomposite1 libxdamage1 libxkbfile1 \
             libxcb-cursor0 \
-            fontconfig
+            fontconfig \
+            xvfb
 
       - name: Install package with dev dependencies
         run: |
@@ -72,10 +73,8 @@ jobs:
 
       - name: Run tests with coverage
         timeout-minutes: 30
-        env:
-          QT_QPA_PLATFORM: offscreen
         run: |
-          pytest \
+          xvfb-run -a --server-args="-screen 0 1024x768x24" pytest \
             gym_gui/tests \
             -v \
             --timeout=600 \

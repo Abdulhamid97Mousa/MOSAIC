@@ -25,7 +25,13 @@ try:
 except ImportError:
     OPENSPIEL_AVAILABLE = False
 
-if OPENSPIEL_AVAILABLE:
+if TYPE_CHECKING:
+    from gym_gui.core.adapters.base import AdapterContext
+    from gym_gui.core.adapters.open_spiel import (
+        CheckersEnvironmentAdapter,
+        CheckersRenderPayload,
+    )
+elif OPENSPIEL_AVAILABLE:
     from gym_gui.core.adapters.base import AdapterContext
     from gym_gui.core.adapters.open_spiel import (
         CheckersEnvironmentAdapter,

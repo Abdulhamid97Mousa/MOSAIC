@@ -116,9 +116,11 @@ class TestJumanjiSudokuAdapterReset:
         adapter = _make_sudoku_adapter()
         try:
             adapter.reset(seed=12345)
+            assert adapter._initial_board is not None
             first_board = adapter._initial_board.copy()
 
             adapter.reset(seed=12345)
+            assert adapter._initial_board is not None
             second_board = adapter._initial_board.copy()
 
             np.testing.assert_array_equal(first_board, second_board)
@@ -134,7 +136,6 @@ class TestJumanjiSudokuAdapterStep:
     standard gym convention is Python ints.
     """
 
-    @pytest.mark.xfail(reason="Jumanji gymnasium wrapper has action type issues")
     def test_sudoku_step_basic(self) -> None:
         """Test basic step functionality."""
         adapter = _make_sudoku_adapter()
@@ -142,6 +143,7 @@ class TestJumanjiSudokuAdapterStep:
             _ = adapter.reset(seed=42)
 
             # Find a valid action from action_mask
+            assert adapter._last_obs is not None
             action_mask = adapter._last_obs.get("action_mask", [])
             valid_actions = np.where(np.array(action_mask).flatten())[0]
 
@@ -155,12 +157,12 @@ class TestJumanjiSudokuAdapterStep:
         finally:
             adapter.close()
 
-    @pytest.mark.xfail(reason="Jumanji gymnasium wrapper has action type issues")
     def test_sudoku_step_updates_last_obs(self) -> None:
         """Test that step updates _last_obs."""
         adapter = _make_sudoku_adapter()
         try:
             _ = adapter.reset(seed=42)
+            assert adapter._last_obs is not None
             initial_obs = adapter._last_obs
 
             # Find a valid action
@@ -322,6 +324,7 @@ class TestJumanjiSudokuBoardGameDetection:
         try:
             step = adapter.reset(seed=42)
             payload = step.render_payload
+            assert payload is not None
 
             detected = BoardGameRendererStrategy.get_game_from_payload(payload)
             assert detected == GameId.JUMANJI_SUDOKU

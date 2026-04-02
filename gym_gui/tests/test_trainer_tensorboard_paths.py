@@ -72,6 +72,7 @@ class TrainerTensorboardPathTests(unittest.TestCase):
 
         metadata = validated.payload.get("metadata")
         self.assertIsInstance(metadata, dict)
+        assert metadata is not None
         artifacts = metadata.get("artifacts")
         self.assertIsInstance(artifacts, dict)
         tensorboard_meta = artifacts.get("tensorboard")
@@ -104,7 +105,7 @@ class TelemetryValidationTensorboardTests(unittest.TestCase):
             }
         )
 
-        self.assertEqual(event.kind, "tensorboard")
+        self.assertEqual(event.kind, "tensorboard")  # type: ignore[attr-defined]
 
 
 if __name__ == "__main__":  # pragma: no cover

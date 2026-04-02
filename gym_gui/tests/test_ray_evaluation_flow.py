@@ -290,12 +290,12 @@ class TestSignalChain:
         assert hasattr(PolicyAssignmentPanel, "evaluate_requested")
 
     def test_multi_agent_tab_has_signal(self):
-        """Test that MultiAgentTab has policy_evaluate_requested signal."""
+        """Test that MultiAgentTab has evaluate_requested signal."""
         pytest.importorskip("qtpy")
 
         from gym_gui.ui.widgets.multi_agent_tab import MultiAgentTab
 
-        assert hasattr(MultiAgentTab, "policy_evaluate_requested")
+        assert hasattr(MultiAgentTab, "evaluate_requested")
 
     def test_control_panel_has_signal(self):
         """Test that ControlPanelWidget has policy_evaluate_requested signal."""

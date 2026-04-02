@@ -6,6 +6,7 @@ import random
 import time
 from dataclasses import dataclass
 from pathlib import Path
+from typing import Optional
 
 import gymnasium as gym
 import numpy as np
@@ -39,7 +40,7 @@ class Args:
     """if toggled, this experiment will be tracked with Weights and Biases"""
     wandb_project_name: str = "cleanRL"
     """the wandb's project name"""
-    wandb_entity: str | None = None
+    wandb_entity: Optional[str] = None
     """the entity (team) of wandb's project"""
     capture_video: bool = False
     """whether to capture videos of the agent performances (check out `videos` folder)"""
@@ -85,7 +86,7 @@ class Args:
     """coefficient of the value function"""
     max_grad_norm: float = 0.5
     """the maximum norm for the gradient clipping"""
-    target_kl: float | None = None
+    target_kl: Optional[float] = None
     """the target KL divergence threshold"""
 
     # GRU specific arguments
@@ -99,13 +100,13 @@ class Args:
     """maximum steps per episode for MiniGrid/BabyAI/MOSAIC environments"""
     reward_scale: float = 1.0
     """reward scaling factor (BabyAI paper uses 20.0)"""
-    view_size: int | None = None
+    view_size: Optional[int] = None
     """agent view size for MOSAIC MultiGrid (3, 5, 7, etc.). None = use environment default"""
 
     # Action masking arguments
     mask_invalid_actions: bool = False
     """if toggled, mask invalid actions during training (speeds up learning)"""
-    invalid_actions: list[int] | None = None
+    invalid_actions: Optional[list[int]] = None
     """list of action indices to mask (e.g., [0, 6, 7] for noop, toggle, done). If None and mask_invalid_actions=True, defaults to [0, 6, 7]"""
 
     # to be filled in runtime

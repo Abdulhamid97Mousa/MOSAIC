@@ -40,6 +40,7 @@ class EnvironmentFamily(StrEnum):
     OPEN_SPIEL = "open_spiel"  # OpenSpiel + custom draughts variants (American, Russian, International)
     MOSAIC_MULTIGRID = "mosaic_multigrid"  # mosaic_multigrid (PyPI): Competitive team-based (Soccer, Collect) - view_size=3
     INI_MULTIGRID = "ini_multigrid"  # INI multigrid: Cooperative exploration (Empty, BlockedUnlockPickup, etc.) - view_size=7
+    MALMOENV = "malmoenv"  # MalmoEnv: Microsoft Malmo Java-based Minecraft (connects to Minecraft server on port 9000)
     MELTINGPOT = "meltingpot"  # Melting Pot multi-agent social scenarios (Google DeepMind) via Shimmy
     OVERCOOKED = "overcooked"  # Overcooked-AI cooperative cooking (2 agents, human-AI coordination)
     SMAC = "smac"  # SMAC v1: StarCraft Multi-Agent Challenge - hand-designed cooperative micromanagement maps
@@ -47,6 +48,7 @@ class EnvironmentFamily(StrEnum):
     RWARE = "rware"  # Robotic Warehouse: cooperative multi-agent shelf delivery
     GRIDDLY = "griddly"  # Griddly: C++ backend high-performance grid world platform
     HEMAC = "hemac"  # HeMAC: Heterogeneous Multi-Agent Challenge (ThalesGroup ECAI 2025)
+    GFOOTBALL = "gfootball"  # Google Research Football: multi-agent football (soccer) environment
     OTHER = "other"  # Fallback for unknown environments (not displayed in UI)
 
 
@@ -466,6 +468,15 @@ class GameId(StrEnum):
     MOSAIC_MULTIGRID_BASKETBALL_SOLO_GREEN = "MosaicMultiGrid-Basketball-Solo-Green-IndAgObs-v0"  # 1 agent (Green), scores right
     MOSAIC_MULTIGRID_BASKETBALL_SOLO_BLUE = "MosaicMultiGrid-Basketball-Solo-Blue-IndAgObs-v0"  # 1 agent (Blue), scores left
 
+    # American Football variants (v6.3.0) - Brown field, end zones, touchdown scoring, ball stealing
+    MOSAIC_MULTIGRID_AMERICAN_FOOTBALL_1V1 = "MosaicMultiGrid-AmericanFootball-1v1-v0"  # 1v1 American Football, 16x11 brown field
+    MOSAIC_MULTIGRID_AMERICAN_FOOTBALL_2V2 = "MosaicMultiGrid-AmericanFootball-2v2-v0"  # 2v2 American Football
+    MOSAIC_MULTIGRID_AMERICAN_FOOTBALL_3V3 = "MosaicMultiGrid-AmericanFootball-3v3-v0"  # 3v3 American Football
+    MOSAIC_MULTIGRID_AMERICAN_FOOTBALL_2V2_TEAMOBS = "MosaicMultiGrid-AmericanFootball-2v2-TeamObs-v0"  # 2v2 + teammate awareness
+    MOSAIC_MULTIGRID_AMERICAN_FOOTBALL_3V3_TEAMOBS = "MosaicMultiGrid-AmericanFootball-3v3-TeamObs-v0"  # 3v3 + teammate awareness
+    MOSAIC_MULTIGRID_AMERICAN_FOOTBALL_SOLO_GREEN = "MosaicMultiGrid-AmericanFootball-Solo-Green-v0"  # Solo training (Green)
+    MOSAIC_MULTIGRID_AMERICAN_FOOTBALL_SOLO_BLUE = "MosaicMultiGrid-AmericanFootball-Solo-Blue-v0"  # Solo training (Blue)
+
     # ─────────────────────────────────────────────────────────────────────────
     # INI MultiGrid (Local: 3rd_party/multigrid-ini/)
     # Cooperative exploration tasks with view_size=7
@@ -674,6 +685,41 @@ class GameId(StrEnum):
     HEMAC_COMPLEX_FLEET_3Q1O1P = "hemac-complex-fleet-3q1o1p-v0"
     HEMAC_COMPLEX_FLEET_5Q2O1P = "hemac-complex-fleet-5q2o1p-v0"
 
+    # ── MalmoEnv (Microsoft Malmo, Java-based Minecraft) ─────────────
+    MALMOENV_MOBCHASE = "MalmoEnv-MobChase-v0"
+    MALMOENV_MAZERUNNER = "MalmoEnv-MazeRunner-v0"
+    MALMOENV_VERTICAL = "MalmoEnv-Vertical-v0"
+    MALMOENV_CLIFFWALKING = "MalmoEnv-CliffWalking-v0"
+    MALMOENV_CATCHTHEMOB = "MalmoEnv-CatchTheMob-v0"
+    MALMOENV_FINDTHEGOAL = "MalmoEnv-FindTheGoal-v0"
+    MALMOENV_ATTIC = "MalmoEnv-Attic-v0"
+    MALMOENV_DEFAULTFLATWORLD = "MalmoEnv-DefaultFlatWorld-v0"
+    MALMOENV_DEFAULTWORLD = "MalmoEnv-DefaultWorld-v0"
+    MALMOENV_EATING = "MalmoEnv-Eating-v0"
+    MALMOENV_OBSTACLES = "MalmoEnv-Obstacles-v0"
+    MALMOENV_TRICKYARENA = "MalmoEnv-TrickyArena-v0"
+    MALMOENV_TREASUREHUNT = "MalmoEnv-TreasureHunt-v0"
+
+    # ── Google Research Football (GRF) ───────────────────────────────
+    # Full matches
+    GRF_11V11_EASY = "gfootball-11_vs_11_easy_stochastic"
+    GRF_11V11 = "gfootball-11_vs_11_stochastic"
+    GRF_11V11_HARD = "gfootball-11_vs_11_hard_stochastic"
+    GRF_1V1_EASY = "gfootball-1_vs_1_easy"
+    GRF_5V5 = "gfootball-5_vs_5"
+    # Academy scenarios (drills)
+    GRF_ACADEMY_EMPTY_GOAL_CLOSE = "gfootball-academy_empty_goal_close"
+    GRF_ACADEMY_EMPTY_GOAL = "gfootball-academy_empty_goal"
+    GRF_ACADEMY_RUN_TO_SCORE = "gfootball-academy_run_to_score"
+    GRF_ACADEMY_RUN_TO_SCORE_WITH_KEEPER = "gfootball-academy_run_to_score_with_keeper"
+    GRF_ACADEMY_PASS_AND_SHOOT = "gfootball-academy_pass_and_shoot_with_keeper"
+    GRF_ACADEMY_RUN_PASS_AND_SHOOT = "gfootball-academy_run_pass_and_shoot_with_keeper"
+    GRF_ACADEMY_3V1_WITH_KEEPER = "gfootball-academy_3_vs_1_with_keeper"
+    GRF_ACADEMY_CORNER = "gfootball-academy_corner"
+    GRF_ACADEMY_COUNTERATTACK_EASY = "gfootball-academy_counterattack_easy"
+    GRF_ACADEMY_COUNTERATTACK_HARD = "gfootball-academy_counterattack_hard"
+    GRF_ACADEMY_SINGLE_GOAL_VS_LAZY = "gfootball-academy_single_goal_versus_lazy"
+
 
 def get_game_display_name(game_id: GameId) -> str:
     """Get the display name for a GameId with family prefix.
@@ -826,6 +872,7 @@ class RenderMode(StrEnum):
     ANSI = "ansi"
     ASCII = "ascii"
     GRID = "grid"
+    MOSAIC_MALMO = "mosaic_malmo"  # kept for rendering pipeline compatibility (MalmoEnv uses this render mode)
     RGB_ARRAY = "rgb_array"
     SURFACE = "surface"
 
@@ -1116,6 +1163,21 @@ ENVIRONMENT_FAMILY_BY_GAME: dict[GameId, EnvironmentFamily] = {
     GameId.VIZDOOM_PREDICT_POSITION: EnvironmentFamily.VIZDOOM,
     GameId.VIZDOOM_TAKE_COVER: EnvironmentFamily.VIZDOOM,
     GameId.VIZDOOM_DEATHMATCH: EnvironmentFamily.VIZDOOM,
+    # MalmoEnv (Microsoft Malmo, Java-based Minecraft)
+    GameId.MALMOENV_MOBCHASE: EnvironmentFamily.MALMOENV,
+    GameId.MALMOENV_MAZERUNNER: EnvironmentFamily.MALMOENV,
+    GameId.MALMOENV_VERTICAL: EnvironmentFamily.MALMOENV,
+    GameId.MALMOENV_CLIFFWALKING: EnvironmentFamily.MALMOENV,
+    GameId.MALMOENV_CATCHTHEMOB: EnvironmentFamily.MALMOENV,
+    GameId.MALMOENV_FINDTHEGOAL: EnvironmentFamily.MALMOENV,
+    GameId.MALMOENV_ATTIC: EnvironmentFamily.MALMOENV,
+    GameId.MALMOENV_DEFAULTFLATWORLD: EnvironmentFamily.MALMOENV,
+    GameId.MALMOENV_DEFAULTWORLD: EnvironmentFamily.MALMOENV,
+    GameId.MALMOENV_EATING: EnvironmentFamily.MALMOENV,
+    GameId.MALMOENV_OBSTACLES: EnvironmentFamily.MALMOENV,
+    GameId.MALMOENV_TRICKYARENA: EnvironmentFamily.MALMOENV,
+    GameId.MALMOENV_TREASUREHUNT: EnvironmentFamily.MALMOENV,
+    # PettingZoo Classic
     GameId.CHESS: EnvironmentFamily.PETTINGZOO_CLASSIC,
     GameId.CONNECT_FOUR: EnvironmentFamily.PETTINGZOO_CLASSIC,
     GameId.GO: EnvironmentFamily.PETTINGZOO_CLASSIC,
@@ -1244,6 +1306,14 @@ ENVIRONMENT_FAMILY_BY_GAME: dict[GameId, EnvironmentFamily] = {
     GameId.MOSAIC_MULTIGRID_SOCCER_SOLO_BLUE: EnvironmentFamily.MOSAIC_MULTIGRID,
     GameId.MOSAIC_MULTIGRID_BASKETBALL_SOLO_GREEN: EnvironmentFamily.MOSAIC_MULTIGRID,
     GameId.MOSAIC_MULTIGRID_BASKETBALL_SOLO_BLUE: EnvironmentFamily.MOSAIC_MULTIGRID,
+    # American Football variants (v6.3.0)
+    GameId.MOSAIC_MULTIGRID_AMERICAN_FOOTBALL_1V1: EnvironmentFamily.MOSAIC_MULTIGRID,
+    GameId.MOSAIC_MULTIGRID_AMERICAN_FOOTBALL_2V2: EnvironmentFamily.MOSAIC_MULTIGRID,
+    GameId.MOSAIC_MULTIGRID_AMERICAN_FOOTBALL_3V3: EnvironmentFamily.MOSAIC_MULTIGRID,
+    GameId.MOSAIC_MULTIGRID_AMERICAN_FOOTBALL_2V2_TEAMOBS: EnvironmentFamily.MOSAIC_MULTIGRID,
+    GameId.MOSAIC_MULTIGRID_AMERICAN_FOOTBALL_3V3_TEAMOBS: EnvironmentFamily.MOSAIC_MULTIGRID,
+    GameId.MOSAIC_MULTIGRID_AMERICAN_FOOTBALL_SOLO_GREEN: EnvironmentFamily.MOSAIC_MULTIGRID,
+    GameId.MOSAIC_MULTIGRID_AMERICAN_FOOTBALL_SOLO_BLUE: EnvironmentFamily.MOSAIC_MULTIGRID,
     # INI MultiGrid (Local: cooperative exploration)
     GameId.INI_MULTIGRID_BLOCKED_UNLOCK_PICKUP: EnvironmentFamily.INI_MULTIGRID,
     GameId.INI_MULTIGRID_EMPTY_5X5: EnvironmentFamily.INI_MULTIGRID,
@@ -1380,6 +1450,23 @@ ENVIRONMENT_FAMILY_BY_GAME: dict[GameId, EnvironmentFamily] = {
     GameId.HEMAC_FLEET_20Q5O: EnvironmentFamily.HEMAC,
     GameId.HEMAC_COMPLEX_FLEET_3Q1O1P: EnvironmentFamily.HEMAC,
     GameId.HEMAC_COMPLEX_FLEET_5Q2O1P: EnvironmentFamily.HEMAC,
+    # Google Research Football (GRF)
+    GameId.GRF_11V11_EASY: EnvironmentFamily.GFOOTBALL,
+    GameId.GRF_11V11: EnvironmentFamily.GFOOTBALL,
+    GameId.GRF_11V11_HARD: EnvironmentFamily.GFOOTBALL,
+    GameId.GRF_1V1_EASY: EnvironmentFamily.GFOOTBALL,
+    GameId.GRF_5V5: EnvironmentFamily.GFOOTBALL,
+    GameId.GRF_ACADEMY_EMPTY_GOAL_CLOSE: EnvironmentFamily.GFOOTBALL,
+    GameId.GRF_ACADEMY_EMPTY_GOAL: EnvironmentFamily.GFOOTBALL,
+    GameId.GRF_ACADEMY_RUN_TO_SCORE: EnvironmentFamily.GFOOTBALL,
+    GameId.GRF_ACADEMY_RUN_TO_SCORE_WITH_KEEPER: EnvironmentFamily.GFOOTBALL,
+    GameId.GRF_ACADEMY_PASS_AND_SHOOT: EnvironmentFamily.GFOOTBALL,
+    GameId.GRF_ACADEMY_RUN_PASS_AND_SHOOT: EnvironmentFamily.GFOOTBALL,
+    GameId.GRF_ACADEMY_3V1_WITH_KEEPER: EnvironmentFamily.GFOOTBALL,
+    GameId.GRF_ACADEMY_CORNER: EnvironmentFamily.GFOOTBALL,
+    GameId.GRF_ACADEMY_COUNTERATTACK_EASY: EnvironmentFamily.GFOOTBALL,
+    GameId.GRF_ACADEMY_COUNTERATTACK_HARD: EnvironmentFamily.GFOOTBALL,
+    GameId.GRF_ACADEMY_SINGLE_GOAL_VS_LAZY: EnvironmentFamily.GFOOTBALL,
 }
 
 
@@ -1615,6 +1702,14 @@ DEFAULT_RENDER_MODES: dict[GameId, RenderMode] = {
     GameId.MOSAIC_MULTIGRID_SOCCER_SOLO_BLUE: RenderMode.RGB_ARRAY,
     GameId.MOSAIC_MULTIGRID_BASKETBALL_SOLO_GREEN: RenderMode.RGB_ARRAY,
     GameId.MOSAIC_MULTIGRID_BASKETBALL_SOLO_BLUE: RenderMode.RGB_ARRAY,
+    # American Football variants (v6.3.0)
+    GameId.MOSAIC_MULTIGRID_AMERICAN_FOOTBALL_1V1: RenderMode.RGB_ARRAY,
+    GameId.MOSAIC_MULTIGRID_AMERICAN_FOOTBALL_2V2: RenderMode.RGB_ARRAY,
+    GameId.MOSAIC_MULTIGRID_AMERICAN_FOOTBALL_3V3: RenderMode.RGB_ARRAY,
+    GameId.MOSAIC_MULTIGRID_AMERICAN_FOOTBALL_2V2_TEAMOBS: RenderMode.RGB_ARRAY,
+    GameId.MOSAIC_MULTIGRID_AMERICAN_FOOTBALL_3V3_TEAMOBS: RenderMode.RGB_ARRAY,
+    GameId.MOSAIC_MULTIGRID_AMERICAN_FOOTBALL_SOLO_GREEN: RenderMode.RGB_ARRAY,
+    GameId.MOSAIC_MULTIGRID_AMERICAN_FOOTBALL_SOLO_BLUE: RenderMode.RGB_ARRAY,
     GameId.INI_MULTIGRID_BLOCKED_UNLOCK_PICKUP: RenderMode.RGB_ARRAY,
     GameId.INI_MULTIGRID_EMPTY_5X5: RenderMode.RGB_ARRAY,
     GameId.INI_MULTIGRID_EMPTY_RANDOM_5X5: RenderMode.RGB_ARRAY,
@@ -1741,6 +1836,23 @@ DEFAULT_RENDER_MODES: dict[GameId, RenderMode] = {
     GameId.GRIDDLY_ROBOT_TAG_8V8: RenderMode.RGB_ARRAY,
     GameId.GRIDDLY_ROBOT_TAG_12V12: RenderMode.RGB_ARRAY,
     GameId.GRIDDLY_FORAGERS: RenderMode.RGB_ARRAY,
+    # Google Research Football (GRF) -- rendered frames
+    GameId.GRF_11V11_EASY: RenderMode.RGB_ARRAY,
+    GameId.GRF_11V11: RenderMode.RGB_ARRAY,
+    GameId.GRF_11V11_HARD: RenderMode.RGB_ARRAY,
+    GameId.GRF_1V1_EASY: RenderMode.RGB_ARRAY,
+    GameId.GRF_5V5: RenderMode.RGB_ARRAY,
+    GameId.GRF_ACADEMY_EMPTY_GOAL_CLOSE: RenderMode.RGB_ARRAY,
+    GameId.GRF_ACADEMY_EMPTY_GOAL: RenderMode.RGB_ARRAY,
+    GameId.GRF_ACADEMY_RUN_TO_SCORE: RenderMode.RGB_ARRAY,
+    GameId.GRF_ACADEMY_RUN_TO_SCORE_WITH_KEEPER: RenderMode.RGB_ARRAY,
+    GameId.GRF_ACADEMY_PASS_AND_SHOOT: RenderMode.RGB_ARRAY,
+    GameId.GRF_ACADEMY_RUN_PASS_AND_SHOOT: RenderMode.RGB_ARRAY,
+    GameId.GRF_ACADEMY_3V1_WITH_KEEPER: RenderMode.RGB_ARRAY,
+    GameId.GRF_ACADEMY_CORNER: RenderMode.RGB_ARRAY,
+    GameId.GRF_ACADEMY_COUNTERATTACK_EASY: RenderMode.RGB_ARRAY,
+    GameId.GRF_ACADEMY_COUNTERATTACK_HARD: RenderMode.RGB_ARRAY,
+    GameId.GRF_ACADEMY_SINGLE_GOAL_VS_LAZY: RenderMode.RGB_ARRAY,
 }
 
 
@@ -2423,6 +2535,14 @@ DEFAULT_CONTROL_MODES: dict[GameId, Iterable[ControlMode]] = {
     GameId.MOSAIC_MULTIGRID_SOCCER_SOLO_BLUE: (ControlMode.HUMAN_ONLY, ControlMode.AGENT_ONLY),
     GameId.MOSAIC_MULTIGRID_BASKETBALL_SOLO_GREEN: (ControlMode.HUMAN_ONLY, ControlMode.AGENT_ONLY),
     GameId.MOSAIC_MULTIGRID_BASKETBALL_SOLO_BLUE: (ControlMode.HUMAN_ONLY, ControlMode.AGENT_ONLY),
+    # American Football variants (v6.3.0) - multi-agent competitive
+    GameId.MOSAIC_MULTIGRID_AMERICAN_FOOTBALL_1V1: (ControlMode.HUMAN_ONLY, ControlMode.AGENT_ONLY, ControlMode.MULTI_AGENT_COOP, ControlMode.MULTI_AGENT_COMPETITIVE),
+    GameId.MOSAIC_MULTIGRID_AMERICAN_FOOTBALL_2V2: (ControlMode.HUMAN_ONLY, ControlMode.AGENT_ONLY, ControlMode.MULTI_AGENT_COOP, ControlMode.MULTI_AGENT_COMPETITIVE),
+    GameId.MOSAIC_MULTIGRID_AMERICAN_FOOTBALL_3V3: (ControlMode.HUMAN_ONLY, ControlMode.AGENT_ONLY, ControlMode.MULTI_AGENT_COOP, ControlMode.MULTI_AGENT_COMPETITIVE),
+    GameId.MOSAIC_MULTIGRID_AMERICAN_FOOTBALL_2V2_TEAMOBS: (ControlMode.HUMAN_ONLY, ControlMode.AGENT_ONLY, ControlMode.MULTI_AGENT_COOP, ControlMode.MULTI_AGENT_COMPETITIVE),
+    GameId.MOSAIC_MULTIGRID_AMERICAN_FOOTBALL_3V3_TEAMOBS: (ControlMode.HUMAN_ONLY, ControlMode.AGENT_ONLY, ControlMode.MULTI_AGENT_COOP, ControlMode.MULTI_AGENT_COMPETITIVE),
+    GameId.MOSAIC_MULTIGRID_AMERICAN_FOOTBALL_SOLO_GREEN: (ControlMode.HUMAN_ONLY, ControlMode.AGENT_ONLY),
+    GameId.MOSAIC_MULTIGRID_AMERICAN_FOOTBALL_SOLO_BLUE: (ControlMode.HUMAN_ONLY, ControlMode.AGENT_ONLY),
     GameId.INI_MULTIGRID_BLOCKED_UNLOCK_PICKUP: (ControlMode.HUMAN_ONLY, ControlMode.AGENT_ONLY, ControlMode.MULTI_AGENT_COOP),
     GameId.INI_MULTIGRID_EMPTY_5X5: (ControlMode.HUMAN_ONLY, ControlMode.AGENT_ONLY, ControlMode.MULTI_AGENT_COOP),
     GameId.INI_MULTIGRID_EMPTY_RANDOM_5X5: (ControlMode.HUMAN_ONLY, ControlMode.AGENT_ONLY, ControlMode.MULTI_AGENT_COOP),
@@ -2550,6 +2670,23 @@ DEFAULT_CONTROL_MODES: dict[GameId, Iterable[ControlMode]] = {
     GameId.GRIDDLY_ROBOT_TAG_8V8: (ControlMode.HUMAN_ONLY, ControlMode.AGENT_ONLY, ControlMode.MULTI_AGENT_COOP),
     GameId.GRIDDLY_ROBOT_TAG_12V12: (ControlMode.HUMAN_ONLY, ControlMode.AGENT_ONLY, ControlMode.MULTI_AGENT_COOP),
     GameId.GRIDDLY_FORAGERS: (ControlMode.HUMAN_ONLY, ControlMode.AGENT_ONLY, ControlMode.MULTI_AGENT_COOP),
+    # Google Research Football (GRF) -- supports human, agent, and cooperative multi-agent
+    GameId.GRF_11V11_EASY: (ControlMode.HUMAN_ONLY, ControlMode.AGENT_ONLY, ControlMode.MULTI_AGENT_COOP),
+    GameId.GRF_11V11: (ControlMode.HUMAN_ONLY, ControlMode.AGENT_ONLY, ControlMode.MULTI_AGENT_COOP),
+    GameId.GRF_11V11_HARD: (ControlMode.HUMAN_ONLY, ControlMode.AGENT_ONLY, ControlMode.MULTI_AGENT_COOP),
+    GameId.GRF_1V1_EASY: (ControlMode.HUMAN_ONLY, ControlMode.AGENT_ONLY, ControlMode.MULTI_AGENT_COOP),
+    GameId.GRF_5V5: (ControlMode.HUMAN_ONLY, ControlMode.AGENT_ONLY, ControlMode.MULTI_AGENT_COOP),
+    GameId.GRF_ACADEMY_EMPTY_GOAL_CLOSE: (ControlMode.HUMAN_ONLY, ControlMode.AGENT_ONLY),
+    GameId.GRF_ACADEMY_EMPTY_GOAL: (ControlMode.HUMAN_ONLY, ControlMode.AGENT_ONLY),
+    GameId.GRF_ACADEMY_RUN_TO_SCORE: (ControlMode.HUMAN_ONLY, ControlMode.AGENT_ONLY),
+    GameId.GRF_ACADEMY_RUN_TO_SCORE_WITH_KEEPER: (ControlMode.HUMAN_ONLY, ControlMode.AGENT_ONLY),
+    GameId.GRF_ACADEMY_PASS_AND_SHOOT: (ControlMode.HUMAN_ONLY, ControlMode.AGENT_ONLY, ControlMode.MULTI_AGENT_COOP),
+    GameId.GRF_ACADEMY_RUN_PASS_AND_SHOOT: (ControlMode.HUMAN_ONLY, ControlMode.AGENT_ONLY, ControlMode.MULTI_AGENT_COOP),
+    GameId.GRF_ACADEMY_3V1_WITH_KEEPER: (ControlMode.HUMAN_ONLY, ControlMode.AGENT_ONLY, ControlMode.MULTI_AGENT_COOP),
+    GameId.GRF_ACADEMY_CORNER: (ControlMode.HUMAN_ONLY, ControlMode.AGENT_ONLY, ControlMode.MULTI_AGENT_COOP),
+    GameId.GRF_ACADEMY_COUNTERATTACK_EASY: (ControlMode.HUMAN_ONLY, ControlMode.AGENT_ONLY, ControlMode.MULTI_AGENT_COOP),
+    GameId.GRF_ACADEMY_COUNTERATTACK_HARD: (ControlMode.HUMAN_ONLY, ControlMode.AGENT_ONLY, ControlMode.MULTI_AGENT_COOP),
+    GameId.GRF_ACADEMY_SINGLE_GOAL_VS_LAZY: (ControlMode.HUMAN_ONLY, ControlMode.AGENT_ONLY, ControlMode.MULTI_AGENT_COOP),
 }
 
 
@@ -2588,6 +2725,7 @@ DEFAULT_PARADIGM_BY_FAMILY: dict[EnvironmentFamily, SteppingParadigm] = {
     EnvironmentFamily.SMACV2: SteppingParadigm.SIMULTANEOUS,  # SMACv2: all units act in parallel (procedural gen)
     EnvironmentFamily.RWARE: SteppingParadigm.SIMULTANEOUS,  # RWARE: all robots act in parallel each timestep
     EnvironmentFamily.GRIDDLY: SteppingParadigm.SINGLE_AGENT,  # Griddly: single-agent grid worlds (C++ backend)
+    EnvironmentFamily.GFOOTBALL: SteppingParadigm.SIMULTANEOUS,  # GRF: all controlled players act simultaneously
     EnvironmentFamily.OTHER: SteppingParadigm.SINGLE_AGENT,  # Fallback
 }
 

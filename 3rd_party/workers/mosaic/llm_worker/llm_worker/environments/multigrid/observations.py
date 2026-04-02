@@ -37,6 +37,7 @@ except ImportError:
     _HAS_STRUCTURED_LOGGING = False
 
 # Object type encoding from MiniGrid/MultiGrid
+# Note: mosaic_multigrid adds ENDZONE (10) for American Football
 OBJECT_TYPES = {
     0: "empty",
     1: "wall",
@@ -48,6 +49,7 @@ OBJECT_TYPES = {
     7: "goal",
     8: "lava",
     9: "agent",
+    10: "endzone",  # American Football end zones
 }
 
 # Color encoding
@@ -139,6 +141,7 @@ def describe_observation_egocentric(
     obs: np.ndarray,
     agent_direction: int = 0,
     carrying: Optional[str] = None,
+    env_id: Optional[str] = None,
 ) -> str:
     """Convert observation to text (Mode 1: Egocentric Only).
 
@@ -149,6 +152,7 @@ def describe_observation_egocentric(
         obs: Encoded grid observation (view_size, view_size, 6).
         agent_direction: Agent's facing direction (0-3).
         carrying: What the agent is carrying.
+        env_id: Environment identifier for game-specific descriptions.
 
     Returns:
         Natural language description of agent's view.
@@ -172,6 +176,7 @@ def describe_observation_egocentric(
     goals = []
     walls = []
     agents = []
+    endzones = []
 
     for dx, dy, obj in objects:
         if dx == 0 and dy == 0:
@@ -185,6 +190,8 @@ def describe_observation_egocentric(
             balls.append(f"{obj_color} ball {pos_desc}")
         elif obj_type == "goal":
             goals.append(f"{obj_color} goal {pos_desc}")
+        elif obj_type == "endzone":
+            endzones.append(f"{obj_color} end zone {pos_desc}")
         elif obj_type == "wall":
             if dx == 0 and dy == -1:  # Only immediate wall
                 walls.append("wall at your front")
@@ -203,6 +210,9 @@ def describe_observation_egocentric(
     if goals:
         for goal in goals:
             lines.append(f"- {goal}")
+    if endzones:
+        for endzone in endzones:
+            lines.append(f"- {endzone}")
     if agents:
         for agent in agents[:2]:
             lines.append(f"- {agent}")

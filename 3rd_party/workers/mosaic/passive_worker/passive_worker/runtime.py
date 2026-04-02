@@ -89,8 +89,20 @@ class PassiveWorkerRuntime:
         self._episode_reward = 0.0
 
     def _emit(self, data: Dict[str, Any]) -> None:
-        """Emit JSON response to stdout."""
-        print(json.dumps(data, default=_json_default), flush=True)
+        """Emit JSON response to stdout and also log to stderr for debugging."""
+        json_str = json.dumps(data, default=_json_default)
+        print(json_str, flush=True)
+        # Log to stderr for debugging (appears in operator log file)
+        if data.get("type") == "action_selected":
+            logger.info(
+                "Action selected: player=%s action=%s (passive)",
+                data.get("player_id"), data.get("action"),
+            )
+        elif data.get("type") == "step":
+            logger.info(
+                "Step: action=%s reward=%.2f (passive)",
+                data.get("action"), data.get("reward"),
+            )
 
     def _resolve_action_space(self, game_name: str) -> gym.spaces.Space:
         """Determine the action space from the game/task name."""

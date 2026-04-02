@@ -885,22 +885,25 @@ class GoEnvironmentAdapter(EnvironmentAdapter[Dict[str, Any], int]):
         return self._package_step(obs, reward, terminated, truncated, dict(info))
 
     def _sync_board_from_observation(self, obs: Dict[str, Any]) -> None:
-        """Sync internal board state from observation planes."""
+        """Sync internal board state from observation planes.
+
+        PettingZoo Go observation planes (relative to the observing agent):
+        - Plane 0: opponent's stones
+        - Plane 1: current agent's (own) stones
+        """
         observation = obs["observation"]
-        # Plane 0: current player's stones, Plane 1: opponent's stones
-        # Plane 2: player indicator (1 if black, 0 if white)
-        is_black = observation[0, 0, 2] == 1
+        is_black = self._current_player == self.BLACK_AGENT
 
         for row in range(self._board_size):
             for col in range(self._board_size):
-                current_stones = observation[row, col, 0]
-                opponent_stones = observation[row, col, 1]
+                opponent_stones = observation[row, col, 0]
+                own_stones = observation[row, col, 1]
 
-                if current_stones == 1:
-                    # Current player has stone here
+                if own_stones == 1:
+                    # Current player's stone
                     self._board[row][col] = 1 if is_black else 2
                 elif opponent_stones == 1:
-                    # Opponent has stone here
+                    # Opponent's stone
                     self._board[row][col] = 2 if is_black else 1
                 else:
                     self._board[row][col] = 0

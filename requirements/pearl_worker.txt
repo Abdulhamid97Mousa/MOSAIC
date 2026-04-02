@@ -1,0 +1,14 @@
+# Pearl Worker Dependencies (Meta's production RL library)
+# Install this when launching Pearl-based training runs.
+#
+# Pearl must be installed from the cloned repo:
+#   pip install -e 3rd_party/workers/pearl_worker/Pearl
+
+# Include base requirements
+-r base.txt
+
+# Pearl dependencies
+torch>=2.0.0
+
+# Install Pearl itself from the local clone
+-e 3rd_party/workers/pearl_worker/Pearl

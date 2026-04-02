@@ -41,16 +41,41 @@ fi
 mkdir -p var/logs var/trainer
 
 # ------------------------------------------------------------------------------
-# Cleanup handler
+# Cleanup handler — kills daemon, worker subprocesses, and orphan trackers
 # ------------------------------------------------------------------------------
-cleanup() {
-    if ps -p "${DAEMON_PID:-0}" >/dev/null 2>&1; then
-        echo "Shutting down trainer daemon (PID: $DAEMON_PID)..."
-        kill "$DAEMON_PID" 2>/dev/null || true
-        wait "$DAEMON_PID" 2>/dev/null || true
-    fi
-}
-trap cleanup EXIT
+# cleanup() {
+#     echo ""
+#     # 1. Kill trainer daemon
+#     if ps -p "${DAEMON_PID:-0}" >/dev/null 2>&1; then
+#         echo "Shutting down trainer daemon (PID: $DAEMON_PID)..."
+#         kill "$DAEMON_PID" 2>/dev/null || true
+#         wait "$DAEMON_PID" 2>/dev/null || true
+#     fi
+
+#     # 2. Kill any orphaned worker subprocesses spawned by the trainer
+#     local worker_pids
+#     worker_pids="$(pgrep -f 'cleanrl_worker\.(launcher|train)' 2>/dev/null || true)"
+#     if [ -n "$worker_pids" ]; then
+#         echo "Cleaning up orphaned worker processes..."
+#         kill $worker_pids 2>/dev/null || true
+#         sleep 0.5
+#         kill -9 $worker_pids 2>/dev/null || true
+#     fi
+
+#     # 3. Kill runaway resource_tracker processes spawned from our venv
+#     local tracker_pids
+#     tracker_pids="$(pgrep -f 'resource_tracker.*main' 2>/dev/null || true)"
+#     if [ -n "$tracker_pids" ]; then
+#         echo "Cleaning up orphaned resource_tracker processes..."
+#         kill -9 $tracker_pids 2>/dev/null || true
+#     fi
+
+#     # 4. Clean up stale shared memory segments left by FastLane
+#     for shm in /dev/shm/mosaic.fastlane.*; do
+#         [ -e "$shm" ] && rm -f "$shm" 2>/dev/null && echo "Removed stale shm: $shm"
+#     done
+# }
+# trap cleanup EXIT
 
 # ------------------------------------------------------------------------------
 # Python binary selection

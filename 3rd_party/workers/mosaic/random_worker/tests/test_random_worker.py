@@ -173,6 +173,50 @@ class TestRuntimeProtocol:
         assert all(0 <= a < 7 for a in actions)
         assert len(set(actions)) > 1  # not all the same
 
+    def test_select_action_respects_action_mask(self):
+        """action_mask constrains sampling to only legal actions (e.g. chess_v6)."""
+        rt = self._make_runtime()
+        # Simulate chess_v6: Discrete(4672), only actions 100 and 200 are legal
+        rt.handle_init_agent({"game_name": "FakeEnv", "player_id": "player_0"})
+
+        legal = {100, 200}
+        mask = [0] * 4672
+        for idx in legal:
+            mask[idx] = 1
+
+        # Replace action space to match the mask size
+        import gymnasium as gym
+        rt._action_space = gym.spaces.Discrete(4672)
+
+        actions = set()
+        for _ in range(50):
+            resp = rt.handle_select_action({
+                "observation": "board state",
+                "player_id": "player_0",
+                "action_mask": mask,
+            })
+            assert resp["type"] == "action_selected"
+            actions.add(resp["action"])
+
+        assert actions <= legal, f"Sampled actions outside mask: {actions - legal}"
+        assert len(actions) > 1, "Expected both legal actions to be sampled"
+
+    def test_select_action_no_mask_uses_full_space(self):
+        """Without action_mask, sampling uses the full action space."""
+        rt = self._make_runtime()
+        rt.handle_init_agent({"game_name": "FakeEnv", "player_id": "agent_0"})
+
+        actions = set()
+        for _ in range(200):
+            resp = rt.handle_select_action({
+                "observation": [],
+                "player_id": "agent_0",
+            })
+            actions.add(resp["action"])
+
+        # With Discrete(7) and 200 samples, expect all 7 values to appear
+        assert actions == set(range(7))
+
 
 # ── Full Stdin/Stdout Loop Tests ────────────────────────────────────
 

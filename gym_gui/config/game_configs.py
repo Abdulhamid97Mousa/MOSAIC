@@ -1002,7 +1002,51 @@ class GriddlyConfig:
     """Render mode for MOSAIC display."""
 
 
-# Type alias for all game configuration types
+@dataclass
+class GFootballConfig:
+    """Configuration for Google Research Football (GRF) environments.
+
+    GRF is a multi-agent football (soccer) environment developed by the
+    Google Brain team, designed for RL research in cooperative and
+    competitive settings with realistic physics.
+
+    Paper: Kurach et al. (2020). "Google Research Football: A Novel RL
+           Environment"
+    Source: 3rd_party/environments/football/
+    """
+
+    representation: str = "simple115v2"
+    """Observation representation: 'simple115' (115-d vector), 'simple115v2'
+    (fixed positions), 'extracted' (super minimap), 'pixels', 'pixels_gray',
+    or 'raw' (dict with full game state)."""
+
+    rewards: str = "scoring"
+    """Comma-separated reward components: 'scoring' (goal reward),
+    'checkpoints' (dense distance-based reward)."""
+
+    number_of_left_players_agent_controls: int = 1
+    """Number of left team players controlled by the agent (0-11)."""
+
+    number_of_right_players_agent_controls: int = 0
+    """Number of right team players controlled by the agent (0-11)."""
+
+    stacked: bool = False
+    """Whether to stack 4 consecutive observations (pixels/extracted only)."""
+
+    action_set: str = "default"
+    """Action set: 'default' (19 actions), 'v2' (20 with builtin_ai),
+    or 'full' (33 with all release actions)."""
+
+    render: bool = True
+    """Whether to render game frames (required for pixel observations
+    and for MOSAIC Render View)."""
+
+    max_steps: int = 3000
+    """Maximum steps per episode."""
+
+    seed: int | None = None
+    """Random seed for reproducibility (None = random)."""
+
 GameConfig: TypeAlias = (
     FrozenLakeConfig
     | TaxiConfig
@@ -1023,6 +1067,7 @@ GameConfig: TypeAlias = (
     | SMACConfig
     | RWAREConfig
     | GriddlyConfig
+    | GFootballConfig
 )
 
 

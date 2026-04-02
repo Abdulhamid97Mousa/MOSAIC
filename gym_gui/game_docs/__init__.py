@@ -200,6 +200,27 @@ from gym_gui.game_docs.Mosaic_MultiGrid import (
     MOSAIC_SOCCER_HTML,
     get_mosaic_multigrid_html,
 )
+
+try:  # Optional dependency - MalmoEnv docs (experimental)
+    from gym_gui.game_docs.MosaicMalmo import (  # pragma: no cover - experimental
+        MALMOENV_ATTIC_HTML,
+        MALMOENV_CATCHTHEMOB_HTML,
+        MALMOENV_CLIFFWALKING_HTML,
+        MALMOENV_DEFAULTFLATWORLD_HTML,
+        MALMOENV_DEFAULTWORLD_HTML,
+        MALMOENV_EATING_HTML,
+        MALMOENV_FINDTHEGOAL_HTML,
+        MALMOENV_MAZERUNNER_HTML,
+        MALMOENV_MOBCHASE_HTML,
+        MALMOENV_OBSTACLES_HTML,
+        MALMOENV_TREASUREHUNT_HTML,
+        MALMOENV_TRICKYARENA_HTML,
+        MALMOENV_VERTICAL_HTML,
+    )
+    _MOSAIC_MALMO_DOCS_AVAILABLE = True
+except Exception:  # pragma: no cover - MalmoEnv optional
+    _MOSAIC_MALMO_DOCS_AVAILABLE = False
+
 from gym_gui.game_docs.MultiGrid_INI import (
     get_ini_multigrid_html,
 )
@@ -642,6 +663,24 @@ try:
 except ImportError:
     pass  # Jumanji docs optional
 
+if _MOSAIC_MALMO_DOCS_AVAILABLE:  # pragma: no cover - experimental
+    GAME_INFO.update({
+        # MalmoEnv (MOSAIC MalmoEnv single-agent Minecraft missions)
+        GameId.MALMOENV_ATTIC: MALMOENV_ATTIC_HTML,
+        GameId.MALMOENV_CATCHTHEMOB: MALMOENV_CATCHTHEMOB_HTML,
+        GameId.MALMOENV_CLIFFWALKING: MALMOENV_CLIFFWALKING_HTML,
+        GameId.MALMOENV_DEFAULTFLATWORLD: MALMOENV_DEFAULTFLATWORLD_HTML,
+        GameId.MALMOENV_DEFAULTWORLD: MALMOENV_DEFAULTWORLD_HTML,
+        GameId.MALMOENV_EATING: MALMOENV_EATING_HTML,
+        GameId.MALMOENV_FINDTHEGOAL: MALMOENV_FINDTHEGOAL_HTML,
+        GameId.MALMOENV_MAZERUNNER: MALMOENV_MAZERUNNER_HTML,
+        GameId.MALMOENV_MOBCHASE: MALMOENV_MOBCHASE_HTML,
+        GameId.MALMOENV_OBSTACLES: MALMOENV_OBSTACLES_HTML,
+        GameId.MALMOENV_TRICKYARENA: MALMOENV_TRICKYARENA_HTML,
+        GameId.MALMOENV_TREASUREHUNT: MALMOENV_TREASUREHUNT_HTML,
+        GameId.MALMOENV_VERTICAL: MALMOENV_VERTICAL_HTML,
+    })
+
 
 from gym_gui.game_docs.mosaic_welcome import MULTI_KEYBOARD_HTML
 
@@ -789,6 +828,14 @@ def get_game_info(game_id: GameId) -> str:
         GameId.MOSAIC_MULTIGRID_SOCCER_2VS2_TEAMOBS,
         GameId.MOSAIC_MULTIGRID_COLLECT2VS2_TEAMOBS,
         GameId.MOSAIC_MULTIGRID_BASKETBALL_TEAMOBS,
+        # American Football variants (v6.2.0)
+        GameId.MOSAIC_MULTIGRID_AMERICAN_FOOTBALL_1V1,
+        GameId.MOSAIC_MULTIGRID_AMERICAN_FOOTBALL_2V2,
+        GameId.MOSAIC_MULTIGRID_AMERICAN_FOOTBALL_3V3,
+        GameId.MOSAIC_MULTIGRID_AMERICAN_FOOTBALL_2V2_TEAMOBS,
+        GameId.MOSAIC_MULTIGRID_AMERICAN_FOOTBALL_3V3_TEAMOBS,
+        GameId.MOSAIC_MULTIGRID_AMERICAN_FOOTBALL_SOLO_GREEN,
+        GameId.MOSAIC_MULTIGRID_AMERICAN_FOOTBALL_SOLO_BLUE,
     )
     if game_id in _mosaic_multigrid_variants:
         mosaic_doc = get_mosaic_multigrid_html(game_id.value)
@@ -797,6 +844,9 @@ def get_game_info(game_id: GameId) -> str:
     # Handle MeltingPot variants by substrate name
     from gym_gui.core.enums import ENVIRONMENT_FAMILY_BY_GAME, EnvironmentFamily
     family = ENVIRONMENT_FAMILY_BY_GAME.get(game_id)
+    if family == EnvironmentFamily.MALMOENV:
+        return GAME_INFO.get(game_id, _DEFAULT_DOC)
+
     if family == EnvironmentFamily.MELTINGPOT:
         doc = _get_meltingpot_doc(game_id.value)
         return doc + "\n\n" + MULTI_KEYBOARD_HTML

@@ -44,6 +44,7 @@ from gym_gui.controllers.interaction import (
     TurnBasedInteractionController,
     ViZDoomInteractionController,
 )
+from gym_gui.controllers.malmo_interaction import MalmoInteractionController
 from gym_gui.core.adapters.base import AdapterContext, AdapterStep, EnvironmentAdapter
 from gym_gui.core.data_model import EpisodeRollup, StepRecord
 from gym_gui.core.enums import (
@@ -298,20 +299,22 @@ class SessionController(QtCore.QObject, LogConstantMixin):
         self._awaiting_human = False  # Don't await input until game starts
         self._begin_episode(game_id, control_mode)
         self._timers.reset_episode()
-        self.session_initialized.emit(game_id.value, control_mode.value, initial_step)
-        self.step_processed.emit(initial_step, self._step_index)
-        self._update_status(initial_step, prefix="Environment ready")
-        self.awaiting_human.emit(False, "Click 'Start Game' to begin")
-        self.turn_changed.emit(self._turn)
-        self._last_agent_position = self._extract_agent_position(initial_step)
-        self._last_step = initial_step
-        # Select interaction controller per family
+        # Create interaction controller BEFORE emitting session_initialized,
+        # because UI handlers (e.g. MalmoEnvLoader) inspect _interaction to
+        # decide between native vs legacy mouse capture paths.
         try:
             family = ENVIRONMENT_FAMILY_BY_GAME.get(game_id)
         except Exception:
             family = None
         self._interaction = self._create_interaction_controller(family)
         self._passive_action = self._resolve_passive_action()
+        self._last_agent_position = self._extract_agent_position(initial_step)
+        self._last_step = initial_step
+        self.session_initialized.emit(game_id.value, control_mode.value, initial_step)
+        self.step_processed.emit(initial_step, self._step_index)
+        self._update_status(initial_step, prefix="Environment ready")
+        self.awaiting_human.emit(False, "Click 'Start Game' to begin")
+        self.turn_changed.emit(self._turn)
         self._pending_input_label = "environment_ready"
         self._record_step(initial_step, action=None, input_source=self._pending_input_label)
         self._update_idle_timer()
@@ -394,6 +397,10 @@ class SessionController(QtCore.QObject, LogConstantMixin):
         if family in (EnvironmentFamily.SMAC, EnvironmentFamily.SMACV2):
             # SMAC is agent-only: auto-step with random valid actions at 5 FPS
             return SMACInteractionController(self, target_hz=5)
+        if family == EnvironmentFamily.MALMOENV:
+            # MalmoEnv runs against a live Minecraft client; use 60Hz for smooth rendering
+            # while input is handled natively via side-channel.
+            return MalmoInteractionController(self, target_hz=60)
         if family == EnvironmentFamily.GRIDDLY:
             # Check if this is a continuous Griddly game (moving enemies, spawning objects)
             if self._game_id in CONTINUOUS_GRIDDLY_GAMES:
@@ -430,6 +437,28 @@ class SessionController(QtCore.QObject, LogConstantMixin):
             "Human action received label='%s' action=%s", self._pending_input_label, action
         )
         self._apply_action(action)
+
+    def handle_native_key(self, key_code: int, pressed: bool) -> bool:
+        """Handle a raw key event for native input (bypassing the step loop).
+
+        Returns:
+            True if the key was handled and should not be processed further.
+        """
+        interaction = getattr(self, "_interaction", None)
+        if interaction and hasattr(interaction, "handle_native_key"):
+            return interaction.handle_native_key(key_code, pressed)
+        return False
+
+    def handle_native_mouse(self, dx: int, dy: int) -> bool:
+        """Handle a raw mouse delta event for native input (bypassing the step loop).
+
+        Returns:
+            True if the mouse event was handled and should not be processed further.
+        """
+        interaction = getattr(self, "_interaction", None)
+        if interaction and hasattr(interaction, "handle_native_mouse"):
+            return interaction.handle_native_mouse(dx, dy)
+        return False
 
     def toggle_auto_play(self, *, enabled: bool) -> None:
         if enabled:

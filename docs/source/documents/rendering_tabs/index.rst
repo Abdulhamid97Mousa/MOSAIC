@@ -80,11 +80,12 @@ Why Two Lanes?
      - Mechanism
      - Use Case
    * - :doc:`Fast <fastlane>`
-     - SPSC shared-memory ring buffer (magic ``FLAN``, seqlock semantics).
-       ``FastLaneConsumer`` polls every **16 ms** (~60 Hz).
+     - SPSC shared-memory ring buffer (magic ``FLAN``, sequence-number
+       consistency).  ``FastLaneConsumer`` polls every **16 ms** (~60 Hz).
+       The first shared-memory live visualization path in RL.
      - Live training frames: zero serialisation, lossy by design.
-       Only :doc:`/documents/architecture/workers/integrated_workers/CleanRL_Worker/index`,
-       XuanCe, and Ray RLlib workers produce fast-lane frames.
+       CleanRL, XuanCe, Ray RLlib, SB3, SBX, Tianshou, and TorchRL
+       workers produce fast-lane frames.
    * - :doc:`Slow <slow_lane>`
      - gRPC → ``RunBus`` (queue 2 048) → ``LiveTelemetryController`` →
        ``CreditManager`` (200 credits/stream) →

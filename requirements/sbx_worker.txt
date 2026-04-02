@@ -1,0 +1,11 @@
+# SBX (Stable-Baselines Jax) Worker Dependencies
+# Install this when launching SBX-based training runs.
+
+# Include base requirements
+-r base.txt
+
+# SBX is a JAX drop-in for SB3
+sbx-rl>=0.20.0
+stable-baselines3>=2.0.0
+jax>=0.4.20
+jaxlib>=0.4.20

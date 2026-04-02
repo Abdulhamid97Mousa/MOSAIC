@@ -27,7 +27,7 @@ logger = logging.getLogger(__name__)
 SCHEMA_VERSION = "0.1.0"
 
 # Path to schemas relative to repo root
-_REPO_ROOT = Path(__file__).resolve().parent.parent.parent.parent
+_REPO_ROOT = Path(__file__).resolve().parent.parent.parent.parent.parent
 SCHEMAS_PATH = _REPO_ROOT / "metadata" / "ray_rllib" / SCHEMA_VERSION / "schemas.json"
 
 # Cached schema data

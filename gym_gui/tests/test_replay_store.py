@@ -299,9 +299,11 @@ class TestFrameResolver:
             assert frame[0, 0, 0] == 0  # run_a, frame 0: 0*100+0
 
             frame = resolver.resolve("h5://run_a/frames/3")
+            assert frame is not None
             assert frame[0, 0, 0] == 3  # run_a, frame 3: 0*100+3
 
             frame = resolver.resolve("h5://run_b/frames/0")
+            assert frame is not None
             assert frame[0, 0, 0] == 100  # run_b, frame 0: 1*100+0
 
     def test_resolver_resolve_invalid(self, sample_runs):
@@ -332,9 +334,12 @@ class TestFrameResolver:
             assert len(results) == 5
             assert results[0] is not None
             assert results[0][0, 0, 0] == 0  # run_a, frame 0
+            assert results[1] is not None
             assert results[1][0, 0, 0] == 2  # run_a, frame 2
+            assert results[2] is not None
             assert results[2][0, 0, 0] == 101  # run_b, frame 1
             assert results[3] is None  # invalid
+            assert results[4] is not None
             assert results[4][0, 0, 0] == 4  # run_a, frame 4
 
     def test_resolver_has_run(self, sample_runs):

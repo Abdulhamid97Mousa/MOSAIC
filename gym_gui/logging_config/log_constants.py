@@ -234,6 +234,97 @@ LOG_EVDEV_KEY_RELEASED = _constant(
     tags=_tags("evdev", "keyboard", "key", "multi-agent"),
 )
 
+# Human Control keyboard worker subprocess events (LOG48xx)
+LOG_HUMAN_CONTROL_WORKER_LAUNCH = _constant(
+    "LOG4801",
+    "INFO",
+    "Human control keyboard worker launched",
+    component="Controller",
+    subcomponent="HumanControl",
+    tags=_tags("human_control", "keyboard", "subprocess", "lifecycle"),
+)
+LOG_HUMAN_CONTROL_WORKER_READY = _constant(
+    "LOG4802",
+    "INFO",
+    "Human control keyboard worker initialized and ready",
+    component="Controller",
+    subcomponent="HumanControl",
+    tags=_tags("human_control", "keyboard", "subprocess", "lifecycle"),
+)
+LOG_HUMAN_CONTROL_WORKER_ACTION = _constant(
+    "LOG4803",
+    "DEBUG",
+    "Action received from keyboard worker",
+    component="Controller",
+    subcomponent="HumanControl",
+    tags=_tags("human_control", "keyboard", "action"),
+)
+LOG_HUMAN_CONTROL_WORKER_STEP = _constant(
+    "LOG4804",
+    "INFO",
+    "All keyboard worker actions collected, stepping environment",
+    component="Controller",
+    subcomponent="HumanControl",
+    tags=_tags("human_control", "keyboard", "step"),
+)
+LOG_HUMAN_CONTROL_WORKER_STOPPED = _constant(
+    "LOG4805",
+    "INFO",
+    "Human control keyboard worker stopped",
+    component="Controller",
+    subcomponent="HumanControl",
+    tags=_tags("human_control", "keyboard", "subprocess", "lifecycle"),
+)
+LOG_HUMAN_CONTROL_WORKER_ERROR = _constant(
+    "LOG4806",
+    "ERROR",
+    "Human control keyboard worker error",
+    component="Controller",
+    subcomponent="HumanControl",
+    tags=_tags("human_control", "keyboard", "error"),
+)
+LOG_HUMAN_CONTROL_BRIDGE_START = _constant(
+    "LOG4810",
+    "INFO",
+    "Human control keyboard bridge started",
+    component="Controller",
+    subcomponent="HumanControl",
+    tags=_tags("human_control", "bridge", "lifecycle"),
+)
+LOG_HUMAN_CONTROL_BRIDGE_STOP = _constant(
+    "LOG4811",
+    "INFO",
+    "Human control keyboard bridge stopped",
+    component="Controller",
+    subcomponent="HumanControl",
+    tags=_tags("human_control", "bridge", "lifecycle"),
+)
+LOG_HUMAN_CONTROL_AUTO_ASSIGN = _constant(
+    "LOG4812",
+    "INFO",
+    "Auto-assigned keyboards to agents",
+    component="Controller",
+    subcomponent="HumanControl",
+    tags=_tags("human_control", "keyboard", "assignment"),
+)
+LOG_HUMAN_CONTROL_INPUT_DISABLED = _constant(
+    "LOG4813",
+    "INFO",
+    "Main-thread keyboard input disabled (subprocess workers active)",
+    component="Controller",
+    subcomponent="HumanControl",
+    tags=_tags("human_control", "keyboard", "lifecycle"),
+)
+
+LOG_HUMAN_CONTROL_RAW_KEY_NO_HANDLER = _constant(
+    "LOG4814",
+    "WARNING",
+    "Raw key event received but no native handler available",
+    component="Controller",
+    subcomponent="HumanControl",
+    tags=_tags("human_control", "keyboard", "native_input"),
+)
+
 LOG_LIVE_CONTROLLER_INITIALIZED = _constant(
     "LOG408",
     "INFO",
@@ -815,6 +906,174 @@ LOG_ENV_TEXTWORLD_COMMAND = _constant(
 
 
 # ---------------------------------------------------------------------------
+# MalmoEnv (Minecraft) adapter specific constants (LOG560–LOG569)
+# ---------------------------------------------------------------------------
+LOG_ENV_MALMO_BOOT = _constant(
+    "LOG560",
+    "INFO",
+    "MalmoEnv adapter bootstrapped",
+    component="Adapter",
+    subcomponent="MalmoEnv",
+    tags=_tags("malmo", "minecraft", "bootstrap", "lifecycle"),
+)
+
+LOG_ENV_MALMO_STEP = _constant(
+    "LOG561",
+    "DEBUG",
+    "MalmoEnv step checkpoint",
+    component="Adapter",
+    subcomponent="MalmoEnv",
+    tags=_tags("malmo", "minecraft", "step", "checkpoint"),
+)
+
+LOG_ENV_MALMO_ERROR = _constant(
+    "LOG562",
+    "ERROR",
+    "MalmoEnv environment error",
+    component="Adapter",
+    subcomponent="MalmoEnv",
+    tags=_tags("malmo", "minecraft", "error"),
+)
+
+LOG_ENV_MALMO_CONNECTION_REFUSED = _constant(
+    "LOG563",
+    "WARNING",
+    "MalmoEnv TCP connection refused - Minecraft may not be ready",
+    component="Adapter",
+    subcomponent="MalmoEnv",
+    tags=_tags("malmo", "minecraft", "connection", "tcp"),
+)
+
+LOG_ENV_MALMO_CONNECTION_TIMEOUT = _constant(
+    "LOG564",
+    "WARNING",
+    "MalmoEnv TCP connection timed out",
+    component="Adapter",
+    subcomponent="MalmoEnv",
+    tags=_tags("malmo", "minecraft", "connection", "timeout"),
+)
+
+LOG_ENV_MALMO_MISSION_INIT = _constant(
+    "LOG565",
+    "INFO",
+    "MalmoEnv mission initialized",
+    component="Adapter",
+    subcomponent="MalmoEnv",
+    tags=_tags("malmo", "minecraft", "mission", "init"),
+)
+
+LOG_ENV_MALMO_MISSION_RESET = _constant(
+    "LOG566",
+    "INFO",
+    "MalmoEnv mission reset",
+    component="Adapter",
+    subcomponent="MalmoEnv",
+    tags=_tags("malmo", "minecraft", "mission", "reset"),
+)
+
+LOG_ENV_MALMO_MISSION_END = _constant(
+    "LOG567",
+    "INFO",
+    "MalmoEnv mission ended",
+    component="Adapter",
+    subcomponent="MalmoEnv",
+    tags=_tags("malmo", "minecraft", "mission", "end"),
+)
+
+LOG_ENV_MALMO_RENDER_FRAME = _constant(
+    "LOG568",
+    "DEBUG",
+    "MalmoEnv render frame received",
+    component="Adapter",
+    subcomponent="MalmoEnv",
+    tags=_tags("malmo", "minecraft", "render", "frame"),
+)
+
+LOG_ENV_MALMO_PACKAGE_MISSING = _constant(
+    "LOG569",
+    "ERROR",
+    "MalmoEnv package not installed - run pip install",
+    component="Adapter",
+    subcomponent="MalmoEnv",
+    tags=_tags("malmo", "minecraft", "import", "error"),
+)
+
+# Malmo interaction / input constants (LOG570–LOG579)
+
+LOG_MALMO_PASSIVE_ACTION_RESOLVED = _constant(
+    "LOG570",
+    "DEBUG",
+    "Malmo passive action resolved",
+    component="Controller",
+    subcomponent="MalmoInteraction",
+    tags=_tags("malmo", "minecraft", "input", "passive", "action"),
+)
+
+LOG_MALMO_PASSIVE_ACTION_FALLBACK = _constant(
+    "LOG571",
+    "WARNING",
+    "Malmo passive action fallback — no noop/move 0/turn 0 in action space",
+    component="Controller",
+    subcomponent="MalmoInteraction",
+    tags=_tags("malmo", "minecraft", "input", "passive", "fallback"),
+)
+
+LOG_MALMO_ACTION_SPACE_DUMP = _constant(
+    "LOG572",
+    "DEBUG",
+    "Malmo action space contents",
+    component="Controller",
+    subcomponent="MalmoInteraction",
+    tags=_tags("malmo", "minecraft", "input", "action_space", "debug"),
+)
+
+LOG_MALMO_NATIVE_KEY_SENT = _constant(
+    "LOG573",
+    "DEBUG",
+    "Malmo native key event sent to Java",
+    component="Controller",
+    subcomponent="MalmoInteraction",
+    tags=_tags("malmo", "minecraft", "input", "key", "native"),
+)
+
+LOG_MALMO_NATIVE_KEY_UNMAPPED = _constant(
+    "LOG574",
+    "WARNING",
+    "Malmo native key unmapped — Qt key has no LWJGL equivalent",
+    component="Controller",
+    subcomponent="MalmoInteraction",
+    tags=_tags("malmo", "minecraft", "input", "key", "unmapped"),
+)
+
+LOG_MALMO_NATIVE_MOUSE_SENT = _constant(
+    "LOG575",
+    "DEBUG",
+    "Malmo native mouse event sent to Java",
+    component="Controller",
+    subcomponent="MalmoInteraction",
+    tags=_tags("malmo", "minecraft", "input", "mouse", "native"),
+)
+
+LOG_MALMO_NATIVE_INPUT_CONNECTED = _constant(
+    "LOG576",
+    "INFO",
+    "Malmo native input handler connected",
+    component="Controller",
+    subcomponent="MalmoInteraction",
+    tags=_tags("malmo", "minecraft", "input", "connection", "established"),
+)
+
+LOG_MALMO_NATIVE_INPUT_ERROR = _constant(
+    "LOG577",
+    "ERROR",
+    "Malmo native input handler error",
+    component="Controller",
+    subcomponent="MalmoInteraction",
+    tags=_tags("malmo", "minecraft", "input", "connection", "error"),
+)
+
+
+# ---------------------------------------------------------------------------
 # Service and telemetry constants (LOG601–LOG650)
 # ---------------------------------------------------------------------------
 LOG_SERVICE_TELEMETRY_STEP_REJECTED = _constant(
@@ -1196,6 +1455,353 @@ LOG_TRAINER_WORKER_IMPORT_ERROR = _constant(
     subcomponent="TrainerDispatcher",
     tags=_tags("trainer", "worker", "pythonpath", "dependency"),
 )
+
+LOG_WORKER_CLEANRL_MODULE_EXECUTION_FAILED = _constant(
+    "LOG440",
+    "ERROR",
+    "CleanRL module execution failed (no main() and subprocess error)",
+    component="Worker",
+    subcomponent="runtime",
+    tags=_tags("worker", "cleanrl", "runtime", "subprocess"),
+)
+
+LOG_WORKER_CLEANRL_SUBPROCESS_STDOUT = _constant(
+    "LOG441",
+    "INFO",
+    "CleanRL subprocess stdout",
+    component="Worker",
+    subcomponent="runtime",
+    tags=_tags("worker", "cleanrl", "runtime", "stdout"),
+)
+
+
+LOG_WORKER_TIANSHOU_RUNTIME_STARTED = _constant(
+    "LOG450",
+    "INFO",
+    "Tianshou worker runtime started",
+    component="Worker",
+    subcomponent="runtime",
+    tags=_tags("worker", "tianshou", "runtime", "start"),
+)
+
+LOG_WORKER_TIANSHOU_RUNTIME_COMPLETED = _constant(
+    "LOG451",
+    "INFO",
+    "Tianshou worker runtime completed successfully",
+    component="Worker",
+    subcomponent="runtime",
+    tags=_tags("worker", "tianshou", "runtime", "completion"),
+)
+
+LOG_WORKER_TIANSHOU_RUNTIME_FAILED = _constant(
+    "LOG452",
+    "ERROR",
+    "Tianshou worker runtime failed",
+    component="Worker",
+    subcomponent="runtime",
+    tags=_tags("worker", "tianshou", "runtime", "error"),
+)
+
+LOG_WORKER_TIANSHOU_SUBPROCESS_STDOUT = _constant(
+    "LOG453",
+    "INFO",
+    "Tianshou subprocess stdout",
+    component="Worker",
+    subcomponent="runtime",
+    tags=_tags("worker", "tianshou", "runtime", "stdout"),
+)
+
+LOG_WORKER_TIANSHOU_SUBPROCESS_STDERR = _constant(
+    "LOG454",
+    "ERROR",
+    "Tianshou subprocess stderr",
+    component="Worker",
+    subcomponent="runtime",
+    tags=_tags("worker", "tianshou", "runtime", "stderr"),
+)
+
+
+# ---------------------------------------------------------------------------
+# MushroomRL Worker (LOG1100-LOG1104)
+# ---------------------------------------------------------------------------
+LOG_WORKER_MUSHROOMRL_RUNTIME_STARTED = _constant(
+    "LOG1100",
+    "INFO",
+    "MushroomRL worker runtime started",
+    component="Worker",
+    subcomponent="runtime",
+    tags=_tags("worker", "mushroomrl", "runtime", "start"),
+)
+
+LOG_WORKER_MUSHROOMRL_RUNTIME_COMPLETED = _constant(
+    "LOG1101",
+    "INFO",
+    "MushroomRL worker runtime completed successfully",
+    component="Worker",
+    subcomponent="runtime",
+    tags=_tags("worker", "mushroomrl", "runtime", "completion"),
+)
+
+LOG_WORKER_MUSHROOMRL_RUNTIME_FAILED = _constant(
+    "LOG1102",
+    "ERROR",
+    "MushroomRL worker runtime failed",
+    component="Worker",
+    subcomponent="runtime",
+    tags=_tags("worker", "mushroomrl", "runtime", "error"),
+)
+
+LOG_WORKER_MUSHROOMRL_SUBPROCESS_STDOUT = _constant(
+    "LOG1103",
+    "INFO",
+    "MushroomRL subprocess stdout",
+    component="Worker",
+    subcomponent="runtime",
+    tags=_tags("worker", "mushroomrl", "runtime", "stdout"),
+)
+
+LOG_WORKER_MUSHROOMRL_SUBPROCESS_STDERR = _constant(
+    "LOG1104",
+    "ERROR",
+    "MushroomRL subprocess stderr",
+    component="Worker",
+    subcomponent="runtime",
+    tags=_tags("worker", "mushroomrl", "runtime", "stderr"),
+)
+
+
+# ---------------------------------------------------------------------------
+# OmniSafe Worker (LOG1110-LOG1114)
+# ---------------------------------------------------------------------------
+LOG_WORKER_OMNISAFE_RUNTIME_STARTED = _constant(
+    "LOG1110",
+    "INFO",
+    "OmniSafe worker runtime started",
+    component="Worker",
+    subcomponent="runtime",
+    tags=_tags("worker", "omnisafe", "runtime", "start"),
+)
+
+LOG_WORKER_OMNISAFE_RUNTIME_COMPLETED = _constant(
+    "LOG1111",
+    "INFO",
+    "OmniSafe worker runtime completed successfully",
+    component="Worker",
+    subcomponent="runtime",
+    tags=_tags("worker", "omnisafe", "runtime", "completion"),
+)
+
+LOG_WORKER_OMNISAFE_RUNTIME_FAILED = _constant(
+    "LOG1112",
+    "ERROR",
+    "OmniSafe worker runtime failed",
+    component="Worker",
+    subcomponent="runtime",
+    tags=_tags("worker", "omnisafe", "runtime", "error"),
+)
+
+LOG_WORKER_OMNISAFE_SUBPROCESS_STDOUT = _constant(
+    "LOG1113",
+    "INFO",
+    "OmniSafe subprocess stdout",
+    component="Worker",
+    subcomponent="runtime",
+    tags=_tags("worker", "omnisafe", "runtime", "stdout"),
+)
+
+LOG_WORKER_OMNISAFE_SUBPROCESS_STDERR = _constant(
+    "LOG1114",
+    "ERROR",
+    "OmniSafe subprocess stderr",
+    component="Worker",
+    subcomponent="runtime",
+    tags=_tags("worker", "omnisafe", "runtime", "stderr"),
+)
+
+
+LOG_WORKER_PEARL_RUNTIME_STARTED = _constant(
+    "LOG460",
+    "INFO",
+    "Pearl worker runtime started",
+    component="Worker",
+    subcomponent="runtime",
+    tags=_tags("worker", "pearl", "runtime", "start"),
+)
+
+LOG_WORKER_PEARL_RUNTIME_COMPLETED = _constant(
+    "LOG461",
+    "INFO",
+    "Pearl worker runtime completed successfully",
+    component="Worker",
+    subcomponent="runtime",
+    tags=_tags("worker", "pearl", "runtime", "completion"),
+)
+
+LOG_WORKER_PEARL_RUNTIME_FAILED = _constant(
+    "LOG462",
+    "ERROR",
+    "Pearl worker runtime failed",
+    component="Worker",
+    subcomponent="runtime",
+    tags=_tags("worker", "pearl", "runtime", "error"),
+)
+
+LOG_WORKER_PEARL_SUBPROCESS_STDOUT = _constant(
+    "LOG463",
+    "INFO",
+    "Pearl subprocess stdout",
+    component="Worker",
+    subcomponent="runtime",
+    tags=_tags("worker", "pearl", "runtime", "stdout"),
+)
+
+LOG_WORKER_PEARL_SUBPROCESS_STDERR = _constant(
+    "LOG464",
+    "ERROR",
+    "Pearl subprocess stderr",
+    component="Worker",
+    subcomponent="runtime",
+    tags=_tags("worker", "pearl", "runtime", "stderr"),
+)
+
+
+LOG_WORKER_TORCHRL_RUNTIME_STARTED = _constant(
+    "LOG470",
+    "INFO",
+    "TorchRL worker runtime started",
+    component="Worker",
+    subcomponent="runtime",
+    tags=_tags("worker", "torchrl", "runtime", "start"),
+)
+
+LOG_WORKER_TORCHRL_RUNTIME_COMPLETED = _constant(
+    "LOG471",
+    "INFO",
+    "TorchRL worker runtime completed successfully",
+    component="Worker",
+    subcomponent="runtime",
+    tags=_tags("worker", "torchrl", "runtime", "completion"),
+)
+
+LOG_WORKER_TORCHRL_RUNTIME_FAILED = _constant(
+    "LOG472",
+    "ERROR",
+    "TorchRL worker runtime failed",
+    component="Worker",
+    subcomponent="runtime",
+    tags=_tags("worker", "torchrl", "runtime", "error"),
+)
+
+LOG_WORKER_TORCHRL_SUBPROCESS_STDOUT = _constant(
+    "LOG473",
+    "INFO",
+    "TorchRL subprocess stdout",
+    component="Worker",
+    subcomponent="runtime",
+    tags=_tags("worker", "torchrl", "runtime", "stdout"),
+)
+
+LOG_WORKER_TORCHRL_SUBPROCESS_STDERR = _constant(
+    "LOG474",
+    "ERROR",
+    "TorchRL subprocess stderr",
+    component="Worker",
+    subcomponent="runtime",
+    tags=_tags("worker", "torchrl", "runtime", "stderr"),
+)
+
+
+LOG_WORKER_SB3_RUNTIME_STARTED = _constant(
+    "LOG480",
+    "INFO",
+    "SB3 worker runtime started",
+    component="Worker",
+    subcomponent="runtime",
+    tags=_tags("worker", "sb3", "runtime", "start"),
+)
+
+LOG_WORKER_SB3_RUNTIME_COMPLETED = _constant(
+    "LOG481",
+    "INFO",
+    "SB3 worker runtime completed successfully",
+    component="Worker",
+    subcomponent="runtime",
+    tags=_tags("worker", "sb3", "runtime", "completion"),
+)
+
+LOG_WORKER_SB3_RUNTIME_FAILED = _constant(
+    "LOG482",
+    "ERROR",
+    "SB3 worker runtime failed",
+    component="Worker",
+    subcomponent="runtime",
+    tags=_tags("worker", "sb3", "runtime", "error"),
+)
+
+LOG_WORKER_SB3_SUBPROCESS_STDOUT = _constant(
+    "LOG483",
+    "INFO",
+    "SB3 subprocess stdout",
+    component="Worker",
+    subcomponent="runtime",
+    tags=_tags("worker", "sb3", "runtime", "stdout"),
+)
+
+LOG_WORKER_SB3_SUBPROCESS_STDERR = _constant(
+    "LOG484",
+    "ERROR",
+    "SB3 subprocess stderr",
+    component="Worker",
+    subcomponent="runtime",
+    tags=_tags("worker", "sb3", "runtime", "stderr"),
+)
+
+
+LOG_WORKER_SBX_RUNTIME_STARTED = _constant(
+    "LOG490",
+    "INFO",
+    "SBX worker runtime started",
+    component="Worker",
+    subcomponent="runtime",
+    tags=_tags("worker", "sbx", "runtime", "start"),
+)
+
+LOG_WORKER_SBX_RUNTIME_COMPLETED = _constant(
+    "LOG491",
+    "INFO",
+    "SBX worker runtime completed successfully",
+    component="Worker",
+    subcomponent="runtime",
+    tags=_tags("worker", "sbx", "runtime", "completion"),
+)
+
+LOG_WORKER_SBX_RUNTIME_FAILED = _constant(
+    "LOG492",
+    "ERROR",
+    "SBX worker runtime failed",
+    component="Worker",
+    subcomponent="runtime",
+    tags=_tags("worker", "sbx", "runtime", "error"),
+)
+
+LOG_WORKER_SBX_SUBPROCESS_STDOUT = _constant(
+    "LOG493",
+    "INFO",
+    "SBX subprocess stdout",
+    component="Worker",
+    subcomponent="runtime",
+    tags=_tags("worker", "sbx", "runtime", "stdout"),
+)
+
+LOG_WORKER_SBX_SUBPROCESS_STDERR = _constant(
+    "LOG494",
+    "ERROR",
+    "SBX subprocess stderr",
+    component="Worker",
+    subcomponent="runtime",
+    tags=_tags("worker", "sbx", "runtime", "stderr"),
+)
+
 
 LOG_SERVICE_FRAME_INFO = _constant(
     "LOG660",
@@ -2916,6 +3522,49 @@ LOG_UI_FASTLANE_EVAL_SUMMARY_WARNING = _constant(
     tags=_tags("fastlane", "eval", "warning"),
 )
 
+# ---------------------------------------------------------------------------
+# FastLane Worker-side constants (LOG940–LOG949)
+# Shared memory lifecycle: create, close, unlink, leak detection
+# ---------------------------------------------------------------------------
+LOG_FASTLANE_WRITER_CLOSED = _constant(
+    "LOG940",
+    "INFO",
+    "FastLane shared memory writer closed and unlinked",
+    component="Worker",
+    subcomponent="FastLane",
+    tags=_tags("fastlane", "shm", "cleanup"),
+)
+
+LOG_FASTLANE_SHM_STALE_UNLINKED = _constant(
+    "LOG941",
+    "WARNING",
+    "FastLane stale shared memory segment unlinked from previous crashed run",
+    component="Worker",
+    subcomponent="FastLane",
+    tags=_tags("fastlane", "shm", "stale", "cleanup"),
+)
+
+LOG_FASTLANE_SHM_UNLINK_FAILED = _constant(
+    "LOG942",
+    "ERROR",
+    "FastLane shared memory unlink failed — orphaned /dev/shm segment may cause "
+    "resource_tracker to spawn and leak memory until system OOM",
+    component="Worker",
+    subcomponent="FastLane",
+    tags=_tags("fastlane", "shm", "leak", "error"),
+)
+
+LOG_FASTLANE_SHM_LEAK_RISK = _constant(
+    "LOG943",
+    "ERROR",
+    "FastLane writer destroyed without unlink — resource_tracker process will spawn "
+    "to clean up /dev/shm, but may spin indefinitely consuming RAM. "
+    "This is a known cause of system-wide OOM crashes",
+    component="Worker",
+    subcomponent="FastLane",
+    tags=_tags("fastlane", "shm", "leak", "oom", "critical"),
+)
+
 
 # ---------------------------------------------------------------------------
 # SMAC Adapter constants (LOG960–LOG969)
@@ -3258,6 +3907,59 @@ LOG_HEMAC_ENERGY_DEPLETED = _constant(
     component="Adapter",
     subcomponent="HeMAC",
     tags=_tags("hemac", "energy", "warning"),
+)
+
+
+# ---------------------------------------------------------------------------
+# Google Research Football Adapter constants (LOG4120–LOG4125)
+# ---------------------------------------------------------------------------
+LOG_GFOOTBALL_ENV_CREATED = _constant(
+    "LOG4120",
+    "INFO",
+    "GFootball environment created",
+    component="Adapter",
+    subcomponent="GFootball",
+    tags=_tags("gfootball", "environment", "lifecycle"),
+)
+LOG_GFOOTBALL_ENV_RESET = _constant(
+    "LOG4121",
+    "INFO",
+    "GFootball environment reset",
+    component="Adapter",
+    subcomponent="GFootball",
+    tags=_tags("gfootball", "episode", "lifecycle"),
+)
+LOG_GFOOTBALL_STEP_SUMMARY = _constant(
+    "LOG4122",
+    "DEBUG",
+    "GFootball step summary",
+    component="Adapter",
+    subcomponent="GFootball",
+    tags=_tags("gfootball", "step"),
+)
+LOG_GFOOTBALL_ENV_CLOSED = _constant(
+    "LOG4123",
+    "INFO",
+    "GFootball environment closed",
+    component="Adapter",
+    subcomponent="GFootball",
+    tags=_tags("gfootball", "environment", "lifecycle"),
+)
+LOG_GFOOTBALL_RENDER_ERROR = _constant(
+    "LOG4124",
+    "WARNING",
+    "GFootball render error",
+    component="Adapter",
+    subcomponent="GFootball",
+    tags=_tags("gfootball", "render", "error"),
+)
+LOG_GFOOTBALL_GOAL = _constant(
+    "LOG4125",
+    "INFO",
+    "GFootball goal scored",
+    component="Adapter",
+    subcomponent="GFootball",
+    tags=_tags("gfootball", "goal", "reward"),
 )
 
 
@@ -4087,6 +4789,136 @@ LOG_WORKER_CLEANRL_EVAL_MODE_COMPLETED = _constant(
     component="Worker",
     subcomponent="CleanRLRuntime",
     tags=_tags("cleanrl", "worker", "eval", "mode"),
+)
+
+LOG_WORKER_CLEANRL_SUBPROCESS_STDERR = _constant(
+    "LOG463",
+    "WARNING",
+    "CleanRL subprocess stderr",
+    component="Worker",
+    subcomponent="CleanRLRuntime",
+    tags=_tags("cleanrl", "worker", "runtime", "stderr"),
+)
+
+LOG_WORKER_CLEANRL_MAIN_ENTRYPOINT_MISSING = _constant(
+    "LOG464",
+    "WARNING",
+    "CleanRL module lacks main() entrypoint, falling back to subprocess",
+    component="Worker",
+    subcomponent="CleanRLRuntime",
+    tags=_tags("cleanrl", "worker", "runtime", "fallback"),
+)
+
+LOG_WORKER_CLEANRL_TRAINING_STARTED = _constant(
+    "LOG465",
+    "INFO",
+    "CleanRL training started",
+    component="Worker",
+    subcomponent="CleanRLRuntime",
+    tags=_tags("cleanrl", "worker", "training", "start"),
+)
+
+LOG_WORKER_CLEANRL_TRAINING_COMPLETED = _constant(
+    "LOG466",
+    "INFO",
+    "CleanRL training completed",
+    component="Worker",
+    subcomponent="CleanRLRuntime",
+    tags=_tags("cleanrl", "worker", "training", "complete"),
+)
+
+LOG_WORKER_CLEANRL_MODULE_EXECUTION_FAILED = _constant(
+    "LOG467",
+    "ERROR",
+    "CleanRL module execution failed",
+    component="Worker",
+    subcomponent="CleanRLRuntime",
+    tags=_tags("cleanrl", "worker", "module", "execution", "error"),
+)
+
+# ---------------------------------------------------------------------------
+# CleanRL Worker subprocess lifecycle diagnostics (LOG468–LOG475)
+# These catch silent subprocess deaths (OOM, SIGKILL, etc.)
+# ---------------------------------------------------------------------------
+LOG_WORKER_CLEANRL_SUBPROCESS_OOM_KILLED = _constant(
+    "LOG468",
+    "CRITICAL",
+    "CleanRL subprocess killed by OOM (exit code -9/137). "
+    "The system ran out of memory during training. "
+    "Check 'free -h' and close other applications, or increase swap size",
+    component="Worker",
+    subcomponent="CleanRLRuntime",
+    tags=_tags("cleanrl", "worker", "subprocess", "oom", "critical"),
+)
+
+LOG_WORKER_CLEANRL_SUBPROCESS_SIGNALED = _constant(
+    "LOG469",
+    "ERROR",
+    "CleanRL subprocess terminated by signal (not OOM). "
+    "Process received an external signal before training could complete",
+    component="Worker",
+    subcomponent="CleanRLRuntime",
+    tags=_tags("cleanrl", "worker", "subprocess", "signal", "error"),
+)
+
+LOG_WORKER_CLEANRL_SUBPROCESS_NO_OUTPUT = _constant(
+    "LOG470",
+    "WARNING",
+    "CleanRL subprocess produced no stdout output. "
+    "The worker started but did not complete a single training update. "
+    "Possible causes: OOM kill, GPU memory exhaustion, MuJoCo rendering hang, "
+    "or insufficient time for first update (2048 steps with num_envs=1)",
+    component="Worker",
+    subcomponent="CleanRLRuntime",
+    tags=_tags("cleanrl", "worker", "subprocess", "silent", "warning"),
+)
+
+LOG_WORKER_CLEANRL_SUBPROCESS_MEMORY_SNAPSHOT = _constant(
+    "LOG471",
+    "INFO",
+    "System memory snapshot at worker subprocess launch",
+    component="Worker",
+    subcomponent="CleanRLRuntime",
+    tags=_tags("cleanrl", "worker", "subprocess", "memory", "diagnostic"),
+)
+
+LOG_WORKER_CLEANRL_SUBPROCESS_EXIT_SUMMARY = _constant(
+    "LOG472",
+    "INFO",
+    "CleanRL subprocess exit summary with diagnostics",
+    component="Worker",
+    subcomponent="CleanRLRuntime",
+    tags=_tags("cleanrl", "worker", "subprocess", "exit", "summary"),
+)
+
+LOG_WORKER_CLEANRL_TENSORBOARD_PATH_RESOLVED = _constant(
+    "LOG473",
+    "DEBUG",
+    "CleanRL TensorBoard log directory resolved",
+    component="Worker",
+    subcomponent="CleanRLRuntime",
+    tags=_tags("cleanrl", "worker", "tensorboard", "path", "debug"),
+)
+
+LOG_WORKER_CLEANRL_SUBPROCESS_SLOW_START = _constant(
+    "LOG474",
+    "WARNING",
+    "CleanRL subprocess has not produced output after 30 seconds. "
+    "First training update requires num_steps environment interactions "
+    "which may take time for heavy environments like MuJoCo",
+    component="Worker",
+    subcomponent="CleanRLRuntime",
+    tags=_tags("cleanrl", "worker", "subprocess", "slow", "warning"),
+)
+
+LOG_WORKER_CLEANRL_SUBPROCESS_STDERR_ONLY = _constant(
+    "LOG475",
+    "WARNING",
+    "CleanRL subprocess wrote to stderr but not stdout. "
+    "Check the stderr log for errors, warnings, or resource_tracker leaks",
+    component="Worker",
+    subcomponent="CleanRLRuntime",
+    tags=_tags("cleanrl", "worker", "subprocess", "stderr", "diagnostic"),
 )
 
 
@@ -5159,6 +5991,17 @@ ALL_LOG_CONSTANTS: Tuple[LogConstant, ...] = (
     LOG_INPUT_MODE_CONFIGURED,
     LOG_EVDEV_KEY_PRESSED,
     LOG_EVDEV_KEY_RELEASED,
+    LOG_HUMAN_CONTROL_WORKER_LAUNCH,
+    LOG_HUMAN_CONTROL_WORKER_READY,
+    LOG_HUMAN_CONTROL_WORKER_ACTION,
+    LOG_HUMAN_CONTROL_WORKER_STEP,
+    LOG_HUMAN_CONTROL_WORKER_STOPPED,
+    LOG_HUMAN_CONTROL_WORKER_ERROR,
+    LOG_HUMAN_CONTROL_BRIDGE_START,
+    LOG_HUMAN_CONTROL_BRIDGE_STOP,
+    LOG_HUMAN_CONTROL_AUTO_ASSIGN,
+    LOG_HUMAN_CONTROL_INPUT_DISABLED,
+    LOG_HUMAN_CONTROL_RAW_KEY_NO_HANDLER,
     LOG_LIVE_CONTROLLER_INITIALIZED,
     LOG_LIVE_CONTROLLER_THREAD_STARTED,
     LOG_LIVE_CONTROLLER_THREAD_STOPPED,
@@ -5390,6 +6233,10 @@ ALL_LOG_CONSTANTS: Tuple[LogConstant, ...] = (
     LOG_RUNBUS_UI_QUEUE_DEPTH,
     LOG_FASTLANE_HEADER_INVALID,
     LOG_FASTLANE_FRAME_READ_ERROR,
+    LOG_FASTLANE_WRITER_CLOSED,
+    LOG_FASTLANE_SHM_STALE_UNLINKED,
+    LOG_FASTLANE_SHM_UNLINK_FAILED,
+    LOG_FASTLANE_SHM_LEAK_RISK,
     LOG_RUNBUS_DB_QUEUE_DEPTH,
     LOG_UI_FASTLANE_EVAL_SUMMARY_UPDATE,
     LOG_UI_FASTLANE_EVAL_SUMMARY_WARNING,
@@ -5541,6 +6388,14 @@ ALL_LOG_CONSTANTS: Tuple[LogConstant, ...] = (
     LOG_MOSAIC_WORKER_LLM_EPISODE_AUTO_RESET,
     LOG_MOSAIC_WORKER_LLM_ACTION_DEFAULTED,
     LOG_WORKER_CLEANRL_EPISODE_AUTO_RESET,
+    LOG_WORKER_CLEANRL_SUBPROCESS_OOM_KILLED,
+    LOG_WORKER_CLEANRL_SUBPROCESS_SIGNALED,
+    LOG_WORKER_CLEANRL_SUBPROCESS_NO_OUTPUT,
+    LOG_WORKER_CLEANRL_SUBPROCESS_MEMORY_SNAPSHOT,
+    LOG_WORKER_CLEANRL_SUBPROCESS_EXIT_SUMMARY,
+    LOG_WORKER_CLEANRL_TENSORBOARD_PATH_RESOLVED,
+    LOG_WORKER_CLEANRL_SUBPROCESS_SLOW_START,
+    LOG_WORKER_CLEANRL_SUBPROCESS_STDERR_ONLY,
     # Passive Worker
     LOG_WORKER_PASSIVE_RUNTIME_STARTED,
     LOG_WORKER_PASSIVE_RUNTIME_STOPPED,
@@ -5549,6 +6404,18 @@ ALL_LOG_CONSTANTS: Tuple[LogConstant, ...] = (
     LOG_WORKER_PASSIVE_ENV_CREATED,
     LOG_WORKER_PASSIVE_ENV_RESET,
     LOG_WORKER_PASSIVE_DEBUG,
+    # MushroomRL Worker
+    LOG_WORKER_MUSHROOMRL_RUNTIME_STARTED,
+    LOG_WORKER_MUSHROOMRL_RUNTIME_COMPLETED,
+    LOG_WORKER_MUSHROOMRL_RUNTIME_FAILED,
+    LOG_WORKER_MUSHROOMRL_SUBPROCESS_STDOUT,
+    LOG_WORKER_MUSHROOMRL_SUBPROCESS_STDERR,
+    # OmniSafe Worker
+    LOG_WORKER_OMNISAFE_RUNTIME_STARTED,
+    LOG_WORKER_OMNISAFE_RUNTIME_COMPLETED,
+    LOG_WORKER_OMNISAFE_RUNTIME_FAILED,
+    LOG_WORKER_OMNISAFE_SUBPROCESS_STDOUT,
+    LOG_WORKER_OMNISAFE_SUBPROCESS_STDERR,
 )
 
 
@@ -5577,6 +6444,16 @@ __all__ = (
     "LOG_INPUT_MODE_CONFIGURED",
     "LOG_EVDEV_KEY_PRESSED",
     "LOG_EVDEV_KEY_RELEASED",
+    "LOG_HUMAN_CONTROL_WORKER_LAUNCH",
+    "LOG_HUMAN_CONTROL_WORKER_READY",
+    "LOG_HUMAN_CONTROL_WORKER_ACTION",
+    "LOG_HUMAN_CONTROL_WORKER_STEP",
+    "LOG_HUMAN_CONTROL_WORKER_STOPPED",
+    "LOG_HUMAN_CONTROL_WORKER_ERROR",
+    "LOG_HUMAN_CONTROL_BRIDGE_START",
+    "LOG_HUMAN_CONTROL_BRIDGE_STOP",
+    "LOG_HUMAN_CONTROL_AUTO_ASSIGN",
+    "LOG_HUMAN_CONTROL_INPUT_DISABLED",
     "LOG_LIVE_CONTROLLER_INITIALIZED",
     "LOG_LIVE_CONTROLLER_THREAD_STARTED",
     "LOG_LIVE_CONTROLLER_THREAD_STOPPED",
@@ -5855,6 +6732,10 @@ __all__ = (
     "LOG_RUNBUS_UI_QUEUE_DEPTH",
     "LOG_FASTLANE_HEADER_INVALID",
     "LOG_FASTLANE_FRAME_READ_ERROR",
+    "LOG_FASTLANE_WRITER_CLOSED",
+    "LOG_FASTLANE_SHM_STALE_UNLINKED",
+    "LOG_FASTLANE_SHM_UNLINK_FAILED",
+    "LOG_FASTLANE_SHM_LEAK_RISK",
     "LOG_RUNBUS_DB_QUEUE_DEPTH",
     "LOG_UI_FASTLANE_EVAL_SUMMARY_UPDATE",
     "LOG_UI_FASTLANE_EVAL_SUMMARY_WARNING",
@@ -6016,6 +6897,14 @@ __all__ = (
     "LOG_MOSAIC_WORKER_LLM_EPISODE_AUTO_RESET",
     "LOG_MOSAIC_WORKER_LLM_ACTION_DEFAULTED",
     "LOG_WORKER_CLEANRL_EPISODE_AUTO_RESET",
+    "LOG_WORKER_CLEANRL_SUBPROCESS_OOM_KILLED",
+    "LOG_WORKER_CLEANRL_SUBPROCESS_SIGNALED",
+    "LOG_WORKER_CLEANRL_SUBPROCESS_NO_OUTPUT",
+    "LOG_WORKER_CLEANRL_SUBPROCESS_MEMORY_SNAPSHOT",
+    "LOG_WORKER_CLEANRL_SUBPROCESS_EXIT_SUMMARY",
+    "LOG_WORKER_CLEANRL_TENSORBOARD_PATH_RESOLVED",
+    "LOG_WORKER_CLEANRL_SUBPROCESS_SLOW_START",
+    "LOG_WORKER_CLEANRL_SUBPROCESS_STDERR_ONLY",
     # Passive Worker
     "LOG_WORKER_PASSIVE_RUNTIME_STARTED",
     "LOG_WORKER_PASSIVE_RUNTIME_STOPPED",

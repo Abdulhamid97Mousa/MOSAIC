@@ -177,6 +177,21 @@ def get_worker_catalog() -> Tuple[WorkerDefinition, ...]:
             supports_multi_agent=True,  # Two-player games
         ),
         WorkerDefinition(
+            worker_id="tianshou_worker",
+            display_name="Tianshou Worker",
+            description=(
+                "Deep Reinforcement Learning platform based on PyTorch. "
+                "Supports 20+ algorithms including PPO, DQN, SAC, TD3, A2C. "
+                "Modular design with building blocks for policies, networks, and collectors. "
+                "FastLane integration for live training visualization."
+            ),
+            supports_training=True,
+            supports_policy_load=True,
+            requires_live_telemetry=True,
+            provides_fast_analytics=True,
+            supports_multi_agent=True,
+        ),
+        WorkerDefinition(
             worker_id="marllib_worker",
             display_name="MARLlib Worker",
             description=(
@@ -192,6 +207,105 @@ def get_worker_catalog() -> Tuple[WorkerDefinition, ...]:
             requires_live_telemetry=False,
             provides_fast_analytics=False,
             supports_multi_agent=True,
+        ),
+        WorkerDefinition(
+            worker_id="sb3_worker",
+            display_name="Stable-Baselines3 Worker",
+            description=(
+                "Reliable RL implementations using Stable-Baselines3. "
+                "PPO, A2C, DQN, SAC, TD3, HER. PyTorch backend. "
+                "Works with single-agent Gymnasium environments."
+            ),
+            supports_training=True,
+            supports_policy_load=False,
+            requires_live_telemetry=False,
+            provides_fast_analytics=False,
+            supports_multi_agent=False,
+        ),
+        WorkerDefinition(
+            worker_id="sbx_worker",
+            display_name="SBX (JAX) Worker",
+            description=(
+                "JAX-accelerated RL using SBX (Stable-Baselines Jax). "
+                "Drop-in replacement for SB3 with JAX backends for faster training. "
+                "PPO, DQN, SAC, TQC, CrossQ. Works with Gymnasium environments."
+            ),
+            supports_training=True,
+            supports_policy_load=False,
+            requires_live_telemetry=False,
+            provides_fast_analytics=False,
+            supports_multi_agent=False,
+        ),
+        WorkerDefinition(
+            worker_id="mushroomrl_worker",
+            display_name="MushroomRL Worker",
+            description=(
+                "Model-free and model-based RL using MushroomRL. "
+                "PPO, TRPO, SAC, TD3, DDPG. Continuous control focus. "
+                "Works with Gymnasium and MuJoCo environments."
+            ),
+            supports_training=True,
+            supports_policy_load=False,
+            requires_live_telemetry=False,
+            provides_fast_analytics=False,
+            supports_multi_agent=False,
+        ),
+        WorkerDefinition(
+            worker_id="pearl_worker",
+            display_name="Pearl Worker",
+            description=(
+                "Production-ready RL using Meta's Pearl library. "
+                "PPO, DQN, SAC, bandits. Modular agent design with "
+                "dynamic action spaces, safety modules, and offline RL support."
+            ),
+            supports_training=True,
+            supports_policy_load=False,
+            requires_live_telemetry=False,
+            provides_fast_analytics=False,
+            supports_multi_agent=False,
+        ),
+        WorkerDefinition(
+            worker_id="torchrl_worker",
+            display_name="TorchRL Worker",
+            description=(
+                "PyTorch official RL library (TorchRL). "
+                "PPO with modular collector/loss/advantage design. "
+                "Works with Gymnasium environments via GymEnv wrapper."
+            ),
+            supports_training=True,
+            supports_policy_load=False,
+            requires_live_telemetry=False,
+            provides_fast_analytics=False,
+            supports_multi_agent=False,
+        ),
+        WorkerDefinition(
+            worker_id="omnisafe_worker",
+            display_name="OmniSafe Worker",
+            description=(
+                "Safe RL using OmniSafe (PKU-Alignment). "
+                "PPOLag, CPO, FOCOPS, CUP and 30+ constrained RL algorithms. "
+                "Works with Safety-Gymnasium environments for safe policy learning."
+            ),
+            supports_training=True,
+            supports_policy_load=False,
+            requires_live_telemetry=False,
+            provides_fast_analytics=False,
+            supports_multi_agent=False,
+        ),
+        WorkerDefinition(
+            worker_id="jumanji_worker",
+            display_name="Jumanji Worker (JAX)",
+            description=(
+                "JAX-based RL using Jumanji environments (DeepMind, ICLR 2024). "
+                "A2C with environment-specific networks on Game2048, Sudoku, TSP, etc. "
+                "Supports gymnax for fully JIT-compiled CartPole/Pendulum training. "
+                "Hardware-accelerated on CPU, GPU, and TPU via XLA."
+            ),
+            supports_training=True,
+            supports_policy_load=False,
+            requires_live_telemetry=True,
+            provides_fast_analytics=False,
+            supports_multi_agent=False,
         ),
         # NOTE: PettingZoo is an environment library, not an algorithm provider.
         # PettingZoo environments are supported BY other workers (CleanRL, XuanCe, Ray RLlib, Chess, Human, MCTX).

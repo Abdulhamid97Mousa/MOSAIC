@@ -416,6 +416,55 @@ except Exception:  # pragma: no cover - mosaic_multigrid optional
     MOSAIC_MULTIGRID_ACTIONS = []  # type: ignore[misc]
     _MOSAIC_MULTIGRID_AVAILABLE = False
 
+try:  # Optional dependency - MalmoEnv (Microsoft Malmo, Java-based Minecraft)
+    from .mosaic_malmo import (
+        MALMOENV_ACTIONS,
+        MALMOENV_ADAPTERS,
+        MALMOENV_MULTI_AGENT_ADAPTERS,
+        MOSAIC_MALMO_ACTIONS,  # legacy alias
+        MOSAIC_MALMO_ADAPTERS,  # legacy alias
+        MalmoEnvAdapter,
+        MalmoEnvAtticAdapter,
+        MalmoEnvCatchTheMobAdapter,
+        MalmoEnvCliffWalkingAdapter,
+        MalmoEnvDefaultFlatWorldAdapter,
+        MalmoEnvDefaultWorldAdapter,
+        MalmoEnvEatingAdapter,
+        MalmoEnvFindTheGoalAdapter,
+        MalmoEnvMazeRunnerAdapter,
+        MalmoEnvMobChaseAdapter,
+        MalmoEnvMultiAgentAdapter,
+        MalmoEnvObstaclesAdapter,
+        MalmoEnvTreasureHuntAdapter,
+        MalmoEnvTreasureHuntMultiAgentAdapter,
+        MalmoEnvTrickyArenaAdapter,
+        MalmoEnvVerticalAdapter,
+    )
+    _MOSAIC_MALMO_AVAILABLE = True
+except Exception:  # pragma: no cover - malmoenv optional
+    MalmoEnvAdapter = None  # type: ignore[misc, assignment]
+    MalmoEnvMultiAgentAdapter = None  # type: ignore[misc, assignment]
+    MalmoEnvMobChaseAdapter = None  # type: ignore[misc, assignment]
+    MalmoEnvMazeRunnerAdapter = None  # type: ignore[misc, assignment]
+    MalmoEnvVerticalAdapter = None  # type: ignore[misc, assignment]
+    MalmoEnvCliffWalkingAdapter = None  # type: ignore[misc, assignment]
+    MalmoEnvCatchTheMobAdapter = None  # type: ignore[misc, assignment]
+    MalmoEnvFindTheGoalAdapter = None  # type: ignore[misc, assignment]
+    MalmoEnvAtticAdapter = None  # type: ignore[misc, assignment]
+    MalmoEnvDefaultFlatWorldAdapter = None  # type: ignore[misc, assignment]
+    MalmoEnvDefaultWorldAdapter = None  # type: ignore[misc, assignment]
+    MalmoEnvEatingAdapter = None  # type: ignore[misc, assignment]
+    MalmoEnvObstaclesAdapter = None  # type: ignore[misc, assignment]
+    MalmoEnvTrickyArenaAdapter = None  # type: ignore[misc, assignment]
+    MalmoEnvTreasureHuntAdapter = None  # type: ignore[misc, assignment]
+    MalmoEnvTreasureHuntMultiAgentAdapter = None  # type: ignore[misc, assignment]
+    MALMOENV_ADAPTERS = {}  # type: ignore[misc]
+    MALMOENV_MULTI_AGENT_ADAPTERS = {}  # type: ignore[misc]
+    MALMOENV_ACTIONS = []  # type: ignore[misc]
+    MOSAIC_MALMO_ADAPTERS = {}  # type: ignore[misc]
+    MOSAIC_MALMO_ACTIONS = []  # type: ignore[misc]
+    _MOSAIC_MALMO_AVAILABLE = False
+
 try:  # Optional dependency - INI MultiGrid (cooperative multi-agent)
     from .ini_multigrid import (
         INI_MULTIGRID_ACTIONS,
@@ -868,6 +917,31 @@ if _MOSAIC_MULTIGRID_AVAILABLE:
         "MultiGridBasketballTeamObsAdapter",
         "MOSAIC_MULTIGRID_ADAPTERS",
         "MOSAIC_MULTIGRID_ACTIONS",
+    ]
+
+if _MOSAIC_MALMO_AVAILABLE:
+    __all__ += [
+        "MalmoEnvAdapter",
+        "MalmoEnvMobChaseAdapter",
+        "MalmoEnvMazeRunnerAdapter",
+        "MalmoEnvVerticalAdapter",
+        "MalmoEnvCliffWalkingAdapter",
+        "MalmoEnvCatchTheMobAdapter",
+        "MalmoEnvFindTheGoalAdapter",
+        "MalmoEnvAtticAdapter",
+        "MalmoEnvDefaultFlatWorldAdapter",
+        "MalmoEnvDefaultWorldAdapter",
+        "MalmoEnvEatingAdapter",
+        "MalmoEnvObstaclesAdapter",
+        "MalmoEnvTrickyArenaAdapter",
+        "MalmoEnvTreasureHuntAdapter",
+        "MalmoEnvMultiAgentAdapter",
+        "MalmoEnvTreasureHuntMultiAgentAdapter",
+        "MALMOENV_ADAPTERS",
+        "MALMOENV_MULTI_AGENT_ADAPTERS",
+        "MALMOENV_ACTIONS",
+        "MOSAIC_MALMO_ADAPTERS",
+        "MOSAIC_MALMO_ACTIONS",
     ]
 
 if _INI_MULTIGRID_AVAILABLE:

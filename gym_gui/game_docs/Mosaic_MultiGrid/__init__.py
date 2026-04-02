@@ -593,6 +593,100 @@ relative positions and states of all teammates.
 
 
 # ---------------------------------------------------------------------------
+# American Football
+# ---------------------------------------------------------------------------
+
+def _get_american_football_html() -> str:
+    """American Football documentation."""
+    return """
+<h2>MosaicMultiGrid-AmericanFootball (1v1, 2v2, 3v3)</h2>
+
+<p style="background-color: #e8f5e9; padding: 8px; border-radius: 4px; margin-bottom: 10px;">
+<strong>NEW</strong> in v6.3.0. American Football with brown field rendering, end zones,
+touchdown scoring, and ball stealing mechanics.
+Gymnasium API: <code>env.reset(seed=N)</code> returns <code>(obs, info)</code>.
+Supports <strong>Parallel</strong> (default) and <strong>AEC</strong> execution modes.
+</p>
+
+<p>
+Multi-agent American Football game on a 16x11 brown field with end zones.
+Two teams compete to score touchdowns by advancing the ball into the opponent's end zone.
+Available in 1v1 (2 agents), 2v2 (4 agents), and 3v3 (6 agents) configurations.
+</p>
+
+<h4>Environment Variants</h4>
+<table style="width:100%; border-collapse: collapse; margin: 10px 0;">
+    <tr style="background-color: #f0f0f0;">
+        <th style="border: 1px solid #ddd; padding: 8px;">Environment</th>
+        <th style="border: 1px solid #ddd; padding: 8px;">Agents</th>
+        <th style="border: 1px solid #ddd; padding: 8px;">Features</th>
+    </tr>
+    <tr><td style="border: 1px solid #ddd; padding: 8px;"><code>MosaicMultiGrid-AmericanFootball-1v1-v0</code></td><td style="border: 1px solid #ddd; padding: 8px;">2 (1v1)</td><td style="border: 1px solid #ddd; padding: 8px;">Individual play</td></tr>
+    <tr><td style="border: 1px solid #ddd; padding: 8px;"><code>MosaicMultiGrid-AmericanFootball-2v2-v0</code></td><td style="border: 1px solid #ddd; padding: 8px;">4 (2v2)</td><td style="border: 1px solid #ddd; padding: 8px;">Team coordination</td></tr>
+    <tr><td style="border: 1px solid #ddd; padding: 8px;"><code>MosaicMultiGrid-AmericanFootball-3v3-v0</code></td><td style="border: 1px solid #ddd; padding: 8px;">6 (3v3)</td><td style="border: 1px solid #ddd; padding: 8px;">Full team play</td></tr>
+    <tr><td style="border: 1px solid #ddd; padding: 8px;"><code>MosaicMultiGrid-AmericanFootball-2v2-TeamObs-v0</code></td><td style="border: 1px solid #ddd; padding: 8px;">4 (2v2)</td><td style="border: 1px solid #ddd; padding: 8px;">+ teammate awareness</td></tr>
+    <tr><td style="border: 1px solid #ddd; padding: 8px;"><code>MosaicMultiGrid-AmericanFootball-3v3-TeamObs-v0</code></td><td style="border: 1px solid #ddd; padding: 8px;">6 (3v3)</td><td style="border: 1px solid #ddd; padding: 8px;">+ teammate awareness</td></tr>
+    <tr><td style="border: 1px solid #ddd; padding: 8px;"><code>MosaicMultiGrid-AmericanFootball-Solo-Green-v0</code></td><td style="border: 1px solid #ddd; padding: 8px;">1</td><td style="border: 1px solid #ddd; padding: 8px;">Solo training (Green)</td></tr>
+    <tr><td style="border: 1px solid #ddd; padding: 8px;"><code>MosaicMultiGrid-AmericanFootball-Solo-Blue-v0</code></td><td style="border: 1px solid #ddd; padding: 8px;">1</td><td style="border: 1px solid #ddd; padding: 8px;">Solo training (Blue)</td></tr>
+</table>
+
+<h4>Environment Details</h4>
+<table style="width:100%; border-collapse: collapse; margin: 10px 0;">
+    <tr style="background-color: #f0f0f0;">
+        <th style="border: 1px solid #ddd; padding: 8px;">Property</th>
+        <th style="border: 1px solid #ddd; padding: 8px;">Value</th>
+    </tr>
+    <tr><td style="border: 1px solid #ddd; padding: 8px;">Grid Size</td><td style="border: 1px solid #ddd; padding: 8px;">16 x 11 (14 x 9 playable)</td></tr>
+    <tr><td style="border: 1px solid #ddd; padding: 8px;">View Size</td><td style="border: 1px solid #ddd; padding: 8px;">3 x 3 (partial observability)</td></tr>
+    <tr><td style="border: 1px solid #ddd; padding: 8px;">Field Rendering</td><td style="border: 1px solid #ddd; padding: 8px;">Brown field with end zones</td></tr>
+    <tr><td style="border: 1px solid #ddd; padding: 8px;">Scoring</td><td style="border: 1px solid #ddd; padding: 8px;">Touchdown in opponent's end zone</td></tr>
+    <tr><td style="border: 1px solid #ddd; padding: 8px;">Execution Mode</td><td style="border: 1px solid #ddd; padding: 8px;">Parallel (default) or AEC</td></tr>
+</table>
+
+<h4>Action Space</h4>
+<p><code>Discrete(8)</code> -- same for all agents (NOOP=0 enables AEC mode):</p>
+<table style="width:100%; border-collapse: collapse; margin: 10px 0;">
+    <tr style="background-color: #f0f0f0;">
+        <th style="border: 1px solid #ddd; padding: 8px;">ID</th>
+        <th style="border: 1px solid #ddd; padding: 8px;">Action</th>
+        <th style="border: 1px solid #ddd; padding: 8px;">Football Use</th>
+    </tr>
+    <tr><td style="border: 1px solid #ddd; padding: 8px;">0</td><td style="border: 1px solid #ddd; padding: 8px;">NOOP</td><td style="border: 1px solid #ddd; padding: 8px;">Idle — AEC no-op</td></tr>
+    <tr><td style="border: 1px solid #ddd; padding: 8px;">1</td><td style="border: 1px solid #ddd; padding: 8px;">LEFT</td><td style="border: 1px solid #ddd; padding: 8px;">Rotate counter-clockwise</td></tr>
+    <tr><td style="border: 1px solid #ddd; padding: 8px;">2</td><td style="border: 1px solid #ddd; padding: 8px;">RIGHT</td><td style="border: 1px solid #ddd; padding: 8px;">Rotate clockwise</td></tr>
+    <tr><td style="border: 1px solid #ddd; padding: 8px;">3</td><td style="border: 1px solid #ddd; padding: 8px;">FORWARD</td><td style="border: 1px solid #ddd; padding: 8px;">Move in facing direction / advance ball</td></tr>
+    <tr><td style="border: 1px solid #ddd; padding: 8px;">4</td><td style="border: 1px solid #ddd; padding: 8px;">PICKUP</td><td style="border: 1px solid #ddd; padding: 8px;">Grab ball / steal from opponent</td></tr>
+    <tr><td style="border: 1px solid #ddd; padding: 8px;">5</td><td style="border: 1px solid #ddd; padding: 8px;">DROP</td><td style="border: 1px solid #ddd; padding: 8px;">Score touchdown / pass to teammate</td></tr>
+    <tr><td style="border: 1px solid #ddd; padding: 8px;">6</td><td style="border: 1px solid #ddd; padding: 8px;">TOGGLE</td><td style="border: 1px solid #ddd; padding: 8px;">Toggle object</td></tr>
+    <tr><td style="border: 1px solid #ddd; padding: 8px;">7</td><td style="border: 1px solid #ddd; padding: 8px;">DONE</td><td style="border: 1px solid #ddd; padding: 8px;">Signal completion</td></tr>
+</table>
+
+<h4>Mechanics</h4>
+<ul>
+    <li><strong>Ball Carrying:</strong> Agents can pick up and carry the ball while moving</li>
+    <li><strong>Stealing:</strong> Opponents can steal the ball using the PICKUP action</li>
+    <li><strong>Passing:</strong> DROP action passes to teammates or scores in end zone</li>
+    <li><strong>Touchdown Scoring:</strong> Reach opponent's end zone with the ball and DROP to score</li>
+    <li><strong>Team Rewards:</strong> Shared positive rewards for team members on touchdown</li>
+</ul>
+
+<h4>TeamObs Variant</h4>
+<p>
+<code>MosaicMultiGrid-AmericanFootball-*-TeamObs-v0</code> variants extend IndAgObs
+with SMAC-style teammate awareness: each agent's observation includes
+relative positions, directions, and ball-carrying status of all teammates.
+</p>
+
+<h4>References</h4>
+<ul>
+    <li>Source: <code>3rd_party/mosaic_multigrid/</code></li>
+    <li>AEC wrapper: <code>gym_gui/services/aec_wrapper.py</code></li>
+    <li>Field rendering: Brown field with end zone markings</li>
+</ul>
+"""
+
+
+# ---------------------------------------------------------------------------
 # Solo
 # ---------------------------------------------------------------------------
 
@@ -601,9 +695,15 @@ def _get_solo_html(env_id: str) -> str:
     if "Soccer" in env_id:
         sport = "Soccer"
         grid = "16 x 11 (14 x 9 playable, FIFA 1.54 ratio)"
-    else:
+    elif "Basketball" in env_id:
         sport = "Basketball"
         grid = "19 x 11 (17 x 9 playable)"
+    elif "AmericanFootball" in env_id:
+        sport = "American Football"
+        grid = "16 x 11 (14 x 9 playable)"
+    else:
+        sport = "Unknown"
+        grid = "Unknown"
 
     if "Green" in env_id:
         color = "Green"
@@ -843,6 +943,8 @@ def get_mosaic_multigrid_html(env_id: str) -> str:
         if _is_modern:
             return _get_collect_enhanced_html()
         return _get_collect_base_html()
+    elif "AmericanFootball" in env_id:
+        return _get_american_football_html()
     else:
         return _get_overview_html()
 
@@ -856,11 +958,14 @@ MOSAIC_COLLECT_BASE_HTML = _get_collect_base_html()
 MOSAIC_COLLECT2VS2_HTML = _get_collect2vs2_enhanced_html()
 MOSAIC_COLLECT2VS2_BASE_HTML = _get_collect2vs2_base_html()
 MOSAIC_BASKETBALL_HTML = _get_basketball_html()
+MOSAIC_AMERICAN_FOOTBALL_HTML = _get_american_football_html()
 MOSAIC_OVERVIEW_HTML = _get_overview_html()
 MOSAIC_SOLO_SOCCER_GREEN_HTML = _get_solo_html("MosaicMultiGrid-Soccer-Solo-Green-IndAgObs-v0")
 MOSAIC_SOLO_SOCCER_BLUE_HTML = _get_solo_html("MosaicMultiGrid-Soccer-Solo-Blue-IndAgObs-v0")
 MOSAIC_SOLO_BASKETBALL_GREEN_HTML = _get_solo_html("MosaicMultiGrid-Basketball-Solo-Green-IndAgObs-v0")
 MOSAIC_SOLO_BASKETBALL_BLUE_HTML = _get_solo_html("MosaicMultiGrid-Basketball-Solo-Blue-IndAgObs-v0")
+MOSAIC_SOLO_AMERICAN_FOOTBALL_GREEN_HTML = _get_solo_html("MosaicMultiGrid-AmericanFootball-Solo-Green-v0")
+MOSAIC_SOLO_AMERICAN_FOOTBALL_BLUE_HTML = _get_solo_html("MosaicMultiGrid-AmericanFootball-Solo-Blue-v0")
 
 __all__ = [
     "get_mosaic_multigrid_html",
@@ -872,9 +977,12 @@ __all__ = [
     "MOSAIC_COLLECT2VS2_HTML",
     "MOSAIC_COLLECT2VS2_BASE_HTML",
     "MOSAIC_BASKETBALL_HTML",
+    "MOSAIC_AMERICAN_FOOTBALL_HTML",
     "MOSAIC_OVERVIEW_HTML",
     "MOSAIC_SOLO_SOCCER_GREEN_HTML",
     "MOSAIC_SOLO_SOCCER_BLUE_HTML",
     "MOSAIC_SOLO_BASKETBALL_GREEN_HTML",
     "MOSAIC_SOLO_BASKETBALL_BLUE_HTML",
+    "MOSAIC_SOLO_AMERICAN_FOOTBALL_GREEN_HTML",
+    "MOSAIC_SOLO_AMERICAN_FOOTBALL_BLUE_HTML",
 ]

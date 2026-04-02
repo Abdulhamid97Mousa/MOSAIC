@@ -75,11 +75,30 @@ class RandomWorkerRuntime:
 
     def _emit(self, data: Dict[str, Any]) -> None:
         """Emit JSON response to stdout."""
-        print(json.dumps(data, default=_json_default), flush=True)
+        json_str = json.dumps(data, default=_json_default)
+        print(json_str, flush=True)
+        if data.get("type") == "step":
+            logger.info(
+                "Step: action=%s reward=%.2f",
+                data.get("action"), data.get("reward"),
+            )
 
     def _resolve_action_space(self, game_name: str) -> gym.spaces.Space:
         """Determine the action space from the game/task name."""
         task = self.config.task or game_name
+
+        # Special handling for Crafter (uses old gym API, not gymnasium)
+        if "Crafter" in task:
+            try:
+                import crafter
+                env = crafter.Env()
+                action_space = gym.spaces.Discrete(env.action_space.n)
+                env.close()
+                logger.info("Resolved Crafter action space: %s", action_space)
+                return action_space
+            except ImportError:
+                logger.warning("Crafter not installed, defaulting to Discrete(17)")
+                return gym.spaces.Discrete(17)
 
         try:
             _ensure_env_registered(task)
@@ -101,10 +120,22 @@ class RandomWorkerRuntime:
 
         return gym.spaces.Discrete(7)
 
-    def _select_action(self) -> int:
-        """Select a uniformly random action."""
+    def _select_action(self, action_mask: Optional[List] = None) -> int:
+        """Select a uniformly random action, respecting an optional legal-action mask.
+
+        Args:
+            action_mask: A list/array of 0/1 values (length = action space size).
+                         When provided, only indices where the value is 1 are sampled.
+                         This is critical for environments like chess_v6 where sampling
+                         from the full Discrete(4672) space almost always yields an
+                         illegal move (only ~20 of 4672 actions are legal per turn).
+        """
         if self._action_space is None:
             return 0
+        if action_mask is not None:
+            legal_indices = [i for i, v in enumerate(action_mask) if v]
+            if legal_indices:
+                return int(np.random.choice(legal_indices))
         return int(self._action_space.sample())
 
     # ── Render Helpers ───────────────────────────────────────────────
@@ -156,7 +187,7 @@ class RandomWorkerRuntime:
         }
 
     def handle_select_action(self, cmd: Dict[str, Any]) -> Dict[str, Any]:
-        """Handle select_action: sample a random action and return it."""
+        """Handle select_action: sample a random legal action and return it."""
         if self._action_space is None:
             return {
                 "type": "error",
@@ -164,8 +195,14 @@ class RandomWorkerRuntime:
             }
 
         player_id = cmd.get("player_id", "unknown")
-        action = self._select_action()
+        action_mask = cmd.get("action_mask")  # list of 0/1, length = action space size
+        action = self._select_action(action_mask=action_mask)
         self._step_count += 1
+
+        logger.info(
+            "Action selected: player=%s action=%s (step %d)",
+            player_id, action, self._step_count,
+        )
 
         return {
             "type": "action_selected",
@@ -182,6 +219,62 @@ class RandomWorkerRuntime:
         task = self.config.task
         if not task:
             raise ValueError("--task is required for autonomous (non-interactive) mode")
+
+        # Special handling for Crafter (uses old gym API, not gymnasium)
+        if "Crafter" in task:
+            try:
+                import crafter
+                from gymnasium import Env as GymEnv, spaces
+
+                class CrafterGymnasiumWrapper(GymEnv):
+                    """Wrap crafter.Env for gymnasium compatibility."""
+
+                    def __init__(self, crafter_env):
+                        self._env = crafter_env
+                        self.action_space = spaces.Discrete(crafter_env.action_space.n)
+                        self.observation_space = spaces.Box(
+                            low=0, high=255,
+                            shape=crafter_env.observation_space.shape,
+                            dtype=crafter_env.observation_space.dtype
+                        )
+                        self.action_names = crafter_env.action_names
+                        self._render_mode = "rgb_array"
+
+                    @property
+                    def render_mode(self):
+                        return self._render_mode
+
+                    def reset(self, seed=None, options=None):
+                        if seed is not None:
+                            import numpy as np
+                            np.random.seed(seed)
+                        obs = self._env.reset()
+                        return obs, {}
+
+                    def step(self, action):
+                        obs, reward, done, info = self._env.step(action)
+                        return obs, reward, done, False, info
+
+                    def render(self):
+                        return self._env.render()
+
+                    def close(self):
+                        return self._env.close()
+
+                # Use same defaults as CrafterConfig for high-quality rendering
+                # area=(64, 64), view=(9, 9), size=(512, 512), reward=True, length=10000
+                env = crafter.Env(
+                    area=(64, 64),
+                    view=(9, 9),
+                    size=(512, 512),
+                    reward=True,
+                    length=10000,
+                )
+                logger.info("Creating Crafter env with gymnasium wrapper: %s (size=512x512)", task)
+                return CrafterGymnasiumWrapper(env)
+            except ImportError as e:
+                logger.warning("Crafter not installed: %s", e)
+                raise ValueError(f"Crafter package not installed: {e}")
 
         kwargs: Dict[str, Any] = {"render_mode": "rgb_array", "disable_env_checker": True}
         _ensure_env_registered(task)
@@ -202,13 +295,22 @@ class RandomWorkerRuntime:
                 first_key = self._agent_keys[0]
                 self._action_space = self._raw_action_space.spaces[first_key]
 
+            # Seed the action space RNG with config.seed (derived from run_id in launcher).
+            # This ensures each operator has independent random actions.
+            # The env.reset(seed=...) only seeds the environment layout, not the action space.
+            if self.config.seed is not None:
+                self._action_space.seed(self.config.seed)
+                logger.info(
+                    "Seeded action space with config.seed=%s (derived from run_id)",
+                    self.config.seed,
+                )
+
         self._step_count = 0
         self._episode_reward = 0.0
 
         # Only seed the env layout — do NOT re-seed the action space here.
         # Both operators receive the same layout seed (for reproducibility), but
-        # re-seeding the action space would make both workers pick identical actions.
-        # The action space RNG is seeded once at init_agent time from config.seed.
+        # the action space uses config.seed for independent random sequences.
         reset_kwargs: Dict[str, Any] = {}
         if seed is not None:
             reset_kwargs["seed"] = seed

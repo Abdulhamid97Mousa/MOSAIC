@@ -7,10 +7,21 @@ Three levels are provided to study how explicit coordination guidance affects pe
 - Level 2 (Basic Hints): Add cooperation tips, balance emergence and guidance
 - Level 3 (Role-Based): Explicit roles with detailed strategies
 
+Supported Games:
+- Soccer (2v2): Drop ball at opponent's goal to score
+- Collect (3-agent FFA, 2v2, 1v1): Race to collect balls
+- Basketball (3v3): Drop ball at baseline goal to score
+- American Football (1v1, 2v2, 3v3): Walk into end zone while carrying (touchdown!)
+
+Observation Types:
+- IndAgObs: Individual agent observations (decentralized)
+- TeamObs: SMAC-style teammate awareness (positions, directions, has_ball)
+
 Research Questions:
 - RQ1: How do coordination levels affect multi-agent performance?
 - RQ2: Can LLMs coordinate effectively without explicit guidance?
 - RQ3: Do role-based strategies improve team-based game outcomes?
+- RQ4: Does TeamObs (teammate awareness) improve coordination?
 """
 
 from __future__ import annotations
@@ -83,6 +94,35 @@ def is_ini_multigrid(env_id: str) -> bool:
     """Check if environment uses INI MultiGrid (7 actions) vs Legacy (8 actions)."""
     ini_patterns = ["Empty", "BlockedUnlockPickup", "LockedHallway", "RedBlueDoors", "Playground"]
     return any(pattern in env_id for pattern in ini_patterns)
+
+def is_teamobs_env(env_id: str) -> bool:
+    """Check if environment uses TeamObs (SMAC-style teammate awareness)."""
+    return "TeamObs" in env_id
+
+def get_game_type(env_id: str) -> str:
+    """Detect the game type from environment ID."""
+    if "Soccer" in env_id:
+        return "soccer"
+    elif "Basketball" in env_id:
+        return "basketball"
+    elif "AmericanFootball" in env_id:
+        return "american_football"
+    elif "Collect" in env_id:
+        return "collect"
+    else:
+        return "unknown"
+
+def get_team_size(env_id: str) -> int:
+    """Get team size from environment ID."""
+    if "3vs3" in env_id or "3v3" in env_id:
+        return 3
+    elif "2vs2" in env_id or "2v2" in env_id:
+        return 2
+    elif "1vs1" in env_id or "1v1" in env_id:
+        return 1
+    elif "Solo" in env_id:
+        return 1
+    return 2  # Default
 
 def get_action_space(env_id: str) -> list[str]:
     """Get the appropriate action space for the environment."""
@@ -229,15 +269,69 @@ def get_instruction_prompt_level1(agent_id: int, team: int, env_id: str) -> str:
         for action, description in MULTIGRID_ACTIONS.items()
     )
 
-    is_soccer = "Soccer" in env_id
-    is_collect = "Collect" in env_id
+    game_type = get_game_type(env_id)
+    team_size = get_team_size(env_id)
 
-    if is_soccer:
+    # American Football - simplified scoring (walk into end zone)
+    if game_type == "american_football":
+        team_name = "Green" if team == 0 else "Blue"
+        opponent_name = "Blue" if team == 0 else "Green"
+
+        return f"""
+You are Agent {agent_id} playing American Football ({team_size}v{team_size}).
+
+Your team: {team_name}
+Opponent team: {opponent_name}
+
+Actions:
+{action_strings}
+
+Goal: Score TOUCHDOWNS by walking into the opponent's END ZONE while carrying the ball!
+
+Game Mechanics:
+- Pick up the ball by walking to it and using "pickup"
+- You can STEAL the ball from opponents using "pickup"
+- Score by WALKING into the opponent's end zone while carrying (no drop needed!)
+- Pass to teammate by using "drop" (ball teleports to nearest teammate)
+- Green's end zone is on the LEFT (column 1), Blue scores there
+- Blue's end zone is on the RIGHT (column 14), Green scores there
+
+PLAY!
+""".strip()
+
+    # Basketball - drop ball at baseline goal
+    elif game_type == "basketball":
+        team_name = "Green" if team == 0 else "Blue"
+        opponent_name = "Blue" if team == 0 else "Green"
+
+        return f"""
+You are Agent {agent_id} playing Basketball (3v3).
+
+Your team: {team_name}
+Opponents: {opponent_name}
+
+Actions:
+{action_strings}
+
+Goal: Score by dropping the ball at the opponent's baseline GOAL!
+
+Game Mechanics:
+- Pick up the ball by walking to it and using "pickup"
+- You can STEAL the ball from opponents
+- Score by using "drop" at the opponent's goal (on their baseline)
+- Pass to teammate using "drop" (ball teleports to them)
+- Green's goal is on the LEFT, Blue's goal is on the RIGHT
+
+PLAY!
+""".strip()
+
+    # Soccer - drop ball at goal
+    elif game_type == "soccer":
         team_name = "Red" if team == 0 else "Green"
         opponent_name = "Green" if team == 0 else "Red"
 
         return f"""
-You are Agent {agent_id} playing a 2v2 soccer game.
+You are Agent {agent_id} playing a {team_size}v{team_size} soccer game.
 
 Your team: {team_name} (Agents {team * 2}, {team * 2 + 1})
 Opponent team: {opponent_name}
@@ -256,7 +350,8 @@ Game Mechanics:
 PLAY!
 """.strip()
 
-    elif is_collect:
+    # Collect - race to collect balls
+    elif game_type == "collect":
         colors = ["Red", "Green", "Blue"]
         color = colors[agent_id] if agent_id < 3 else "Unknown"
 
@@ -279,6 +374,7 @@ Game Mechanics:
 PLAY!
 """.strip()
 
+    # Unknown game type
     else:
         return f"""
 You are Agent {agent_id} in a multi-agent grid world.
@@ -325,15 +421,81 @@ def get_instruction_prompt_level2(agent_id: int, team: int, env_id: str) -> str:
         for action, description in MULTIGRID_ACTIONS.items()
     )
 
-    is_soccer = "Soccer" in env_id
-    is_collect = "Collect" in env_id
+    game_type = get_game_type(env_id)
+    team_size = get_team_size(env_id)
 
-    if is_soccer:
+    # American Football - simplified scoring (walk into end zone)
+    if game_type == "american_football":
+        team_name = "Green" if team == 0 else "Blue"
+        opponent_name = "Blue" if team == 0 else "Green"
+
+        return f"""
+You are Agent {agent_id} playing American Football ({team_size}v{team_size}).
+
+Your team: {team_name}
+Opponent team: {opponent_name}
+
+Actions:
+{action_strings}
+
+Goal: Score TOUCHDOWNS by walking into the opponent's END ZONE while carrying the ball!
+
+Game Mechanics:
+- Pick up the ball by walking to it and using "pickup"
+- You can STEAL the ball from opponents using "pickup"
+- Score by WALKING into the opponent's end zone while carrying (no drop needed!)
+- Pass to teammate by using "drop" (ball teleports to nearest teammate)
+- Green's end zone is on the LEFT (column 1), Blue scores there
+- Blue's end zone is on the RIGHT (column 14), Green scores there
+
+Tips for Coordination:
+- Spread out to create passing lanes
+- If you have the ball, advance toward the opponent's end zone
+- If a teammate has the ball, get open for a pass or block defenders
+- If opponents have the ball, swarm the ball carrier to steal
+
+PLAY!
+""".strip()
+
+    # Basketball - drop ball at baseline goal
+    elif game_type == "basketball":
+        team_name = "Green" if team == 0 else "Blue"
+        opponent_name = "Blue" if team == 0 else "Green"
+
+        return f"""
+You are Agent {agent_id} playing Basketball (3v3).
+
+Your team: {team_name}
+Opponent team: {opponent_name}
+
+Actions:
+{action_strings}
+
+Goal: Score by dropping the ball at the opponent's baseline GOAL!
+
+Game Mechanics:
+- Pick up the ball by walking to it and using "pickup"
+- You can STEAL the ball from opponents
+- Score by using "drop" at the opponent's goal (on their baseline)
+- Pass to teammate using "drop" (ball teleports to them)
+- Green's goal is on the LEFT, Blue's goal is on the RIGHT
+
+Tips for Coordination:
+- Create spacing - don't cluster together
+- Pass the ball to open teammates for better shots
+- If you don't have the ball, get open or set screens
+- On defense, stay between your opponent and the goal
+
+PLAY!
+""".strip()
+
+    # Soccer - drop ball at goal
+    elif game_type == "soccer":
         team_name = "Red" if team == 0 else "Green"
         opponent_name = "Green" if team == 0 else "Red"
 
         return f"""
-You are Agent {agent_id} playing a 2v2 soccer game.
+You are Agent {agent_id} playing a {team_size}v{team_size} soccer game.
 
 Your team: {team_name} (Agents {team * 2}, {team * 2 + 1})
 Opponent team: {opponent_name}
@@ -359,7 +521,7 @@ Tips for Coordination:
 PLAY!
 """.strip()
 
-    elif is_collect:
+    elif game_type == "collect":
         colors = ["Red", "Green", "Blue"]
         color = colors[agent_id] if agent_id < 3 else "Unknown"
 
@@ -440,20 +602,112 @@ def get_instruction_prompt_level3(agent_id: int, team: int, role: str, env_id: s
         for action, description in MULTIGRID_ACTIONS.items()
     )
 
-    is_soccer = "Soccer" in env_id
+    game_type = get_game_type(env_id)
+    team_size = get_team_size(env_id)
 
-    if not is_soccer:
-        # Level 3 only applies to Soccer (roles don't make sense for Collect)
-        return get_instruction_prompt_level2(agent_id, team, env_id)
+    # American Football with roles (Quarterback/Receiver)
+    if game_type == "american_football":
+        team_name = "Green" if team == 0 else "Blue"
+        opponent_name = "Blue" if team == 0 else "Green"
 
-    team_name = "Red" if team == 0 else "Green"
-    opponent_name = "Green" if team == 0 else "Red"
-    teammate_id = 1 if agent_id == 0 else 0 if agent_id in [0, 1] else 3 if agent_id == 2 else 2
-    teammate_role = "DEFENDER" if role.lower() == "forward" else "FORWARD"
+        # Roles: Quarterback (ball handler) vs Receiver (get open)
+        if role.lower() == "forward":
+            role_strategy = """
+Your Role: QUARTERBACK (Ball Handler)
+- Priority: Advance the ball, score touchdowns
+- If you have ball → run toward opponent's end zone
+- If you have ball and defenders nearby → pass to open teammate
+- If teammate has ball → provide blocking support
+- Take calculated risks - protect the ball above all"""
+        else:  # defender role maps to receiver
+            role_strategy = """
+Your Role: RECEIVER (Get Open)
+- Priority: Get open for passes, create scoring opportunities
+- If teammate has ball → get open downfield for a pass
+- If you receive the ball → run to the end zone!
+- If opponent has ball → pursue and attempt to steal
+- Create separation from defenders"""
 
-    # Role-specific strategies
-    if role.lower() == "forward":
-        role_strategy = """
+        return f"""
+You are Agent {agent_id} playing American Football ({team_size}v{team_size}).
+
+Your team: {team_name}
+Opponent team: {opponent_name}
+
+{role_strategy}
+
+Actions:
+{action_strings}
+
+Goal: Score TOUCHDOWNS by walking into the opponent's END ZONE while carrying!
+
+Game Mechanics:
+- Pick up ball with "pickup", STEAL from opponents with "pickup"
+- Score by WALKING into end zone while carrying (no drop needed!)
+- Pass with "drop" (teleports to nearest teammate)
+- Green scores at x=14 (Blue's end zone), Blue scores at x=1 (Green's end zone)
+
+Coordination Protocol:
+- Trust your teammates to handle their roles
+- Communicate through positioning
+- Protect the ball carrier
+
+PLAY!
+""".strip()
+
+    # Basketball with roles (Point Guard/Center)
+    elif game_type == "basketball":
+        team_name = "Green" if team == 0 else "Blue"
+        opponent_name = "Blue" if team == 0 else "Green"
+
+        if role.lower() == "forward":
+            role_strategy = """
+Your Role: POINT GUARD (Playmaker)
+- Priority: Create scoring opportunities, handle the ball
+- If you have ball → drive toward opponent's goal or pass
+- If teammate is open → pass with "drop" (teleports to them)
+- If opponent has ball → pressure the ball handler
+- Control the tempo of the game"""
+        else:
+            role_strategy = """
+Your Role: CENTER (Interior Presence)
+- Priority: Score inside, protect the basket
+- Position yourself near the opponent's goal for easy scores
+- If you get the ball → drop it at the goal immediately
+- On defense, stay near your goal to block opponents
+- Create space for teammates to operate"""
+
+        return f"""
+You are Agent {agent_id} playing Basketball (3v3).
+
+Your team: {team_name}
+Opponent team: {opponent_name}
+
+{role_strategy}
+
+Actions:
+{action_strings}
+
+Goal: Score by dropping the ball at the opponent's baseline GOAL!
+
+Game Mechanics:
+- Pick up ball with "pickup", STEAL from opponents
+- Score with "drop" at opponent's goal (on their baseline)
+- Pass with "drop" (teleports to nearest teammate)
+- Green's goal is on the LEFT, Blue's is on the RIGHT
+
+PLAY!
+""".strip()
+
+    # Soccer with roles (Forward/Defender)
+    elif game_type == "soccer":
+        team_name = "Red" if team == 0 else "Green"
+        opponent_name = "Green" if team == 0 else "Red"
+        teammate_id = 1 if agent_id == 0 else 0 if agent_id in [0, 1] else 3 if agent_id == 2 else 2
+        teammate_role = "DEFENDER" if role.lower() == "forward" else "FORWARD"
+
+        if role.lower() == "forward":
+            role_strategy = """
 Your Role: FORWARD (Offensive)
 - Priority: Score goals, pressure opponents
 - If you have ball → advance toward opponent goal
@@ -461,8 +715,8 @@ Your Role: FORWARD (Offensive)
 - If opponent has ball → pressure the ball carrier
 - Stay in attacking half when possible
 - Take risks to create scoring opportunities"""
-    else:  # defender
-        role_strategy = """
+        else:  # defender
+            role_strategy = """
 Your Role: DEFENDER (Defensive)
 - Priority: Protect goal, support attacks
 - If you have ball → pass forward or advance carefully
@@ -471,8 +725,8 @@ Your Role: DEFENDER (Defensive)
 - Stay between ball and your goal
 - Be conservative - don't leave goal undefended"""
 
-    return f"""
-You are Agent {agent_id} playing a 2v2 soccer game.
+        return f"""
+You are Agent {agent_id} playing a {team_size}v{team_size} soccer game.
 
 Your team: {team_name} (Agents {team * 2}, {team * 2 + 1})
 Opponent team: {opponent_name}
@@ -499,15 +753,22 @@ Coordination Protocol:
 PLAY!
 """.strip()
 
+    # Other games - fall back to level 2
+    else:
+        return get_instruction_prompt_level2(agent_id, team, env_id)
+
 
 __all__ = [
     # Action spaces
     "MULTIGRID_ACTION_SPACE",           # Default (Legacy) for backwards compatibility
-    "LEGACY_MULTIGRID_ACTION_SPACE",    # 8 actions: Soccer, Collect
+    "LEGACY_MULTIGRID_ACTION_SPACE",    # 8 actions: Soccer, Collect, Basketball, American Football
     "INI_MULTIGRID_ACTION_SPACE",       # 7 actions: Empty, BlockedUnlockPickup, etc.
     "MULTIGRID_ACTIONS",                # Action descriptions
     # Environment detection
     "is_ini_multigrid",                 # Check if env uses INI action space
+    "is_teamobs_env",                   # Check if env uses TeamObs
+    "get_game_type",                    # Detect game type (soccer, basketball, etc.)
+    "get_team_size",                    # Get team size from env ID
     "get_action_space",                 # Get appropriate action space for env
     # Action parsing
     "parse_action",

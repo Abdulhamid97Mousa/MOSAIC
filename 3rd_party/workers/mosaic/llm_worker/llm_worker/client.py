@@ -421,7 +421,18 @@ class ClaudeWrapper(LLMClientWrapper):
     def _initialize_client(self):
         """Initialize the Claude client if not already initialized."""
         if not self._initialized:
-            self.client = Anthropic()
+            client_name_lower = self.client_name.lower()
+            if client_name_lower == "zhipu":
+                # Zhipu AI (GLM models) via z.ai uses Anthropic-compatible API
+                # API key from ZHIPU_API_KEY or ZAI_API_KEY env var
+                api_key = os.environ.get("ZHIPU_API_KEY") or os.environ.get("ZAI_API_KEY")
+                if not api_key:
+                    raise ValueError("ZHIPU_API_KEY or ZAI_API_KEY environment variable must be set")
+                base_url = self.base_url or "https://api.z.ai/api/anthropic"
+                self.client = Anthropic(api_key=api_key, base_url=base_url)
+            else:
+                # Default Anthropic Claude
+                self.client = Anthropic()
             self._initialized = True
 
     def convert_messages(self, messages):
@@ -502,7 +513,8 @@ def create_llm_client(client_config):
             return OpenAIWrapper(client_config)
         elif "gemini" in client_name_lower or "google" in client_name_lower:
             return GoogleGenerativeAIWrapper(client_config)
-        elif "claude" in client_name_lower or "anthropic" in client_name_lower:
+        elif "claude" in client_name_lower or "anthropic" in client_name_lower or "zhipu" in client_name_lower:
+            # Anthropic and Zhipu (z.ai) use Anthropic-compatible API
             return ClaudeWrapper(client_config)
         else:
             raise ValueError(f"Unsupported client name: {client_config.client_name}")

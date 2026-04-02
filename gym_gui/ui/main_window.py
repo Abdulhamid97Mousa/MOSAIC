@@ -124,6 +124,7 @@ from gym_gui.ui.handlers import (
     HumanVsAgentHandler,
     JumanjiGridClickLoader,
     LogHandler,
+    MalmoEnvLoader,
     MPCHandler,
     # New composed handlers for extracted functionality
     MultiAgentGameHandler,
@@ -195,6 +196,21 @@ class MainWindow(QtWidgets.QMainWindow, LogConstantMixin):
         self._latest_fps: float | None = None
         self._human_input = HumanInputController(self, self._session)
         self._session.set_input_controller(self._human_input)
+
+        # Keyboard worker bridge: subprocess-per-agent for human play.
+        # Replaces main-thread evdev for multi-agent environments.
+        from gym_gui.controllers.keyboard_worker_bridge import KeyboardWorkerBridge
+        self._keyboard_worker_bridge = KeyboardWorkerBridge(parent=self)
+        self._keyboard_worker_bridge.all_actions_ready.connect(
+            self._on_keyboard_worker_actions_ready
+        )
+        self._keyboard_worker_bridge.mouse_delta_received.connect(
+            self._on_keyboard_worker_mouse_delta
+        )
+        self._keyboard_worker_bridge.raw_key_received.connect(
+            self._on_keyboard_worker_raw_key
+        )
+
         locator = get_service_locator()
         telemetry_service = locator.resolve(TelemetryService)
         actor_service = locator.resolve(ActorService)
@@ -231,6 +247,7 @@ class MainWindow(QtWidgets.QMainWindow, LogConstantMixin):
         self._pettingzoo_multiagent_mode: bool = False
         self._pettingzoo_player_handles: Dict[str, Any] = {}  # player_id -> handle
         self._pettingzoo_current_seed: int = 42
+        self._pettingzoo_step_index: int = 0  # step counter within current pettingzoo episode
 
         # Parallel multi-agent mode (MultiGrid, MeltingPot, Overcooked)
         # Similar to PettingZoo but uses Parallel API (simultaneous stepping)
@@ -279,6 +296,7 @@ class MainWindow(QtWidgets.QMainWindow, LogConstantMixin):
         self._go_env_loader: GoEnvLoader
         self._tictactoe_env_loader: TicTacToeEnvLoader
         self._vizdoom_env_loader: VizdoomEnvLoader
+        self._malmo_env_loader: MalmoEnvLoader
         self._jumanji_grid_loader: JumanjiGridClickLoader
         self._smac_camera_loader: SmacCameraLoader
 
@@ -715,6 +733,9 @@ class MainWindow(QtWidgets.QMainWindow, LogConstantMixin):
         self._vizdoom_env_loader = VizdoomEnvLoader(
             render_tabs=self._render_tabs,
         )
+        self._malmo_env_loader = MalmoEnvLoader(
+            render_tabs=self._render_tabs,
+        )
         self._jumanji_grid_loader = JumanjiGridClickLoader(
             render_tabs=self._render_tabs,
         )
@@ -884,6 +905,9 @@ class MainWindow(QtWidgets.QMainWindow, LogConstantMixin):
 
         # Keyboard assignment widget signals (multi-human gameplay)
         self._control_panel._keyboard_widget.assignment_changed.connect(self._on_keyboard_assignment_changed)
+        self._control_panel._keyboard_widget.all_assignments_applied.connect(
+            self._on_all_keyboard_assignments_applied
+        )
 
         # Keyboard assignment from Operators tab (multi-human operators with evdev)
         self._control_panel.operators_tab.keyboard_assignment_changed.connect(
@@ -1597,6 +1621,14 @@ class MainWindow(QtWidgets.QMainWindow, LogConstantMixin):
             self._shared_pettingzoo_env = self._create_pettingzoo_env(task, seed, initial_state)
             self._pettingzoo_multiagent_mode = True
             self._pettingzoo_current_seed = seed
+            self._pettingzoo_step_index = 0  # reset step counter on new episode
+
+            # Stop any existing worker handles before relaunching (handles re-reset)
+            for existing_handle in self._pettingzoo_player_handles.values():
+                try:
+                    existing_handle.stop(timeout=2.0)
+                except Exception:
+                    pass
             self._pettingzoo_player_handles.clear()
 
             self.log_constant(
@@ -1618,9 +1650,11 @@ class MainWindow(QtWidgets.QMainWindow, LogConstantMixin):
         started_ids = []
         failed_ids = []
 
-        # Get all operators and their player assignments
+        # Reset operator states so start_all() returns them even on re-reset
         active_operators = self._multi_operator_service.get_active_operators()
         _OP_LOGGER.debug("active_operators count=%d", len(active_operators))
+        for operator_id in active_operators:
+            self._multi_operator_service.set_operator_state(operator_id, "pending")
         pending_ids = self._multi_operator_service.start_all()
         _OP_LOGGER.debug("pending_ids=%s", pending_ids)
 
@@ -1782,7 +1816,7 @@ class MainWindow(QtWidgets.QMainWindow, LogConstantMixin):
                 # Build chess-specific payload for BoardGameRendererStrategy
                 # Note: "render_payload" key is required for _extract_render_payload
                 payload = {
-                    "step_index": 0,
+                    "step_index": self._pettingzoo_step_index,
                     "episode_index": 0,
                     "render_payload": {
                         "chess": {
@@ -1805,7 +1839,7 @@ class MainWindow(QtWidgets.QMainWindow, LogConstantMixin):
                 rgb_frame = env.render()
                 if rgb_frame is not None and isinstance(rgb_frame, np.ndarray):
                     payload = {
-                        "step_index": 0,
+                        "step_index": self._pettingzoo_step_index,
                         "episode_index": 0,
                         "render_payload": {
                             "mode": "rgb",
@@ -2354,6 +2388,7 @@ class MainWindow(QtWidgets.QMainWindow, LogConstantMixin):
                 extra={"player": current_player, "available": list(self._pettingzoo_player_handles.keys())},
             )
             self._status_bar.showMessage(f"No worker for {current_player}", 3000)
+            self._control_panel.set_current_player(current_player)
             return
 
         _OP_LOGGER.debug("_on_step_pettingzoo_multiagent: Got handle, is_running=%s", handle.is_running)
@@ -2364,10 +2399,20 @@ class MainWindow(QtWidgets.QMainWindow, LogConstantMixin):
                 message=f"Worker not running for player: {current_player}",
             )
             self._status_bar.showMessage(f"Worker stopped for {current_player}", 3000)
+            self._control_panel.set_current_player(current_player)
             return
 
         # Get observation for current player
         obs = env.observe(current_player)
+
+        # Extract action_mask (e.g. chess_v6 returns {"observation": ..., "action_mask": ...})
+        action_mask: Optional[List[bool]] = None
+        if isinstance(obs, dict) and "action_mask" in obs:
+            action_mask = obs["action_mask"].tolist()
+            _OP_LOGGER.debug(
+                "_on_step_pettingzoo_multiagent: action_mask extracted, legal=%d/%d",
+                sum(action_mask), len(action_mask),
+            )
 
         # Get legal moves (for chess, convert to UCI strings)
         legal_moves = self._get_chess_legal_moves(env)
@@ -2377,10 +2422,11 @@ class MainWindow(QtWidgets.QMainWindow, LogConstantMixin):
         obs_str = f"Current player: {current_player}\n"
         obs_str += f"Board state:\n{env.board}\n" if hasattr(env, "board") else str(obs)
 
-        # Send select_action command to worker
+        # Send select_action command to worker; pass action_mask so workers that
+        # sample randomly (e.g. Random Worker) stay within the legal action set.
         info = {"legal_moves": legal_moves}
         _OP_LOGGER.debug("_on_step_pettingzoo_multiagent: Sending select_action to worker...")
-        if handle.send_select_action(obs_str, current_player, info):
+        if handle.send_select_action(obs_str, current_player, info, action_mask=action_mask):
             _OP_LOGGER.debug("_on_step_pettingzoo_multiagent: select_action sent successfully")
             self.log_constant(
                 LOG_UI_MAINWINDOW_TRACE,
@@ -2397,6 +2443,8 @@ class MainWindow(QtWidgets.QMainWindow, LogConstantMixin):
                 LOG_UI_MAINWINDOW_ERROR,
                 message=f"Failed to send select_action to {current_player}",
             )
+            # Re-enable the current player's button so the user can retry
+            self._control_panel.set_current_player(current_player)
 
     def _poll_pettingzoo_action(
         self,
@@ -2538,14 +2586,17 @@ class MainWindow(QtWidgets.QMainWindow, LogConstantMixin):
                     else:
                         _OP_LOGGER.debug("No legal actions in action_mask")
                         self._status_bar.showMessage("No legal moves available", 3000)
+                        self._control_panel.set_current_player(player_id)
                         return
                 else:
                     _OP_LOGGER.debug("No action_mask available")
                     self._status_bar.showMessage("Cannot determine legal moves", 3000)
+                    self._control_panel.set_current_player(player_id)
                     return
             except Exception as mask_err:
                 _OP_LOGGER.debug("Error getting action_mask: %s", mask_err)
                 self._status_bar.showMessage(f"Error: {mask_err}", 3000)
+                self._control_panel.set_current_player(player_id)
                 return
 
         # Execute the action
@@ -2553,6 +2604,10 @@ class MainWindow(QtWidgets.QMainWindow, LogConstantMixin):
             _OP_LOGGER.debug("Executing env.step(%s)", action_index)
             env.step(action_index)
             _OP_LOGGER.debug("env.step completed successfully")
+
+            # Track step count and sync widget
+            self._pettingzoo_step_index += 1
+            self._control_panel.set_step_count(self._pettingzoo_step_index)
 
             # Check for game end - in PettingZoo AEC, check if ALL agents are terminated
             # or if there are no more agents to act
@@ -2623,7 +2678,7 @@ class MainWindow(QtWidgets.QMainWindow, LogConstantMixin):
             _OP_LOGGER.debug("_execute_pettingzoo_action completed successfully")
 
         except Exception as e:
-            _OP_LOGGER.debug("_execute_pettingzoo_action EXCEPTION: %s", e, exc_info=True)
+            _OP_LOGGER.warning("_execute_pettingzoo_action EXCEPTION: %s", e, exc_info=True)
             self.log_constant(
                 LOG_UI_MAINWINDOW_ERROR,
                 message=f"Failed to execute action: {e}",
@@ -4746,6 +4801,11 @@ class MainWindow(QtWidgets.QMainWindow, LogConstantMixin):
         self._update_input_state()
         self._status_bar.showMessage(status, 3000)
 
+        # Auto-launch keyboard (+ mouse) worker subprocesses for human control.
+        # start() is non-blocking: spawns processes, sends init commands,
+        # and the 60Hz poll timer handles the rest.
+        self._auto_launch_keyboard_workers()
+
     def _on_pause_game(self) -> None:
         """Handle Pause Game button."""
         self._session.pause_game()
@@ -4821,31 +4881,29 @@ class MainWindow(QtWidgets.QMainWindow, LogConstantMixin):
                 f"agents={step_info.get('agents')}"
             )
             num_agents = step_info.get('num_agents')
-            if num_agents and isinstance(num_agents, int) and num_agents > 1:
-                # Multi-agent environment - show widget and update agent list
-                # Use actual agent names from environment if available (e.g., 'player_0' for MeltingPot)
-                # Fall back to generic 'agent_X' naming for environments that don't provide names
-                agent_names = step_info.get('agents')
-                if agent_names and isinstance(agent_names, (list, tuple)) and len(agent_names) == num_agents:
-                    agent_list = list(agent_names)
-                else:
-                    agent_list = [f"agent_{i}" for i in range(num_agents)]
-                self._control_panel._keyboard_widget.set_available_agents(agent_list)
-                self._control_panel._keyboard_widget.setVisible(True)
+            if not num_agents or not isinstance(num_agents, int) or num_agents < 1:
+                num_agents = 1
 
-                # Update human input controller with agent count and names
-                self._human_input.set_num_agents(num_agents)
-                self._human_input.set_agent_names(agent_list)
-
-                self.log_constant(
-                    LOG_UI_MAINWINDOW_TRACE,
-                    message=f"Updated keyboard widget for {num_agents} agents",
-                    extra={"num_agents": num_agents, "agents": agent_list},
-                )
+            # Build agent name list from environment or generate defaults
+            agent_names = step_info.get('agents')
+            if agent_names and isinstance(agent_names, (list, tuple)) and len(agent_names) == num_agents:
+                agent_list = list(agent_names)
             else:
-                # Single-agent environment - hide widget
-                self._control_panel._keyboard_widget.setVisible(False)
-                self._human_input.set_num_agents(1)
+                agent_list = [f"agent_{i}" for i in range(num_agents)]
+
+            # Always show the evdev keyboard widget (single and multi-agent).
+            # Every human player goes through a worker subprocess.
+            self._control_panel._keyboard_widget.set_available_agents(agent_list)
+            self._control_panel._keyboard_widget.setVisible(True)
+
+            self._human_input.set_num_agents(num_agents)
+            self._human_input.set_agent_names(agent_list)
+
+            self.log_constant(
+                LOG_UI_MAINWINDOW_TRACE,
+                message=f"Updated keyboard widget for {num_agents} agent(s)",
+                extra={"num_agents": num_agents, "agents": agent_list},
+            )
         self._configure_mouse_capture()  # Configure FPS-style mouse capture for ViZDoom
         self._control_panel.set_auto_running(False)
         self._control_panel.set_game_started(False)  # Reset game state on new load
@@ -4880,10 +4938,12 @@ class MainWindow(QtWidgets.QMainWindow, LogConstantMixin):
 
         Delegates to environment-specific loaders:
         - VizdoomEnvLoader: FPS-style mouse capture for ViZDoom games
+        - MalmoEnvLoader: FPS-style mouse capture for MalmoEnv (Minecraft) games
         - JumanjiGridClickLoader: Grid-click for Tetris, Minesweeper, etc.
         - SmacCameraLoader: 3D camera panning for SMAC/SMACv2 environments
         """
         self._vizdoom_env_loader.configure_mouse_capture(self._session)
+        self._malmo_env_loader.configure_mouse_capture(self._session)
         self._jumanji_grid_loader.configure_grid_click(self._session)
         self._smac_camera_loader.configure_mouse_capture(self._session)
 
@@ -4926,6 +4986,9 @@ class MainWindow(QtWidgets.QMainWindow, LogConstantMixin):
     def _on_episode_finished(self, finished: bool) -> None:
         self._episode_finished = finished
         if finished:
+            # Stop keyboard worker bridge so workers stop reading keys
+            if self._keyboard_worker_bridge.is_active:
+                self._keyboard_worker_bridge.stop()
             # Disable shortcuts when episode terminates
             self._game_started = False
             self._game_paused = False
@@ -4950,104 +5013,276 @@ class MainWindow(QtWidgets.QMainWindow, LogConstantMixin):
         self._status_bar.showMessage(message, 4000)
 
     def _on_keyboard_assignment_changed(self, device_path: str, agent_id: object) -> None:
-        """Handle keyboard assignment changes from the evdev keyboard widget.
+        """Handle per-keyboard assignment change (informational only).
 
-        Updates the human input controller with the current evdev keyboard assignments.
+        All actual keyboard setup is done by ``_auto_launch_keyboard_workers``
+        which is called from ``_on_start_game`` and uses the subprocess bridge.
+        This handler only logs the assignment for debugging.
         """
-        # Get all current assignments from the widget
-        assignments = self._control_panel._keyboard_widget.get_assignments()
-
-        # Setup evdev monitoring with the new assignments
-        if assignments:
-            from gym_gui.logging_config.log_constants import (
-                LOG_KEYBOARD_EVDEV_SETUP_FAILED,
-                LOG_KEYBOARD_EVDEV_SETUP_START,
-                LOG_KEYBOARD_EVDEV_SETUP_SUCCESS,
-            )
-
-            self.log_constant(
-                LOG_KEYBOARD_EVDEV_SETUP_START,
-                message=f"Setting up evdev for {len(assignments)} keyboards",
-                extra={"num_keyboards": len(assignments), "assignments": assignments},
-            )
-
-            success = self._human_input.setup_evdev_keyboards(assignments)
-
-            if not success:
-                self.log_constant(
-                    LOG_KEYBOARD_EVDEV_SETUP_FAILED,
-                    message="Evdev setup failed - check permissions",
-                    extra={"assignments": assignments},
-                )
-                return
-
-            self.log_constant(
-                LOG_KEYBOARD_EVDEV_SETUP_SUCCESS,
-                message=f"Evdev monitoring started for {len(assignments)} keyboards",
-                extra={"num_keyboards": len(assignments)},
-            )
-        else:
-            _LOGGER.warning("No keyboard assignments to apply")
-
         agent_str = agent_id if agent_id else "unassigned"
         device_name = device_path.split("/")[-1] if "/" in device_path else device_path
-        self.log_constant(
-            LOG_UI_MAINWINDOW_TRACE,
-            message=f"Keyboard {device_name} assigned to {agent_str}",
-            extra={"device_path": device_path, "agent_id": agent_str},
+        _LOGGER.debug(
+            "Keyboard assignment changed: %s -> %s (handled by bridge on Start Game)",
+            device_name, agent_str,
         )
 
     def _on_operator_keyboard_assignment_changed(self, device_path: str, agent_id: object) -> None:
-        """Handle keyboard assignment changes from the Operators tab evdev widget.
+        """Handle per-keyboard assignment change from Operators tab (informational only).
 
-        When human operators are configured in the Operators tab and the user assigns
-        physical USB keyboards to agents, this sets up evdev monitoring so each
-        keyboard controls only its assigned agent.
+        All actual keyboard setup is done by ``_auto_launch_keyboard_workers``
+        which uses the subprocess bridge. This handler only logs.
         """
-        assignments = self._control_panel.operators_tab.keyboard_assignment_widget.get_assignments()
-        if not assignments:
-            _LOGGER.warning("No keyboard assignments to apply from Operators tab")
-            return
-
-        # Determine unique agents and configure HumanInputController
-        unique_agents = sorted(set(assignments.values()))
-        self._human_input.set_num_agents(len(unique_agents))
-        self._human_input.set_agent_names(unique_agents)
-
-        from gym_gui.logging_config.log_constants import (
-            LOG_KEYBOARD_EVDEV_SETUP_FAILED,
-            LOG_KEYBOARD_EVDEV_SETUP_START,
-            LOG_KEYBOARD_EVDEV_SETUP_SUCCESS,
-        )
-
-        self.log_constant(
-            LOG_KEYBOARD_EVDEV_SETUP_START,
-            message=f"Setting up evdev for {len(assignments)} keyboards (from Operators tab)",
-            extra={"num_keyboards": len(assignments), "assignments": assignments},
-        )
-
-        success = self._human_input.setup_evdev_keyboards(assignments)
-
-        if success:
-            self.log_constant(
-                LOG_KEYBOARD_EVDEV_SETUP_SUCCESS,
-                message=f"Evdev monitoring started for {len(assignments)} keyboards (Operators tab)",
-                extra={"num_keyboards": len(assignments), "agents": unique_agents},
-            )
-        else:
-            self.log_constant(
-                LOG_KEYBOARD_EVDEV_SETUP_FAILED,
-                message="Evdev setup failed from Operators tab - check permissions",
-                extra={"assignments": assignments},
-            )
-
         agent_str = agent_id if agent_id else "unassigned"
         device_name = device_path.split("/")[-1] if "/" in device_path else device_path
-        self.log_constant(
-            LOG_UI_MAINWINDOW_TRACE,
-            message=f"Operator keyboard {device_name} assigned to {agent_str}",
-            extra={"device_path": device_path, "agent_id": agent_str},
+        _LOGGER.debug(
+            "Operator keyboard assignment changed: %s -> %s (handled by bridge)",
+            device_name, agent_str,
         )
+
+    # ---- Keyboard Worker Bridge: auto-launch and handlers ----
+
+    def _auto_launch_keyboard_workers(self) -> None:
+        """Auto-discover keyboards+mice, pair by USB port, launch workers.
+
+        Called from ``_on_start_game()``.  For human-controlled modes only.
+        Handles both single-agent (1 keyboard, no widget) and multi-agent
+        (N keyboards, auto-assigned to agents).
+        """
+        from gym_gui.logging_config.log_constants import (
+            LOG_HUMAN_CONTROL_BRIDGE_START,
+        )
+
+        # Only for human-play modes
+        mode = self._session._control_mode
+        if mode not in {
+            ControlMode.HUMAN_ONLY,
+            ControlMode.HYBRID_TURN_BASED,
+            ControlMode.HYBRID_HUMAN_AGENT,
+        }:
+            return
+
+        # If bridge is already running (e.g. user restarted), stop it first
+        if self._keyboard_worker_bridge.is_active:
+            self._keyboard_worker_bridge.stop()
+
+        # Stop old main-thread evdev if active
+        if self._human_input._use_evdev:
+            self._human_input.stop_evdev_monitoring()
+
+        # Discover devices
+        import sys
+
+        from gym_gui.config.paths import HUMAN_WORKER_PKG_DIR
+        _hw_path = str(HUMAN_WORKER_PKG_DIR)
+        if _hw_path not in sys.path:
+            sys.path.insert(0, _hw_path)
+        from human_worker.evdev_input import (
+            discover_keyboards,
+            discover_mice,
+            pair_devices_by_usb_port,
+            setup_multi_cursor,
+            teardown_multi_cursor,
+        )
+
+        keyboards = discover_keyboards()
+        mice = discover_mice()
+
+        if not keyboards:
+            _LOGGER.warning("No keyboards found, cannot launch keyboard workers")
+            return
+
+        # Determine agent count
+        num_agents = getattr(self._human_input, '_num_agents', 1) or 1
+        agent_names = getattr(self._human_input, '_agent_names', None)
+        if not agent_names:
+            agent_names = [f"agent_{i}" for i in range(num_agents)]
+
+        # Pair keyboards+mice by USB port
+        pairs = pair_devices_by_usb_port(keyboards, mice)
+
+        # Limit to available agents (use first N pairs)
+        pairs = pairs[:num_agents]
+
+        # Build assignment dicts
+        # assignments: {keyboard_device_path: agent_id}
+        # mouse_assignments: {agent_id: mouse_device_path}
+        assignments = {}
+        mouse_assignments = {}
+        for i, pair in enumerate(pairs):
+            agent_id = agent_names[i] if i < len(agent_names) else f"agent_{i}"
+            assignments[pair["keyboard_path"]] = agent_id
+            if pair.get("mouse_path"):
+                mouse_assignments[agent_id] = pair["mouse_path"]
+
+        if not assignments:
+            _LOGGER.warning("No keyboard-agent assignments could be made")
+            return
+
+        # Use the environment family for the resolver fallback name.
+        family = self._control_panel._selected_family
+        env_name = family.value if family is not None else "multigrid"
+
+        # Build the dynamic key-action map from the GUI's ShortcutMappings.
+        # This is the exact same mapping the Qt shortcut system uses, converted
+        # to Linux keycodes so the subprocess resolver matches perfectly.
+        from gym_gui.controllers.human_input import build_key_action_map_for_game
+        game_id = self._session.game_id
+        key_action_map = build_key_action_map_for_game(
+            game_id,
+            env_family=family,
+            action_space=getattr(self._session, '_action_space', None),
+        )
+
+        # Setup multi-cursor if multiple mice
+        if len(mice) >= 2 and num_agents >= 2:
+            mice_for_agents = mice[:num_agents]
+            self._multi_cursor_state = setup_multi_cursor(mice_for_agents, agent_names)
+        else:
+            self._multi_cursor_state = None
+
+        self.log_constant(
+            LOG_HUMAN_CONTROL_BRIDGE_START,
+            message=(
+                f"Auto-launching {len(assignments)} keyboard worker(s) "
+                f"({len(mouse_assignments)} with mouse), env={env_name}"
+            ),
+            extra={
+                "assignments": {k: v for k, v in assignments.items()},
+                "mouse_assignments": mouse_assignments,
+                "env_name": env_name,
+            },
+        )
+
+        # Update keyboard widget to show auto-assignments (UI only, no signal).
+        kbd_widget = self._control_panel._keyboard_widget
+        kbd_widget.set_available_agents(agent_names)
+        kbd_widget._detect_keyboards()
+        kbd_widget._auto_assign()  # Updates UI rows, does NOT emit signal
+
+        # Tick rate and NOOP action from the session's InteractionController.
+        # This matches the environment's own physics/render rate exactly.
+        # Single-agent turn-based: blocking (tick_timeout=0), wait for key.
+        # Multi-agent or real-time: tick mode, return NOOP after timeout.
+        noop_action = 0
+        tick_timeout = 0.0
+        interaction = getattr(self._session, '_interaction', None)
+        if interaction is not None:
+            interval_ms = interaction.idle_interval_ms()
+            if interval_ms is not None:
+                tick_timeout = interval_ms / 1000.0  # ms to seconds
+            passive = interaction.maybe_passive_action()
+            if passive is not None and isinstance(passive, int):
+                noop_action = passive
+        # Multi-agent always needs tick mode even if turn-based
+        if num_agents > 1 and tick_timeout <= 0:
+            tick_timeout = 0.016  # 60Hz fallback for multi-agent turn-based
+
+        success = self._keyboard_worker_bridge.start(
+            assignments=assignments,
+            env_name=env_name,
+            mouse_assignments=mouse_assignments if mouse_assignments else None,
+            key_action_map=key_action_map,
+            noop_action=noop_action,
+            tick_timeout=tick_timeout,
+        )
+
+        if success:
+            device_info = []
+            for pair in pairs:
+                info = pair["keyboard_name"]
+                if pair.get("mouse_name"):
+                    info += f" + {pair['mouse_name']}"
+                device_info.append(info)
+            self._status_bar.showMessage(
+                f"Keyboard workers: {', '.join(device_info)}",
+                5000,
+            )
+            # Disable old Qt shortcuts now that bridge owns input
+            self._update_input_state()
+        else:
+            self._status_bar.showMessage(
+                "Failed to launch keyboard workers. Check logs.",
+                5000,
+            )
+            # Clean up multi-cursor on failure
+            if hasattr(self, '_multi_cursor_state'):
+                teardown_multi_cursor(self._multi_cursor_state)
+                self._multi_cursor_state = None
+
+    def _on_all_keyboard_assignments_applied(self, assignments: dict) -> None:
+        """Handle Apply Assignments from widget. Delegates to auto-launch.
+
+        Args:
+            assignments: {device_path: agent_id} mapping from the keyboard widget.
+        """
+        if not assignments:
+            _LOGGER.warning("No keyboard assignments to launch workers for")
+            return
+        # Delegate to the full auto-launch (discovers mice, pairs by USB port,
+        # builds key_action_map, launches bridge workers).
+        self._auto_launch_keyboard_workers()
+
+    def _on_keyboard_worker_actions_ready(self, actions: list) -> None:
+        """Handle completed action collection from all keyboard worker subprocesses.
+
+        Routes actions to the appropriate stepping mechanism:
+        - Single agent: session.perform_human_action
+        - Multi-agent parallel: _execute_parallel_multiagent_step
+        - Multi-agent AEC: feed into step state per agent
+        """
+        # Drop actions if episode is done or game stopped
+        if self._episode_finished or not self._game_started:
+            return
+
+        if len(actions) == 1:
+            # Single-agent mode
+            self._session.perform_human_action(actions[0], key_label="keyboard")
+        elif self._parallel_multiagent_step_state is not None:
+            # Multi-agent parallel mode: feed each action into step state
+            step_state = self._parallel_multiagent_step_state
+            agent_order = sorted(step_state.human_agents)
+            for i, agent_id in enumerate(agent_order):
+                if i < len(actions) and agent_id not in step_state.pending_actions:
+                    step_state.add_action(agent_id, actions[i])
+
+            if step_state.is_complete():
+                self._execute_parallel_multiagent_step(step_state.get_all_actions())
+        elif self._parallel_multiagent_env is not None:
+            # Multi-agent but no step state yet (e.g. AEC current turn)
+            env = self._parallel_multiagent_env
+            current_agent = getattr(env, "agent_selection", None)
+            if current_agent is not None and actions:
+                env.step(actions[0])
+                self._render_parallel_multiagent_frame()
+        else:
+            # Fallback: treat first action as single-agent
+            if actions:
+                self._session.perform_human_action(actions[0], key_label="keyboard")
+
+        # Request next round of input
+        self._keyboard_worker_bridge.request_next_round()
+
+    def _on_keyboard_worker_mouse_delta(self, agent_id: str, dx: int, dy: int) -> None:
+        """Route mouse delta from keyboard worker subprocess to native mouse handler."""
+        self._session.handle_native_mouse(dx, dy)
+
+    def _on_keyboard_worker_raw_key(self, agent_id: str, keycode: int, pressed: bool) -> None:
+        """Route raw key event from worker subprocess to native key handler.
+
+        Linux evdev keycodes are identical to LWJGL scan codes, so Malmo's
+        TCP side-channel can receive them directly without Qt key translation.
+        """
+        from gym_gui.logging_config.log_constants import LOG_HUMAN_CONTROL_RAW_KEY_NO_HANDLER
+
+        interaction = getattr(self._session, '_interaction', None)
+        if interaction is not None and hasattr(interaction, 'handle_native_key_evdev'):
+            interaction.handle_native_key_evdev(keycode, pressed)
+        else:
+            self.log_constant(
+                LOG_HUMAN_CONTROL_RAW_KEY_NO_HANDLER,
+                message=f"Raw key from {agent_id} (code={keycode}, pressed={pressed}) dropped: no native handler",
+                extra={"agent_id": agent_id, "keycode": keycode, "pressed": pressed},
+            )
 
     def _on_status_message(self, message: str) -> None:
         self._status_bar.showMessage(message, 5000)
@@ -5748,6 +5983,11 @@ class MainWindow(QtWidgets.QMainWindow, LogConstantMixin):
             # Turn-based: only when awaiting human input
             enable_input = self._awaiting_human
 
+        # When bridge workers are active, disable old Qt shortcuts to prevent
+        # double-stepping (bridge handles all keyboard input via subprocess).
+        if self._keyboard_worker_bridge.is_active:
+            enable_input = False
+
         self._human_input.set_enabled(enable_input)
 
     @staticmethod
@@ -5940,6 +6180,25 @@ class MainWindow(QtWidgets.QMainWindow, LogConstantMixin):
         self._render_tabs.remove_operator_view(operator_id)
 
     def closeEvent(self, a0: QtGui.QCloseEvent | None) -> None:
+        # Stop keyboard worker subprocesses before anything else
+        if hasattr(self, "_keyboard_worker_bridge"):
+            self._keyboard_worker_bridge.stop()
+
+        # Restore multi-cursor (put all mice back on default pointer)
+        if hasattr(self, "_multi_cursor_state") and self._multi_cursor_state is not None:
+            try:
+                import sys
+
+                from gym_gui.config.paths import HUMAN_WORKER_PKG_DIR
+                _hw_path = str(HUMAN_WORKER_PKG_DIR)
+                if _hw_path not in sys.path:
+                    sys.path.insert(0, _hw_path)
+                from human_worker.evdev_input import teardown_multi_cursor
+                teardown_multi_cursor(self._multi_cursor_state)
+            except Exception as exc:
+                _LOGGER.warning("Failed to teardown multi-cursor: %s", exc)
+            self._multi_cursor_state = None
+
         logging.getLogger().removeHandler(self._log_handler)
 
         # Shutdown live telemetry controller

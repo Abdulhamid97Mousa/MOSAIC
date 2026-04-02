@@ -323,15 +323,12 @@ class GoAdapter:
         obs, _, _, _, _ = self._aec_env.last()
         observation = obs["observation"]
 
-        # Plane 0: current player's stones
-        # Plane 1: opponent's stones
-        # Plane 2: player indicator (1 if black's turn, 0 if white's turn)
-        plane2_value = float(observation[0, 0, 2])
-        is_black_turn = plane2_value > 0.5
+        # PettingZoo Go observation planes (relative to the observing agent):
+        # Plane 0: opponent's stones
+        # Plane 1: current agent's (own) stones
 
         _LOG.debug(
-            f"[SYNC] plane2_value={plane2_value}, is_black_turn={is_black_turn}, "
-            f"agent_selection={self._aec_env.agent_selection}"
+            f"[SYNC] agent_selection={self._aec_env.agent_selection}"
         )
 
         # Detect captured stones: positions where we have a stone on our board

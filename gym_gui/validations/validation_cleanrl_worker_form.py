@@ -53,7 +53,54 @@ def run_cleanrl_dry_run(
             "--emit-summary",
         ]
 
+        # Set FastLane environment variables from config payload
+        # These are needed because fastlane.py reads them at module import time
         env = os.environ.copy()
+
+        # First, try to get environment variables from the top-level "environment" key
+        # (the canonical location set by the form via apply_fastlane_environment)
+        top_level_env = config_payload.get("environment", {}) or {}
+        for key, value in top_level_env.items():
+            if value is not None:
+                env[str(key)] = str(value)
+
+        # Also extract from metadata.worker.config.extras for backwards compatibility
+        # and to get algo_params
+        worker_config = (
+            config_payload.get("metadata", {})
+            .get("worker", {})
+            .get("config", {})
+        )
+        extras = worker_config.get("extras", {}) or {}
+        algo_params = extras.get("algo_params", {}) or {}
+
+        # Map fastlane config from payload to environment variables (if not already set)
+        # Use setdefault to prefer values from top-level environment dict
+        fastlane_only = extras.get("fastlane_only")
+        if fastlane_only is not None:
+            env.setdefault("GYM_GUI_FASTLANE_ONLY", "1" if fastlane_only else "0")
+
+        fastlane_slot = extras.get("fastlane_slot")
+        if fastlane_slot is not None:
+            env.setdefault("GYM_GUI_FASTLANE_SLOT", str(fastlane_slot))
+
+        fastlane_video_mode = extras.get("fastlane_video_mode")
+        if fastlane_video_mode is not None:
+            env.setdefault("GYM_GUI_FASTLANE_VIDEO_MODE", str(fastlane_video_mode))
+
+        fastlane_grid_limit = extras.get("fastlane_grid_limit")
+        if fastlane_grid_limit is not None:
+            env.setdefault("GYM_GUI_FASTLANE_GRID_LIMIT", str(fastlane_grid_limit))
+
+        # Set run_id for FastLane buffer naming
+        run_id = worker_config.get("run_id") or config_payload.get("run_id")
+        if run_id:
+            env.setdefault("CLEANRL_RUN_ID", str(run_id))
+
+        # Set num_envs for grid limit calculations
+        num_envs = algo_params.get("num_envs")
+        if num_envs is not None:
+            env.setdefault("CLEANRL_NUM_ENVS", str(num_envs))
         try:
             result = subprocess.run(
                 command,

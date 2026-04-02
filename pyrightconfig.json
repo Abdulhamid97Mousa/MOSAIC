@@ -1,11 +1,12 @@
 {
-  // Make Pylance/Pyright aware of the vendored worker packages.
   "extraPaths": [
     "3rd_party/workers/mujoco_mpc_worker",
     "3rd_party/workers/xuance_worker",
     "3rd_party/workers/balrog_worker",
     "3rd_party/workers/cleanrl_worker",
     "3rd_party/workers/ray_worker",
+    "3rd_party/workers/tianshou_worker/tianshou",
+    "3rd_party/workers/tianshou_worker",
     "3rd_party/workers/chess_worker",
     "3rd_party/workers/mctx_worker",
     "3rd_party/workers/marllib_worker",
@@ -17,87 +18,37 @@
     "3rd_party/workers/mosaic/passive_worker",
     "3rd_party/workers/mosaic/random_worker"
   ],
-  // Keep analysis focused on the project sources.
   "include": [
     "gym_gui",
     "3rd_party/workers"
   ],
-  // Match the repo's virtual environment so stubs resolve correctly.
   "venv": ".venv",
   "venvPath": ".",
   "exclude": [
     "**/*.md",
-    "**/docs/**",
+    "**/docs/**"
   ],
-  // Use standard type-checking level as a baseline.
   "typeCheckingMode": "standard",
-
-  // ── Rule overrides ─────────────────────────────────────────────────
-  // Optional deps (gymnasium, vizdoom, pettingzoo …) are not installed
-  // in the base dev/CI environment.
   "reportMissingImports": "warning",
-
-  // qtpy dynamically re-exports Qt bindings; pyright cannot resolve them.
   "reportPrivateImportUsage": false,
-
-  // PyQt6 stubs use auto-generated parameter names (a0, a1) that differ
-  // from the meaningful names used in overrides throughout the codebase.
-  // Also covers ALE adapter subclasses that override the `id` property
-  // with a plain class attribute—an intentional pattern.
   "reportIncompatibleMethodOverride": "warning",
-
-  // Many test files use try/except ImportError with @skipUnless guards;
-  // pyright cannot prove the names are bound despite the runtime guard.
   "reportPossiblyUnboundVariable": "warning",
-
-  // Qt layout/header helpers often return Optional; callers already guard
-  // at runtime but pyright's narrowing doesn't always track it.
   "reportOptionalMemberAccess": "warning",
   "reportOptionalSubscript": "warning",
   "reportOptionalCall": "warning",
-
-  // Some adapters use duck-typed attribute access on generic adapter refs.
   "reportAttributeAccessIssue": "warning",
-
-  // gRPC generated stubs and test mocks have imprecise signatures.
   "reportCallIssue": "warning",
-
-  // Assignment type mismatches in test mocks and gRPC stubs.
   "reportAssignmentType": "warning",
-
-  // Argument type mismatches in adapters using duck-typed dicts/enums.
   "reportArgumentType": "warning",
-
-  // Operator mismatches (e.g. subprocess output parsed as str used in math).
   "reportOperatorIssue": "warning",
-
-  // Adapter subclasses that override class-level `id` attribute.
   "reportIncompatibleVariableOverride": "warning",
-
-  // Return type mismatches in adapter board-state helpers.
   "reportReturnType": "warning",
-
-  // Index type mismatches in dict lookups with mixed key types.
   "reportIndexIssue": "warning",
-
-  // gRPC generated stubs use patterns pyright flags as invalid type forms.
   "reportInvalidTypeForm": "warning",
-
-  // General type issues in adapter code with complex generics.
   "reportGeneralTypeIssues": "warning",
-
-  // Unused expressions in gRPC stubs.
   "reportUnusedExpression": "warning",
-
-  // Optional operand in arithmetic expressions.
   "reportOptionalOperand": "warning",
-
-  // Redeclaration in conditional import blocks.
   "reportRedeclaration": "warning",
-
-  // Dynamic attribute access on function objects.
   "reportFunctionMemberAccess": "warning",
-
-  // __all__ manipulation with extend().
   "reportUnsupportedDunderAll": "warning"
 }

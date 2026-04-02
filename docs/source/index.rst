@@ -29,7 +29,7 @@ MOSAIC
 
    <br>
 
-**A Unified Platform for Cross-Paradigm Comparison and Evaluation of Homogeneous and Heterogeneous Multi-Agent RL, LLM, VLM, and Human Decision-Makers**
+**A Unified Platform for Cross-Paradigm Agent-Mixing and Human-AI Collaboration**
 
 MOSAIC is a visual-first platform that enables researchers to configure, run, and
 compare experiments across RL, LLM, VLM, and human decision-makers in the same
@@ -779,117 +779,215 @@ as teammates within heterogeneous teams.
 Supported Environment Families
 ------------------------------
 
-MOSAIC supports **28 environment families** spanning single-agent, multi-agent,
+MOSAIC supports **31 environment families** spanning single-agent, multi-agent,
 and cooperative/competitive paradigms.  See the full
 :doc:`Environment Families <documents/environments/index>` reference for
 installation instructions, environment lists, and academic citations.
 
 
 .. list-table::
-   :widths: 28 42 30
+   :widths: 22 32 24 22
    :header-rows: 1
 
    * - Family
      - Description
      - Example Environments
-   * - **Gymnasium**
+     - Status
+   * - :doc:`Gymnasium <documents/environments/gymnasium/index>`
      - Standard single-agent RL (Toy Text, Classic Control, Box2D, MuJoCo)
      - .. image:: images/envs/gymnasium/cartpole.gif
           :width: 200px
-   * - **Atari / ALE**
+     - | Human-Control: ✅
+       | Single-Agent: ✅
+       | Multi-Agent: ❌
+   * - :doc:`Atari / ALE <documents/environments/atari_ale/index>`
      - 128 classic Atari 2600 games
      - .. image:: images/envs/atari/atari.gif
           :width: 200px
-   * - **MiniGrid**
+     - | Human-Control: ✅
+       | Single-Agent: ✅
+       | Multi-Agent: ✅
+   * - :doc:`MiniGrid <documents/environments/minigrid/index>`
      - Procedural grid-world navigation
      - .. image:: images/envs/minigrid/minigrid.gif
           :width: 200px
-   * - **BabyAI**
+     - | Human-Control: ✅
+       | Single-Agent: ✅
+       | Multi-Agent: ❌
+   * - :doc:`BabyAI <documents/environments/babyai/index>`
      - Language-grounded instruction following
      - .. image:: images/envs/babyai/GoTo.gif
           :width: 200px
-   * - **Griddly**
+     - | Human-Control: ✅
+       | Single-Agent: ✅
+       | Multi-Agent: ❌
+   * - :doc:`Griddly <documents/environments/griddly/index>`
      - High-performance grid worlds with C++ backend & Vulkan GPU rendering (34 envs)
      - .. image:: images/envs/griddly/griddly.gif
           :width: 200px
-   * - **ViZDoom**
+     - | Human-Control: ✅
+       | Single-Agent: 📋
+       | Multi-Agent: ✅
+   * - :doc:`ViZDoom <documents/environments/vizdoom/index>`
      - Doom-based first-person visual RL
      - .. image:: images/envs/vizdoom/vizdoom.gif
           :width: 200px
-   * - **MiniHack**
+     - | Human-Control: ✅
+       | Single-Agent: 📋
+       | Multi-Agent: ❌
+   * - :doc:`MiniHack <documents/environments/minihack/index>`
      - Roguelike sandbox built on NetHack (NLE)
      - .. image:: images/envs/minihack/minihack.gif
           :width: 200px
-   * - **NetHack**
+     - | Human-Control: ✅
+       | Single-Agent: 📋
+       | Multi-Agent: ❌
+   * - :doc:`NetHack <documents/environments/nethack/index>`
      - Full NetHack roguelike game via NLE
-     -
-   * - **Crafter**
+     - .. image:: images/envs/nethack/nethack.gif
+          :width: 200px
+     - | Human-Control: ✅
+       | Single-Agent: 📋
+       | Multi-Agent: ❌
+   * - :doc:`Crafter <documents/environments/crafter/index>`
      - Open-world survival benchmark
      - .. image:: images/envs/crafter/crafter.gif
           :width: 200px
-   * - **Procgen**
+     - | Human-Control: ✅
+       | Single-Agent: 📋
+       | Multi-Agent: ❌
+   * - :doc:`Procgen <documents/environments/procgen/index>`
      - 16 procedurally generated environments
      - .. image:: images/envs/procgen/coinrun.gif
           :width: 200px
-   * - **BabaIsAI**
+     - | Human-Control: ✅
+       | Single-Agent: ✅
+       | Multi-Agent: ❌
+   * - :doc:`BabaIsAI <documents/environments/babaisai/index>`
      - Rule-manipulation puzzles
      - .. image:: images/envs/babaisai/babaisai.png
           :width: 200px
-   * - **TextWorld**
+     - | Human-Control: ✅
+       | Single-Agent: 📋
+       | Multi-Agent: ❌
+   * - :doc:`TextWorld <documents/environments/textworld/index>`
      - Text-based interactive fiction (Microsoft Research)
      - .. image:: images/envs/textworld/textworld.gif
           :width: 200px
-   * - **Jumanji**
+     - | Human-Control: ✅
+       | Single-Agent: 📋
+       | Multi-Agent: ❌
+   * - :doc:`Jumanji <documents/environments/jumanji/index>`
      - JAX-accelerated logic/routing/packing (25 envs)
      - .. image:: images/envs/jumanji/jumanji.gif
           :width: 200px
-   * - **PyBullet Drones**
+     - | Human-Control: ✅
+       | Single-Agent: 📋
+       | Multi-Agent: ❌
+   * - :doc:`PyBullet Drones <documents/environments/pybullet_drones/index>`
      - Quadcopter physics simulation
      - .. image:: images/envs/pybullet_drones/pybullet_drones.gif
           :width: 200px
-   * - **PettingZoo Classic**
+     - | Human-Control: ❌
+       | Single-Agent: ✅
+       | Multi-Agent: ✅
+   * - :doc:`PettingZoo Classic <documents/environments/pettingzoo/index>`
      - Turn-based board games (AEC)
      - .. image:: images/envs/pettingzoo/pettingzoo.gif
           :width: 200px
-   * - **OpenSpiel**
+     - | Human-Control: ✅
+       | Single-Agent: ❌
+       | Multi-Agent: ✅
+   * - :doc:`OpenSpiel <documents/environments/openspiel/index>`
      - Board games via DeepMind's OpenSpiel + Shimmy (Chess, Go, Checkers)
      - .. image:: images/envs/openspiel/openspiel.gif
           :width: 200px
-   * - **MOSAIC MultiGrid**
+     - | Human-Control: ✅
+       | Single-Agent: ✅
+       | Multi-Agent: ❌
+   * - :doc:`MOSAIC MultiGrid <documents/environments/mosaic_multigrid/index>`
      - Competitive team sports (view_size=3)
      - .. image:: images/envs/mosaic_multigrid/mosaic_multigrid.gif
           :width: 200px
-   * - **INI MultiGrid**
+     - | Human-Control: ✅
+       | Single-Agent: ✅
+       | Multi-Agent: ✅
+   * - :doc:`INI MultiGrid <documents/environments/ini_multigrid/index>`
      - Cooperative exploration (view_size=7)
      - .. image:: images/envs/multigrid_ini/multigrid_ini.gif
           :width: 200px
-   * - **Melting Pot**
+     - | Human-Control: ✅
+       | Single-Agent: ❌
+       | Multi-Agent: ✅
+   * - :doc:`Melting Pot <documents/environments/melting_pot/index>`
      - Social multi-agent scenarios (up to 16 agents)
      - .. image:: images/envs/meltingpot/meltingpot.gif
           :width: 200px
-   * - **Overcooked**
+     - | Human-Control: ✅
+       | Single-Agent: ❌
+       | Multi-Agent: ✅
+   * - :doc:`Overcooked <documents/environments/overcooked/index>`
      - Cooperative cooking (2 agents)
      - .. image:: images/envs/overcooked/overcooked_layouts.gif
           :width: 200px
-   * - **SMAC**
+     - | Human-Control: ✅
+       | Single-Agent: ❌
+       | Multi-Agent: ✅
+   * - :doc:`SMAC <documents/environments/smac/index>`
      - StarCraft Multi-Agent Challenge (hand-designed maps)
      - .. image:: images/envs/smac/smac.gif
           :width: 200px
-   * - **SMACv2**
+     - | Human-Control: ❌
+       | Single-Agent: ❌
+       | Multi-Agent: ✅
+   * - :doc:`SMACv2 <documents/environments/smacv2/index>`
      - StarCraft Multi-Agent Challenge v2 (procedural units)
      - .. image:: images/envs/smacv2/smacv2.png
           :width: 200px
-   * - **RWARE**
+     - | Human-Control: ❌
+       | Single-Agent: ❌
+       | Multi-Agent: ✅
+   * - :doc:`RWARE <documents/environments/rware/index>`
      - Cooperative warehouse delivery
      - .. image:: images/envs/rware/rware.gif
           :width: 200px
-   * - **HeMAC**
+     - | Human-Control: ✅
+       | Single-Agent: ❌
+       | Multi-Agent: ✅
+   * - :doc:`HeMAC <documents/environments/hemac/index>`
      - Heterogeneous multi-agent challenge (Quadcopters, Observers, Provisioners)
      -
+     - | Human-Control: 📋
+       | Single-Agent: 📋
+       | Multi-Agent: ✅
    * - **MuJoCo**
      - Continuous-control robotics tasks
      - .. image:: images/envs/mujoco/ant.gif
           :width: 200px
+     - | Human-Control: ✅
+       | Single-Agent: ✅
+       | Multi-Agent: 📋
+   * - **Google Research Football** *(experimental)*
+     - 11-vs-11 football/soccer simulation (Google Research)
+     - .. image:: https://1.bp.blogspot.com/-HkcNiCL13cc/XPqSVOgTwMI/AAAAAAAAEM4/OoK_qoM14QA6VNQ79sWeS97TKBhCD7CzQCLcBGAs/s640/image3.gif
+          :width: 200px
+     - | Human-Control: 🚧
+       | Single-Agent: 🚧
+       | Multi-Agent: 🚧
+   * - :doc:`MarLo <documents/environments/marlo/index>` *(experimental)*
+     - Multi-Agent RL in Minecraft (2018 MarLo Challenge)
+     - .. image:: https://media.giphy.com/media/u45fNQxG59wfnRpzwJ/giphy.gif
+          :width: 200px
+     - | Human-Control: ✅
+       | Single-Agent: 🚧
+       | Multi-Agent: 🚧
+   * - :doc:`Malmo <documents/environments/malmo/index>` *(experimental)*
+     - Microsoft Research AI platform built on Minecraft
+     - .. image:: https://www.microsoft.com/en-us/research/wp-content/uploads/2016/06/malmo_human_ai_interaction-web.png
+          :width: 200px
+     - | Human-Control: ✅
+       | Single-Agent: 🚧
+       | Multi-Agent: 🚧
 
 Supported Workers (8)
 ---------------------
@@ -904,6 +1002,59 @@ Supported Workers (8)
 * :doc:`MOSAIC Human Worker <documents/architecture/workers/integrated_workers/MOSAIC_Human_Worker/index>`: Human-in-the-loop play via keyboard for any Gymnasium-compatible environment (MiniGrid, Crafter, Chess, NetHack)
 * :doc:`MOSAIC Random Worker <documents/architecture/workers/integrated_workers/MOSAIC_Random_Worker/index>`: Baseline agents with random, no-op, and cycling action behaviours across all 28 environment families
 
+Roadmap
+-------
+
+MOSAIC is actively expanding to support more diverse and complex environments, simulators, and algorithms.
+
+**Environments**
+
+.. list-table::
+   :widths: 25 15 60
+   :header-rows: 1
+
+   * - Environment
+     - Status
+     - Description
+   * - **Google Research Football**
+     - 🚧 Experimental
+     - 11-vs-11 football/soccer simulation for multi-agent RL research
+   * - **Minecraft: Malmo**
+     - 🚧 Experimental
+     - Microsoft Research AI platform built on Minecraft for fundamental AI research
+   * - **Minecraft: MarLo**
+     - 🚧 Experimental
+     - Multi-Agent RL environments for Minecraft (2018 MarLo Challenge)
+   * - **Minecraft: MineRL / Mindcraft**
+     - 📋 Planned
+     - Additional Minecraft-based AI research platforms
+
+**Simulators**
+
+.. list-table::
+   :widths: 25 15 60
+   :header-rows: 1
+
+   * - Simulator
+     - Status
+     - Description
+   * - **AirSim**
+     - 📋 Planned
+     - `Microsoft Research <https://microsoft.github.io/AirSim/>`_ simulator for drones and autonomous vehicles
+   * - **Godot Engine**
+     - 📋 Planned
+     - `Free, open-source game engine <https://godotengine.org/>`_ for custom RL environments
+
+**Algorithms**
+
+More algorithms coming soon, including additional multi-agent and hierarchical RL methods.
+
+.. raw:: html
+
+   <p style="font-size:0.85em; color:#666;">
+     <strong>Legend:</strong> 🚧 Experimental (under active development) | 📋 Planned (on roadmap)
+   </p>
+
 Citing MOSAIC
 -------------
 
@@ -912,7 +1063,7 @@ If you use MOSAIC in your research, please cite the following paper:
 .. code-block:: bibtex
 
    @misc{mousa2026mosaicunifiedplatformcrossparadigm,
-     title={MOSAIC: A Unified Platform for Cross-Paradigm Comparison and Evaluation of Homogeneous and Heterogeneous Multi-Agent RL, LLM, VLM, and Human Decision-Makers},
+     title={MOSAIC: A Unified Platform for Cross-Paradigm Agent-Mixing and Human-AI Collaboration},
      author={Abdulhamid M. Mousa and Yu Fu and Rakhmonberdi Khajiev and Jalaledin M. Azzabi and Abdulkarim M. Mousa and Peng Yang and Yunusa Haruna and Ming Liu},
      year={2026},
      eprint={2603.01260},
@@ -960,65 +1111,58 @@ References
    <br><hr>
 
 .. toctree::
-   :hidden:
    :maxdepth: 2
-   :caption: Getting Started
+   :caption: Getting Started:
 
    documents/tutorials/installation/index
    documents/tutorials/quickstart
 
 .. toctree::
-   :hidden:
-   :maxdepth: 2
-   :caption: Environments
-
-   documents/environments/index
-
-.. toctree::
-   :hidden:
    :maxdepth: 4
-   :caption: Architecture
+   :caption: Architecture:
 
    documents/architecture/overview
    documents/architecture/paradigms
    documents/architecture/policy_mapping
    documents/architecture/workers/index
+   documents/architecture/engines/index
    documents/architecture/actors/index
    documents/architecture/operators/index
 
 .. toctree::
-   :hidden:
    :maxdepth: 3
-   :caption: Rendering
+   :caption: Rendering:
 
    documents/rendering_tabs/index
 
 .. toctree::
-   :hidden:
    :maxdepth: 3
-   :caption: Runtime Logs
+   :caption: Runtime Logs:
 
    documents/runtime_logging/index
 
 .. toctree::
-   :hidden:
    :maxdepth: 2
-   :caption: Human Control
+   :caption: Human Control:
 
    documents/human_control/index
 
 .. toctree::
-   :hidden:
    :maxdepth: 2
-   :caption: API Reference
+   :caption: Environments:
+
+   documents/environments/index
+
+.. toctree::
+   :maxdepth: 2
+   :caption: API Reference:
 
    documents/api/core
    documents/api/services
    documents/api/adapters
 
 .. toctree::
-   :hidden:
-   :caption: Development
+   :caption: Development:
 
    GitHub <https://github.com/Abdulhamid97Mousa/MOSAIC>
    documents/contributing

@@ -1,0 +1,14 @@
+# OmniSafe Worker Dependencies (safe RL)
+# Install this when launching OmniSafe-based training runs.
+#
+# OmniSafe must be installed from the cloned repo:
+#   pip install -e 3rd_party/workers/omnisafe_worker/omnisafe
+
+# Include base requirements
+-r base.txt
+
+# OmniSafe dependencies
+torch>=2.0.0
+
+# Install OmniSafe itself from the local clone
+-e 3rd_party/workers/omnisafe_worker/omnisafe

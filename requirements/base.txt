@@ -25,7 +25,7 @@ protobuf==5.28.3
 
 # Run ID generation
 python-ulid==2.7.0
-numpy==2.3.4
+numpy==2.2.2  # Numba 0.61.2 requires NumPy <= 2.2
 pytest==8.4.2
 pytest-qt>=4.5.0
 pydantic==2.12.0

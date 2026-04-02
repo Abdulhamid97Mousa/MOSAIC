@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import logging
 import os
 import time
 import sys
@@ -14,16 +15,28 @@ from typing import Any, Optional
 import numpy as np
 import gymnasium as gym
 
+_LOGGER = logging.getLogger(__name__)
+
 try:  # pragma: no cover - relies on repo layout
     from gym_gui.fastlane import FastLaneWriter, FastLaneConfig, FastLaneMetrics
     from gym_gui.fastlane.buffer import create_fastlane_name
     from gym_gui.fastlane.tiling import tile_frames
     from gym_gui.telemetry.semconv import VideoModes, TelemetryEnv
+    from gym_gui.logging_config.log_constants import (
+        LOG_FASTLANE_WRITER_CLOSED,
+        LOG_FASTLANE_SHM_STALE_UNLINKED,
+        LOG_FASTLANE_SHM_UNLINK_FAILED,
+        LOG_FASTLANE_SHM_LEAK_RISK,
+    )
+    from gym_gui.logging_config.helpers import log_constant
+    _HAS_LOG_CONSTANTS = True
 except ImportError:  # pragma: no cover - best effort fallback
     FastLaneWriter = None  # type: ignore
     FastLaneConfig = None  # type: ignore
     FastLaneMetrics = None  # type: ignore
     create_fastlane_name = None  # type: ignore
+    _HAS_LOG_CONSTANTS = False
+    log_constant = None  # type: ignore
 
     class _VideoModes:
         SINGLE = "single"
@@ -330,9 +343,25 @@ class FastLaneTelemetryWrapper(gym.Wrapper):
                 return None
             try:
                 name = create_fastlane_name(self._config.run_id)
-                shm = shared_memory.SharedMemory(name=name, create=False)
-                return FastLaneWriter(shm, config)  # type: ignore[call-arg]
+                # Unlink stale segment from a previous crashed run, then recreate
+                try:
+                    stale = shared_memory.SharedMemory(name=name, create=False)
+                    stale.close()
+                    stale.unlink()
+                    self._log_structured(
+                        LOG_FASTLANE_SHM_STALE_UNLINKED if _HAS_LOG_CONSTANTS else None,
+                        f"Unlinked stale shm segment '{name}' from previous run",
+                        level="warning",
+                    )
+                except FileNotFoundError:
+                    pass
+                return FastLaneWriter.create(self._config.run_id, config)  # type: ignore[union-attr]
             except Exception:
+                self._log_structured(
+                    LOG_FASTLANE_SHM_UNLINK_FAILED if _HAS_LOG_CONSTANTS else None,
+                    f"Failed to recover stale shm for run={self._config.run_id}",
+                    level="error",
+                )
                 return None
 
     def _close_writer(self) -> None:
@@ -341,15 +370,42 @@ class FastLaneTelemetryWrapper(gym.Wrapper):
             return
         try:
             writer.close()
+            writer.unlink()
+        except FileNotFoundError:
+            pass  # already unlinked
+        except Exception:
+            self._log_structured(
+                LOG_FASTLANE_SHM_UNLINK_FAILED if _HAS_LOG_CONSTANTS else None,
+                f"Failed to unlink shm for run={self._config.run_id} — "
+                "orphaned /dev/shm segment may cause resource_tracker memory leak",
+                level="error",
+            )
         finally:
             self._writer = None
-            self._log_debug("FastLane writer closed")
+            self._log_structured(
+                LOG_FASTLANE_WRITER_CLOSED if _HAS_LOG_CONSTANTS else None,
+                "FastLane writer closed and unlinked",
+            )
 
     def _log_debug(self, message: str, *, limit: int | None = None) -> None:
         if limit is not None and self._debug_counter >= limit:
             return
         self._debug_counter += 1
-        print(f"[FASTLANE] {message}", file=sys.stderr, flush=True)
+        _LOGGER.debug("[FASTLANE] %s", message)
+
+    def _log_structured(
+        self,
+        constant: Any,
+        fallback_msg: str,
+        *,
+        level: str = "info",
+    ) -> None:
+        """Log via log_constant when available, else fall back to stdlib."""
+        extra = {"run_id": self._config.run_id, "slot": self._slot}
+        if _HAS_LOG_CONSTANTS and constant is not None and log_constant is not None:
+            log_constant(_LOGGER, constant, extra=extra)
+        else:
+            getattr(_LOGGER, level, _LOGGER.info)("[FASTLANE] %s", fallback_msg)
 
 
 class _GridCoordinator:

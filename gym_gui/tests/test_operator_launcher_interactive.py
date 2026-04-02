@@ -1,10 +1,13 @@
 """Tests for OperatorLauncher interactive mode support."""
 
+from __future__ import annotations
+
 import json
 import subprocess
 import tempfile
 import unittest
 from pathlib import Path
+from typing import TYPE_CHECKING
 from unittest.mock import MagicMock, PropertyMock, patch
 
 
@@ -17,21 +20,15 @@ def _has_pyqt6() -> bool:
         return False
 
 
-# Skip all tests if PyQt6 is not available
-if not _has_pyqt6():
-    # Create mock classes for tests that run without PyQt6
-    class OperatorConfig:
-        pass
-
-    class OperatorLauncher:
-        pass
-
-    class OperatorProcessHandle:
-        pass
-
-    class OperatorLaunchError(Exception):
-        pass
-else:
+# Import real classes when PyQt6 is available; use TYPE_CHECKING for pyright.
+if TYPE_CHECKING:
+    from gym_gui.services.operator import OperatorConfig
+    from gym_gui.services.operator_launcher import (
+        OperatorLauncher,
+        OperatorLaunchError,
+        OperatorProcessHandle,
+    )
+elif _has_pyqt6():
     from gym_gui.services.operator import OperatorConfig
     from gym_gui.services.operator_launcher import (
         OperatorLauncher,
@@ -80,11 +77,12 @@ class TestOperatorProcessHandleInteractive(unittest.TestCase):
         result = handle.send_command({"cmd": "step"})
 
         self.assertTrue(result)
-        handle.process.stdin.write.assert_called_once()
-        handle.process.stdin.flush.assert_called_once()
+        assert handle.process.stdin is not None
+        handle.process.stdin.write.assert_called_once()  # type: ignore[union-attr]
+        handle.process.stdin.flush.assert_called_once()  # type: ignore[union-attr]
 
         # Verify JSON format
-        written_data = handle.process.stdin.write.call_args[0][0]
+        written_data = handle.process.stdin.write.call_args[0][0]  # type: ignore[union-attr]
         parsed = json.loads(written_data.strip())
         self.assertEqual(parsed["cmd"], "step")
 
@@ -95,7 +93,8 @@ class TestOperatorProcessHandleInteractive(unittest.TestCase):
         result = handle.send_command({"cmd": "step"})
 
         self.assertFalse(result)
-        handle.process.stdin.write.assert_not_called()
+        assert handle.process.stdin is not None
+        handle.process.stdin.write.assert_not_called()  # type: ignore[union-attr]
 
     def test_send_command_not_running(self) -> None:
         """Should return False if process not running."""
@@ -120,7 +119,8 @@ class TestOperatorProcessHandleInteractive(unittest.TestCase):
         result = handle.send_reset(seed=42)
 
         self.assertTrue(result)
-        written_data = handle.process.stdin.write.call_args[0][0]
+        assert handle.process.stdin is not None
+        written_data = handle.process.stdin.write.call_args[0][0]  # type: ignore[union-attr]
         parsed = json.loads(written_data.strip())
         self.assertEqual(parsed["cmd"], "reset")
         self.assertEqual(parsed["seed"], 42)
@@ -132,7 +132,8 @@ class TestOperatorProcessHandleInteractive(unittest.TestCase):
         result = handle.send_reset()
 
         self.assertTrue(result)
-        written_data = handle.process.stdin.write.call_args[0][0]
+        assert handle.process.stdin is not None
+        written_data = handle.process.stdin.write.call_args[0][0]  # type: ignore[union-attr]
         parsed = json.loads(written_data.strip())
         self.assertEqual(parsed["cmd"], "reset")
         self.assertNotIn("seed", parsed)
@@ -144,7 +145,8 @@ class TestOperatorProcessHandleInteractive(unittest.TestCase):
         result = handle.send_step()
 
         self.assertTrue(result)
-        written_data = handle.process.stdin.write.call_args[0][0]
+        assert handle.process.stdin is not None
+        written_data = handle.process.stdin.write.call_args[0][0]  # type: ignore[union-attr]
         parsed = json.loads(written_data.strip())
         self.assertEqual(parsed["cmd"], "step")
 
@@ -155,14 +157,16 @@ class TestOperatorProcessHandleInteractive(unittest.TestCase):
         result = handle.send_stop()
 
         self.assertTrue(result)
-        written_data = handle.process.stdin.write.call_args[0][0]
+        assert handle.process.stdin is not None
+        written_data = handle.process.stdin.write.call_args[0][0]  # type: ignore[union-attr]
         parsed = json.loads(written_data.strip())
         self.assertEqual(parsed["cmd"], "stop")
 
     def test_send_command_write_error(self) -> None:
         """Should handle write errors gracefully."""
         handle = self._make_mock_handle(interactive=True)
-        handle.process.stdin.write.side_effect = IOError("Broken pipe")
+        assert handle.process.stdin is not None
+        handle.process.stdin.write.side_effect = IOError("Broken pipe")  # type: ignore[union-attr]
 
         result = handle.send_command({"cmd": "step"})
 
@@ -396,6 +400,7 @@ class TestOperatorProcessHandleStdoutReader(unittest.TestCase):
         result = handle.try_read_response(timeout=0.1)
 
         self.assertIsNotNone(result)
+        assert result is not None
         self.assertEqual(result["type"], "step")
         self.assertEqual(result["step_index"], 5)
         self.assertEqual(result["reward"], 0.5)
@@ -466,6 +471,7 @@ class TestOperatorProcessHandleStdoutReader(unittest.TestCase):
             result = handle.read_response(timeout=15.0)
 
             mock_try.assert_called_once_with(timeout=15.0)
+            assert result is not None
             self.assertEqual(result["type"], "test")
 
 
@@ -508,6 +514,7 @@ sys.stdout.flush()
             response = handle.read_response(timeout=5.0)
 
             self.assertIsNotNone(response)
+            assert response is not None
             self.assertEqual(response["type"], "step")
             self.assertEqual(response["step_index"], 42)
             self.assertEqual(response["reward"], 1.0)
@@ -564,6 +571,7 @@ for line in sys.stdin:
             # Read response
             response = handle.read_response(timeout=5.0)
             self.assertIsNotNone(response)
+            assert response is not None
             self.assertEqual(response["type"], "step")
             self.assertEqual(response["action"], "forward")
 
@@ -571,6 +579,7 @@ for line in sys.stdin:
             handle.send_stop()
             stop_response = handle.read_response(timeout=5.0)
             self.assertIsNotNone(stop_response)
+            assert stop_response is not None
             self.assertEqual(stop_response["type"], "stopped")
         finally:
             process.terminate()

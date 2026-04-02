@@ -47,6 +47,7 @@ class HeMACRenderPayload:
 
     def to_dict(self) -> Dict[str, Any]:
         return {
+            "mode": RenderMode.RGB_ARRAY.value,
             "scenario": self.scenario,
             "agents": self.agents,
             "targets": self.targets,

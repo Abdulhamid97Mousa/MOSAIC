@@ -49,8 +49,10 @@ class RowWidgets(TypedDict):
 class KeyboardAssignmentWidget(LogConstantMixin, QtWidgets.QGroupBox):
     """Widget for assigning keyboards to agents for multi-human gameplay using evdev."""
 
-    # Signal: (device_path, agent_id)
+    # Signal: (device_path, agent_id) - per-keyboard, fires N times
     assignment_changed = pyqtSignal(str, object)
+    # Signal: (assignments_dict) - fires ONCE with all assignments
+    all_assignments_applied = pyqtSignal(dict)
     # Signal: (num_keyboards_detected)
     keyboards_detected = pyqtSignal(int)
     # Signal: (error_message)
@@ -362,15 +364,16 @@ class KeyboardAssignmentWidget(LogConstantMixin, QtWidgets.QGroupBox):
             self._status.setText("No keyboards assigned. Use Auto-Assign or assign manually.")
             return
 
-        self._logger.warning(f"About to emit signals for {len(assignments)} keyboards")
+        self._logger.info(f"Applying {len(assignments)} keyboard assignments")
 
-        # Emit signal for each assignment
+        # Emit per-keyboard signals (backward compat for single-agent path)
         for device_path, agent_id in assignments.items():
-            self._logger.warning(f"Emitting assignment_changed: {device_path} → {agent_id}")
             self.assignment_changed.emit(device_path, agent_id)
 
+        # Emit single signal with ALL assignments (for multi-agent bridge)
+        self.all_assignments_applied.emit(assignments)
+
         self._status.setText(f"Applied {len(assignments)} keyboard assignment(s)")
-        self._logger.warning(f"Finished emitting {len(assignments)} signals")
 
     def _clear_assignments(self) -> None:
         """Clear all keyboard assignments."""
@@ -383,6 +386,17 @@ class KeyboardAssignmentWidget(LogConstantMixin, QtWidgets.QGroupBox):
         self._logger.info("Cleared all keyboard assignments")
 
     # Public API
+
+    def auto_assign_and_apply(self) -> Dict[str, str]:
+        """Auto-assign keyboards to agents and apply immediately.
+
+        Called automatically when a multi-agent environment is loaded.
+        Returns the assignments dict.
+        """
+        self._detect_keyboards()
+        self._auto_assign()
+        self._apply_assignments()
+        return self.get_assignments()
 
     def get_assignments(self) -> Dict[str, str]:
         """Returns {device_path: agent_id} for assigned keyboards only."""

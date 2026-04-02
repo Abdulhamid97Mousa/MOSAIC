@@ -169,6 +169,7 @@ class TestMultiOperatorServiceBasic(unittest.TestCase):
 
         retrieved = self.service.get_operator("op_0")
         self.assertIsNotNone(retrieved)
+        assert retrieved is not None
         self.assertEqual(retrieved.display_name, "GPT-4 LLM")
 
     def test_add_multiple_operators(self) -> None:
@@ -246,6 +247,7 @@ class TestMultiOperatorServiceBasic(unittest.TestCase):
         self.service.update_operator(config2)
 
         retrieved = self.service.get_operator("op_0")
+        assert retrieved is not None
         self.assertEqual(retrieved.display_name, "Updated Name")
 
     def test_clear_operators(self) -> None:
@@ -419,6 +421,7 @@ class TestMultiOperatorServiceRunIdManagement(unittest.TestCase):
 
         # Config should also be updated with run_id
         updated_config = self.service.get_operator("op_0")
+        assert updated_config is not None
         self.assertEqual(updated_config.run_id, "run_abc123")
 
     def test_get_operator_by_run_id(self) -> None:
@@ -431,6 +434,7 @@ class TestMultiOperatorServiceRunIdManagement(unittest.TestCase):
         config = self.service.get_operator_by_run_id("run_abc123")
 
         self.assertIsNotNone(config)
+        assert config is not None
         self.assertEqual(config.operator_id, "op_0")
 
     def test_get_operator_by_unknown_run_id(self) -> None:

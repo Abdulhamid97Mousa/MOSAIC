@@ -10,6 +10,7 @@ Paper: Panerati, J., et al. (2021). Learning to Fly - a Gym Environment with
 from __future__ import annotations
 
 import logging
+from typing import TYPE_CHECKING, Any
 
 import numpy as np
 import pytest
@@ -24,7 +25,19 @@ except ImportError:
     PYBULLET_DRONES_AVAILABLE = False
 
 # Conditionally import adapter classes
-if PYBULLET_DRONES_AVAILABLE:
+if TYPE_CHECKING:
+    from gym_gui.core.adapters.base import AdapterContext
+    from gym_gui.core.adapters.pybullet_drones import (
+        PYBULLET_DRONES_ADAPTERS,
+        CtrlAviaryAdapter,
+        HoverAviaryAdapter,
+        MultiHoverAviaryAdapter,
+        PyBulletDronesAdapter,
+        PyBulletDronesConfig,
+        VelocityAviaryAdapter,
+    )
+    from gym_gui.core.factories.adapters import create_adapter, get_adapter_cls
+elif PYBULLET_DRONES_AVAILABLE:
     from gym_gui.core.adapters.base import AdapterContext
     from gym_gui.core.adapters.pybullet_drones import (
         PYBULLET_DRONES_ADAPTERS,
@@ -42,8 +55,8 @@ if PYBULLET_DRONES_AVAILABLE:
 if PYBULLET_DRONES_AVAILABLE:
     def _make_adapter(
         game_id: GameId = GameId.PYBULLET_HOVER_AVIARY,
-        **overrides,
-    ) -> "PyBulletDronesAdapter":
+        **overrides: Any,
+    ) -> PyBulletDronesAdapter:
         """Create a PyBullet Drones adapter with the given configuration."""
         config = PyBulletDronesConfig(env_id=game_id.value, gui=False, **overrides)
         context = AdapterContext(settings=None, control_mode=ControlMode.AGENT_ONLY)
@@ -169,6 +182,7 @@ class TestHoverAviaryAdapter:
 
             # Get action space from environment
             env = adapter._env
+            assert env is not None
             action = env.action_space.sample()
 
             step = adapter.step(action)
@@ -186,6 +200,7 @@ class TestHoverAviaryAdapter:
         try:
             adapter.reset()
             env = adapter._env
+            assert env is not None
 
             for _ in range(10):
                 action = env.action_space.sample()
@@ -281,7 +296,7 @@ class TestFactoryIntegration:
         adapter = create_adapter(
             GameId.PYBULLET_HOVER_AVIARY,
             context,
-            game_config=config,
+            game_config=config,  # type: ignore[arg-type]
         )
 
         assert adapter is not None

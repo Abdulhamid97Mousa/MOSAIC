@@ -4,7 +4,7 @@ import argparse
 import sys
 
 from .config import HumanWorkerConfig
-from .runtime import HumanInteractiveRuntime, HumanWorkerRuntime
+from .runtime import HumanInteractiveRuntime, HumanKeyboardRuntime, HumanWorkerRuntime
 
 
 def main() -> int:
@@ -17,10 +17,11 @@ def main() -> int:
     parser.add_argument(
         "--mode",
         type=str,
-        choices=["interactive", "board-game"],
+        choices=["interactive", "board-game", "keyboard"],
         default="interactive",
         help="Worker mode: 'interactive' owns the environment (MiniGrid, etc.), "
-             "'board-game' for games where GUI owns the environment (chess, etc.)",
+             "'board-game' for games where GUI owns the environment (chess, etc.), "
+             "'keyboard' reads a physical USB keyboard via evdev (Linux only).",
     )
 
     # Run identification
@@ -94,6 +95,22 @@ def main() -> int:
         help="Require move confirmation before submitting",
     )
 
+    # Keyboard mode settings
+    parser.add_argument(
+        "--device-path",
+        type=str,
+        default="",
+        help="Path to evdev keyboard device (e.g., /dev/input/by-path/...-event-kbd). "
+             "Required for --mode keyboard.",
+    )
+    parser.add_argument(
+        "--mouse-path",
+        type=str,
+        default="",
+        help="Path to evdev mouse device (e.g., /dev/input/by-path/...-event-mouse). "
+             "Optional. Enables mouse delta for Malmo/ViZDoom turn/look.",
+    )
+
     # Telemetry
     parser.add_argument(
         "--telemetry-dir",
@@ -130,7 +147,17 @@ def main() -> int:
     )
 
     # Create and run the appropriate runtime
-    if args.mode == "interactive":
+    if args.mode == "keyboard":
+        # Keyboard mode - reads evdev device, returns actions via pipe
+        if not args.device_path:
+            parser.error("--device-path is required for --mode keyboard")
+        runtime = HumanKeyboardRuntime(
+            config,
+            device_path=args.device_path,
+            mouse_path=args.mouse_path or None,
+        )
+        runtime.run()
+    elif args.mode == "interactive":
         # New interactive mode - worker owns the environment
         runtime = HumanInteractiveRuntime(config)
         runtime.run()

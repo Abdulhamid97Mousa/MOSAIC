@@ -18,6 +18,7 @@ warnings.filterwarnings("ignore", category=DeprecationWarning, module="gym.utils
 warnings.filterwarnings("ignore", category=DeprecationWarning, module="gym.core")
 
 import asyncio
+import contextlib
 import errno
 import json
 import logging
@@ -205,7 +206,7 @@ def _detect_optional_dependencies() -> dict[str, bool]:
         "minigrid": "minigrid",
         "babyai": "minigrid.envs.babyai",  # BabyAI (bundled in minigrid>=2)
         "mosaic_multigrid": "mosaic_multigrid",  # Modern fork (Gymnasium API)
-        ## "mosaic_malmo": "mosaic_malmo",  # Go-based Minecraft RL environment
+        "malmoenv": "malmoenv",  # MalmoEnv: Microsoft Malmo Java-based Minecraft (requires running Minecraft server)
         "multigrid_ini": "multigrid",  # Original INI version (cooperative exploration)
         "pettingzoo": "pettingzoo",
         "mujoco": "mujoco",
@@ -236,6 +237,16 @@ def _detect_optional_dependencies() -> dict[str, bool]:
         "ray_worker": "ray",
         "cleanrl_worker": "cleanrl",
         "xuance_worker": "xuance",
+        "tianshou_worker": "tianshou",
+        "sb3_worker": "stable_baselines3",
+        "sbx_worker": "sbx.version",
+        "mushroomrl_worker": "mushroom_rl",
+        "pearl_worker": "pearl",
+        "torchrl_worker": "torchrl",
+        "omnisafe_worker": "omnisafe",
+        "mctx_worker": "mctx",
+        "marllib_worker": "marllib",
+        "chess_worker": "chess_worker",
 
         # MOSAIC native workers
         "llm_worker": "llm_worker",
@@ -298,6 +309,62 @@ def _check_protobuf_status() -> dict[str, Any]:
     return status
 
 
+
+@contextlib.contextmanager
+def _suppress_annoying_warnings():
+    """Suppress known noisy output from 3rd party libraries."""
+    class StreamFilter:
+        def __init__(self, stream):
+            self.stream = stream
+
+        def write(self, data):
+            # Suppress empty lines (from Qt and other library initialization)
+            if data.strip() == "":
+                return len(data)  # Pretend we wrote it
+            # Suppress TF-Keras import failure messages (from tensorflow_probability)
+            if "Failed to import TF-Keras" in data:
+                return
+            if "Please note that TF-Keras is not installed" in data:
+                return
+            if "tensorflow-probability" in data and "extra" in data:
+                return
+            # Suppress Gym legacy warnings (if printed directly to stderr)
+            if "Gym has been unmaintained" in data:
+                return
+            # Suppress specific Gym warnings about replacing 'gym' with 'gymnasium'
+            if "replace 'import gym' with 'import gymnasium as gym'" in data:
+                return
+            self.stream.write(data)
+
+        def flush(self):
+            self.stream.flush()
+
+        def __getattr__(self, name):
+            return getattr(self.stream, name)
+
+    # Suppress logging from noisy libraries
+    import logging
+    loggers_to_silence = ["tensorflow", "absl"]
+    old_levels = {}
+    for name in loggers_to_silence:
+        logger = logging.getLogger(name)
+        old_levels[name] = logger.level
+        logger.setLevel(logging.ERROR)
+
+    original_stderr = sys.stderr
+    original_stdout = sys.stdout
+    sys.stderr = StreamFilter(original_stderr)
+    sys.stdout = StreamFilter(original_stdout)
+
+    try:
+        yield
+    finally:
+        sys.stderr = original_stderr
+        sys.stdout = original_stdout
+        for name, level in old_levels.items():
+            logging.getLogger(name).setLevel(level)
+
+
 def main() -> int:
     """Print the currently loaded settings and, if Qt is installed, show a stub window."""
 
@@ -332,9 +399,10 @@ def main() -> int:
         )
 
     try:
-        from qtpy.QtWidgets import QApplication, QMessageBox
+        with _suppress_annoying_warnings():
+            from qtpy.QtWidgets import QApplication, QMessageBox
 
-        from gym_gui.ui.main_window import MainWindow
+            from gym_gui.ui.main_window import MainWindow
     except ImportError as exc:  # pragma: no cover - optional dependency
         print("[gym_gui] Qt bindings not available. Install qtpy and a Qt backend (PyQt5/PyQt6/PySide2/PySide6):", exc)
         return 0
@@ -381,11 +449,12 @@ def main() -> int:
     _setup_qasync_event_loop(app)
 
     # Import bootstrap AFTER Qt is initialized
-    from gym_gui.services.bootstrap import bootstrap_default_services
     from gym_gui.services.trainer.launcher import TrainerDaemonHandle, TrainerDaemonLaunchError
-
     try:
-        locator = bootstrap_default_services()
+        with _suppress_annoying_warnings():
+            from gym_gui.services.bootstrap import bootstrap_default_services
+
+            locator = bootstrap_default_services()
     except TrainerDaemonLaunchError as exc:
         QMessageBox.critical(None, "Trainer Daemon Error", str(exc))
         return 1

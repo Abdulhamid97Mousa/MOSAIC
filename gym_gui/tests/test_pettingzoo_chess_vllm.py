@@ -142,6 +142,7 @@ class TestPettingZooChessMoveSequence:
             assert env.agent_selection == expected_player, f"Expected {expected_player}, got {env.agent_selection}"
             action = uci_to_action(env, uci)
             obs = env.observe(expected_player)
+            assert obs is not None
             assert obs["action_mask"][action] == 1, f"Action {action} for {uci} is not legal"
             env.step(action)
 
@@ -200,6 +201,7 @@ class TestUCIToActionConversion:
             action = convert_uci_to_action_index(env, move)
             assert action is not None, f"Failed to convert {move}"
             obs = env.observe("player_0")
+            assert obs is not None
             assert obs["action_mask"][action] == 1, f"Action for {move} is not legal"
 
         # Test knight moves
@@ -253,6 +255,7 @@ class TestUCIToActionConversion:
             action = convert_uci_to_action_index(env, move)
             assert action is not None, f"Failed to convert black move {move}"
             obs = env.observe("player_1")
+            assert obs is not None
             assert obs["action_mask"][action] == 1, f"Action for black's {move} is not legal"
 
 

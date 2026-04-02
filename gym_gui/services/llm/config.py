@@ -39,8 +39,21 @@ class LLMConfig:
     vllm_base_url: str = "http://localhost:8000/v1"
     vllm_api_key: str = "EMPTY"
 
+    # Zhipu AI settings (GLM models)
+    # z.ai provides Anthropic-compatible API
+    # Environment variable: ZHIPU_API_KEY or ZAI_API_KEY
+    zhipu_api_key: Optional[str] = None
+    zhipu_base_url: str = "https://api.z.ai/api/anthropic"  # Anthropic-compatible endpoint
+
     # Curated model list (not auto-discovery)
     preferred_models: List[ModelIdentity] = field(default_factory=lambda: [
+        # Zhipu AI models (GLM series via z.ai - Anthropic-compatible API)
+        ModelIdentity(LLMProvider.ZHIPU, "glm-5", "GLM-5 (Zhipu AI, newest flagship)"),
+        ModelIdentity(LLMProvider.ZHIPU, "glm-4.7", "GLM-4.7 (Zhipu AI, reasoning)"),
+        ModelIdentity(LLMProvider.ZHIPU, "glm-4.6", "GLM-4.6 (Zhipu AI, 200K context)"),
+        ModelIdentity(LLMProvider.ZHIPU, "glm-4.5", "GLM-4.5 (Zhipu AI, 128K context)"),
+        ModelIdentity(LLMProvider.ZHIPU, "glm-4.5-flash", "GLM-4.5 Flash (Zhipu AI, FREE)"),
+        ModelIdentity(LLMProvider.ZHIPU, "glm-4.5-air", "GLM-4.5 Air (Zhipu AI, lightweight)"),
         # OpenRouter cloud models (curated, not the full 1000+ catalog)
         ModelIdentity(LLMProvider.OPENROUTER, "openai/gpt-4o-mini", "GPT-4o Mini"),
         ModelIdentity(LLMProvider.OPENROUTER, "openai/gpt-4o", "GPT-4o"),
@@ -91,6 +104,10 @@ class LLMConfig:
             return os.getenv("OPENROUTER_API_KEY")
         elif self.active_provider == LLMProvider.VLLM:
             return self.vllm_api_key
+        elif self.active_provider == LLMProvider.ZHIPU:
+            if self.zhipu_api_key:
+                return self.zhipu_api_key
+            return os.getenv("ZHIPU_API_KEY") or os.getenv("ZAI_API_KEY")
         return None
 
     def set_api_key(self, api_key: str) -> None:
@@ -103,6 +120,8 @@ class LLMConfig:
             self.openrouter_api_key = api_key
         elif self.active_provider == LLMProvider.VLLM:
             self.vllm_api_key = api_key
+        elif self.active_provider == LLMProvider.ZHIPU:
+            self.zhipu_api_key = api_key
 
     def has_valid_api_key(self) -> bool:
         """Check if a valid API key is configured."""
@@ -111,7 +130,7 @@ class LLMConfig:
             return False
         if self.active_provider == LLMProvider.VLLM:
             return True  # vLLM accepts "EMPTY"
-        return len(api_key) > 10  # OpenRouter keys are longer
+        return len(api_key) > 10  # OpenRouter/Zhipu keys are longer
 
     @classmethod
     def from_environment(cls) -> "LLMConfig":
@@ -120,10 +139,14 @@ class LLMConfig:
         Environment variables:
             OPENROUTER_API_KEY: OpenRouter API key
             VLLM_BASE_URL: vLLM server URL (default: http://localhost:8000/v1)
+            ZHIPU_API_KEY / ZAI_API_KEY: Zhipu AI API key (z.ai)
+            ZHIPU_BASE_URL: Zhipu AI API URL (default: https://api.z.ai/api/anthropic)
         """
         return cls(
             openrouter_api_key=os.getenv("OPENROUTER_API_KEY"),
             vllm_base_url=os.getenv("VLLM_BASE_URL", "http://localhost:8000/v1"),
+            zhipu_api_key=os.getenv("ZHIPU_API_KEY") or os.getenv("ZAI_API_KEY"),
+            zhipu_base_url=os.getenv("ZHIPU_BASE_URL", "https://api.z.ai/api/anthropic"),
         )
 
 

@@ -1,0 +1,59 @@
+# Jumanji Worker A2C Benchmark Configuration
+# Based on: jumanji_worker/jumanji_worker/config.py + runtime.py
+# Environment: Game2048-v1 (simple logic puzzle)
+# Task: Measure overhead of worker wrapper vs native execution
+
+environment:
+  # Jumanji Phase 1 (Logic) environments - simplest/fastest
+  # Options: Game2048, GraphColoring, Minesweeper, RubiksCube, SlidingTilePuzzle, Sudoku
+  # Phase 2 (Packing): BinPack, FlatPack, JobShop, Knapsack, Tetris
+  # Phase 3 (Routing): Cleaner, Connector, CVRP, Maze, MMST, MultiCVRP, PacMan, RobotWarehouse, Snake, Sokoban, TSP
+  env_id: "Game2048-v1"
+
+training:
+  agent: "a2c"              # "a2c" or "random" (only two supported agents)
+  num_epochs: 100           # Number of training epochs
+  n_steps: 32               # Steps per rollout
+  total_batch_size: 256     # Total batch size (across all parallel envs)
+  num_learner_steps_per_epoch: 1  # SGD updates per epoch
+  num_iterations: 3
+  seed: 42
+
+# A2C hyperparameters (JAX-based, from a2c_agent.py)
+a2c_config:
+  learning_rate: 0.001
+  discount_factor: 0.99     # Gamma
+  bootstrapping_factor: 1.0 # Lambda for TD
+  normalize_advantage: true
+  
+  # Loss coefficients
+  l_pg: 1.0                 # Policy gradient loss weight
+  l_td: 0.5                 # Temporal difference loss weight
+  l_en: 0.01                # Entropy regularization weight
+
+# JAX/Device configuration
+device:
+  device_type: "cpu"        # "cpu", "gpu", or "tpu"
+  precision: "float32"      # Computation precision
+
+# Logging configuration
+logging:
+  logger_type: "tensorboard"  # "tensorboard" or "terminal"
+  log_every_n_steps: 100
+
+# Checkpoint management
+save_checkpoint: true
+checkpoint_freq: 10         # Save every N epochs
+
+# Benchmark modes to test
+scenarios:
+  - native                  # Direct A2C training (via jumanji/train.py)
+  - worker                  # Via MOSAIC worker wrapper
+  - fastlane                # Worker + FastLane enabled
+
+# Benchmark settings
+warmup_runs: 0
+timeout_seconds: 3600       # 1 hour max per scenario
+
+# Note: Jumanji uses JAX internally with pmap-based parallelization
+# No traditional "num_envs" - vectorization is handled internally via JAX

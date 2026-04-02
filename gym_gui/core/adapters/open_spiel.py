@@ -197,7 +197,7 @@ class CheckersEnvironmentAdapter(EnvironmentAdapter[Dict[str, Any], int]):
         OpenSpiel checkers board representation (from string):
         - 'o' = player_0 piece (moves first, bottom rows 1-3)
         - '+' = player_1 piece (top rows 6-8)
-        - 'O' = player_0 king
+        - '8' = player_0 king (always the character '8', regardless of rank)
         - '*' = player_1 king
         - '.' = empty
 
@@ -223,7 +223,7 @@ class CheckersEnvironmentAdapter(EnvironmentAdapter[Dict[str, Any], int]):
         OpenSpiel string format:
         - 'o' = player_0 piece
         - '+' = player_1 piece
-        - 'O' = player_0 king
+        - '8' = player_0 king (always the character '8', regardless of rank)
         - '*' = player_1 king
         - '.' = empty square
         """
@@ -259,7 +259,7 @@ class CheckersEnvironmentAdapter(EnvironmentAdapter[Dict[str, Any], int]):
                         break
                     if char == 'o':
                         self._board[row][col] = 1  # player_0 piece
-                    elif char == 'O':
+                    elif char == '8':
                         self._board[row][col] = 2  # player_0 king
                     elif char == '+':
                         self._board[row][col] = 3  # player_1 piece

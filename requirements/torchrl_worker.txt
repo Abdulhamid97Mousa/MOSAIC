@@ -1,0 +1,11 @@
+# TorchRL Worker Dependencies (PyTorch official RL library)
+# Install this when launching TorchRL-based training runs.
+
+# Include base requirements
+-r base.txt
+
+# TorchRL core
+torchrl>=0.11.0
+tensordict>=0.7.0
+torch>=2.0.0
+tensorboard>=2.11.0

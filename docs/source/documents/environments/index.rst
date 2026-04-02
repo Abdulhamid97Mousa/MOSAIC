@@ -42,6 +42,8 @@ dependency; install only the ones you need.
    :caption: First-Person & Roguelike
 
    vizdoom/index
+   malmo/index
+   marlo/index
    minihack/index
    nethack/index
    crafter/index

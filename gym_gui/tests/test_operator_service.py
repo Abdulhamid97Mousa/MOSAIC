@@ -119,6 +119,7 @@ class TestOperatorService(unittest.TestCase):
         self.assertIn("mock_1", self.service.available_operator_ids())
         descriptor = self.service.get_operator_descriptor("mock_1")
         self.assertIsNotNone(descriptor)
+        assert descriptor is not None
         self.assertEqual(descriptor.display_name, "Mock Operator 1")
         self.assertEqual(descriptor.description, "A mock operator for testing")
         self.assertEqual(descriptor.category, "test")
@@ -362,6 +363,7 @@ class TestOperatorServiceMetadata(unittest.TestCase):
         self.service.register_operator(operator)
 
         desc = self.service.get_operator_descriptor("test_op")
+        assert desc is not None
         self.assertEqual(desc.display_name, "Test Operator")
 
     def test_explicit_display_name(self) -> None:
@@ -370,6 +372,7 @@ class TestOperatorServiceMetadata(unittest.TestCase):
         self.service.register_operator(operator, display_name="Custom Name")
 
         desc = self.service.get_operator_descriptor("test_op")
+        assert desc is not None
         self.assertEqual(desc.display_name, "Custom Name")
 
     def test_category_metadata(self) -> None:
@@ -380,14 +383,12 @@ class TestOperatorServiceMetadata(unittest.TestCase):
         self.service.register_operator(human, category="human")
         self.service.register_operator(worker, category="worker")
 
-        self.assertEqual(
-            self.service.get_operator_descriptor("human_keyboard").category,
-            "human",
-        )
-        self.assertEqual(
-            self.service.get_operator_descriptor("w1").category,
-            "worker",
-        )
+        desc_human = self.service.get_operator_descriptor("human_keyboard")
+        assert desc_human is not None
+        self.assertEqual(desc_human.category, "human")
+        desc_w1 = self.service.get_operator_descriptor("w1")
+        assert desc_w1 is not None
+        self.assertEqual(desc_w1.category, "worker")
 
     def test_supports_training_metadata(self) -> None:
         """Should store supports_training metadata."""
@@ -397,12 +398,12 @@ class TestOperatorServiceMetadata(unittest.TestCase):
         self.service.register_operator(op1, supports_training=False)
         self.service.register_operator(op2, supports_training=True)
 
-        self.assertFalse(
-            self.service.get_operator_descriptor("op1").supports_training
-        )
-        self.assertTrue(
-            self.service.get_operator_descriptor("op2").supports_training
-        )
+        desc_op1 = self.service.get_operator_descriptor("op1")
+        assert desc_op1 is not None
+        self.assertFalse(desc_op1.supports_training)
+        desc_op2 = self.service.get_operator_descriptor("op2")
+        assert desc_op2 is not None
+        self.assertTrue(desc_op2.supports_training)
 
     def test_requires_api_key_metadata(self) -> None:
         """Should store requires_api_key metadata."""
@@ -412,12 +413,12 @@ class TestOperatorServiceMetadata(unittest.TestCase):
         self.service.register_operator(local_op, requires_api_key=False)
         self.service.register_operator(api_op, requires_api_key=True)
 
-        self.assertFalse(
-            self.service.get_operator_descriptor("local").requires_api_key
-        )
-        self.assertTrue(
-            self.service.get_operator_descriptor("api").requires_api_key
-        )
+        desc_local = self.service.get_operator_descriptor("local")
+        assert desc_local is not None
+        self.assertFalse(desc_local.requires_api_key)
+        desc_api = self.service.get_operator_descriptor("api")
+        assert desc_api is not None
+        self.assertTrue(desc_api.requires_api_key)
 
 
 if __name__ == "__main__":

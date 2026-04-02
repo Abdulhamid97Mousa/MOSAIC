@@ -54,15 +54,16 @@
 -r base.txt
 
 # =============================================================================
-# MOSAIC MultiGrid from PyPI (v6.0.0)
+# MOSAIC MultiGrid from PyPI (v6.3.0)
 # =============================================================================
+# v6.3.0: Latest release
 # v6.0.0: Solo training environments (no opponent) for curriculum pre-training
 #         Soccer Solo Green/Blue, Basketball Solo Green/Blue
 # v5.0.0: noop=0 added for AEC compatibility (inspired by MeltingPot NOOP=0)
 #         Action space: noop=0, left=1, right=2, forward=3, pickup=4, drop=5, toggle=6, done=7
 #         Step telemetry: infos[agent]["position"] and infos[agent]["carrying"] every step
 
-mosaic-multigrid==6.0.0
+mosaic-multigrid==6.3.0
 
 # Note: For local development, use editable install instead:
 #   pip install -e 3rd_party/mosaic_multigrid/

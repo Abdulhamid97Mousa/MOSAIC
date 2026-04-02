@@ -9,35 +9,30 @@ This widget provides three game modes for multi-agent environments:
 from __future__ import annotations
 
 import logging
-from typing import TYPE_CHECKING, Any, Dict, List, Optional
+from typing import TYPE_CHECKING, List, Optional
 
 from PyQt6 import QtCore, QtWidgets
 from PyQt6.QtCore import pyqtSignal
 
 from gym_gui.core.pettingzoo_enums import (
-    PETTINGZOO_ENV_METADATA,
-    PettingZooAPIType,
     PettingZooEnvId,
     PettingZooFamily,
-    PettingZooGameType,
     get_api_type,
-    get_competitive_envs,
-    get_cooperative_envs,
     get_description,
     get_display_name,
-    get_envs_by_family,
-    get_game_type,
     get_human_vs_agent_envs,
     is_aec_env,
 )
+from gym_gui.ui.forms.factory import get_worker_form_factory
 from gym_gui.ui.widgets.human_vs_agent_config_form import (
     DIFFICULTY_PRESETS,
     HumanVsAgentConfig,
     HumanVsAgentConfigForm,
 )
-from gym_gui.ui.widgets.load_policy_dialog import LoadPolicyDialog
-from gym_gui.ui.widgets.policy_assignment_panel import PolicyAssignmentPanel
 from gym_gui.ui.worker_catalog import WorkerDefinition, get_worker_catalog
+
+if TYPE_CHECKING:
+    pass
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -583,23 +578,22 @@ class MultiAgentCooperationTab(QtWidgets.QWidget):
     """Tab for cooperative multi-agent training and evaluation.
 
     Supports environments where agents must work together to achieve
-    a common goal.
+    a common goal. Uses headless training with worker backends.
     """
 
     # Signals
     worker_changed = pyqtSignal(str)  # worker_id
-    train_requested = pyqtSignal(str, str)  # worker_id, env_id
-    evaluate_requested = pyqtSignal(str, str)  # worker_id, env_id
-    policy_evaluate_requested = pyqtSignal(dict)  # Full evaluation config with policies
+    train_requested = pyqtSignal(str)  # worker_id
+    evaluate_requested = pyqtSignal(str)  # worker_id
+    resume_requested = pyqtSignal(str)  # worker_id
+    script_requested = pyqtSignal(str)  # worker_id
 
     def __init__(self, parent: Optional[QtWidgets.QWidget] = None) -> None:
         super().__init__(parent)
         self._workers: List[WorkerDefinition] = []
-        self._current_agent_ids: List[str] = []
         self._build_ui()
         self._connect_signals()
         self._populate_workers()
-        self._populate_environments()
 
     def _build_ui(self) -> None:
         """Build the UI layout."""
@@ -619,71 +613,87 @@ class MultiAgentCooperationTab(QtWidgets.QWidget):
 
         # Worker selection
         worker_group = QtWidgets.QGroupBox("Worker Integration", self)
-        worker_layout = QtWidgets.QFormLayout(worker_group)
+        worker_layout = QtWidgets.QVBoxLayout(worker_group)
 
         self._worker_combo = QtWidgets.QComboBox(worker_group)
-        worker_layout.addRow("Worker:", self._worker_combo)
+        worker_layout.addWidget(self._worker_combo)
 
         self._worker_info = QtWidgets.QLabel("", worker_group)
         self._worker_info.setWordWrap(True)
         self._worker_info.setStyleSheet("color: #666; font-size: 11px;")
-        worker_layout.addRow("", self._worker_info)
+        worker_layout.addWidget(self._worker_info)
 
         layout.addWidget(worker_group)
 
-        # Environment selection
-        env_group = QtWidgets.QGroupBox("Cooperative Environment", self)
-        env_layout = QtWidgets.QFormLayout(env_group)
+        # Headless Training section (4 buttons, same as Single-Agent Mode)
+        training_group = QtWidgets.QGroupBox("Headless Training", self)
+        training_layout = QtWidgets.QVBoxLayout(training_group)
 
-        self._family_combo = QtWidgets.QComboBox(env_group)
-        env_layout.addRow("Family:", self._family_combo)
+        self._train_btn = QtWidgets.QPushButton("Train Agent", training_group)
+        self._train_btn.setToolTip(
+            "Start a fresh headless training run.\n"
+            "Training will run in the background with live telemetry streaming."
+        )
+        self._train_btn.setEnabled(False)
+        self._train_btn.setStyleSheet(
+            "QPushButton { font-weight: bold; padding: 8px; background-color: #1976d2; color: white; }"
+            "QPushButton:hover { background-color: #1565c0; }"
+            "QPushButton:pressed { background-color: #0d47a1; }"
+            "QPushButton:disabled { background-color: #90caf9; color: #E3F2FD; }"
+        )
+        training_layout.addWidget(self._train_btn)
 
-        self._env_combo = QtWidgets.QComboBox(env_group)
-        env_layout.addRow("Environment:", self._env_combo)
+        self._evaluate_btn = QtWidgets.QPushButton("Evaluate Policy", training_group)
+        self._evaluate_btn.setToolTip(
+            "Select an existing policy or checkpoint to evaluate inside the GUI."
+        )
+        self._evaluate_btn.setEnabled(False)
+        self._evaluate_btn.setStyleSheet(
+            "QPushButton { padding: 8px; font-weight: bold; background-color: #388e3c; color: white; }"
+            "QPushButton:hover { background-color: #2e7d32; }"
+            "QPushButton:pressed { background-color: #1b5e20; }"
+            "QPushButton:disabled { background-color: #a5d6a7; color: #E8F5E9; }"
+        )
+        training_layout.addWidget(self._evaluate_btn)
 
-        self._env_info = QtWidgets.QLabel("", env_group)
-        self._env_info.setWordWrap(True)
-        self._env_info.setStyleSheet("color: #666; font-size: 11px;")
-        env_layout.addRow("", self._env_info)
+        self._resume_btn = QtWidgets.QPushButton("Resume Training", training_group)
+        self._resume_btn.setToolTip(
+            "Load a checkpoint and continue training from where it left off."
+        )
+        self._resume_btn.setEnabled(False)
+        self._resume_btn.setStyleSheet(
+            "QPushButton { padding: 8px; font-weight: bold; background-color: #f57c00; color: white; }"
+            "QPushButton:hover { background-color: #ef6c00; }"
+            "QPushButton:pressed { background-color: #e65100; }"
+            "QPushButton:disabled { background-color: #ffcc80; color: #FFF3E0; }"
+        )
+        training_layout.addWidget(self._resume_btn)
 
-        layout.addWidget(env_group)
+        self._script_btn = QtWidgets.QPushButton("Custom Script", training_group)
+        self._script_btn.setToolTip(
+            "Run a custom bash script for multi-phase or curriculum training.\n"
+            "The script controls all training parameters (algorithm, environment, timesteps)."
+        )
+        self._script_btn.setEnabled(False)
+        self._script_btn.setStyleSheet(
+            "QPushButton { padding: 8px; font-weight: bold; background-color: #7b1fa2; color: white; }"
+            "QPushButton:hover { background-color: #6a1b9a; }"
+            "QPushButton:pressed { background-color: #4a148c; }"
+            "QPushButton:disabled { background-color: #ce93d8; color: #f3e5f5; }"
+        )
+        training_layout.addWidget(self._script_btn)
 
-        # Action buttons
-        action_group = QtWidgets.QGroupBox("Actions", self)
-        action_layout = QtWidgets.QHBoxLayout(action_group)
-
-        self._train_btn = QtWidgets.QPushButton("Train Agents", action_group)
-        action_layout.addWidget(self._train_btn)
-
-        self._eval_btn = QtWidgets.QPushButton("Load Policy", action_group)
-        action_layout.addWidget(self._eval_btn)
-
-        action_layout.addStretch(1)
-
-        layout.addWidget(action_group)
-
-        # Policy Assignment panel
-        self._policy_panel = PolicyAssignmentPanel(self)
-        layout.addWidget(self._policy_panel)
+        layout.addWidget(training_group)
 
         layout.addStretch(1)
 
     def _connect_signals(self) -> None:
         """Connect widget signals."""
         self._worker_combo.currentIndexChanged.connect(self._on_worker_changed)
-        self._family_combo.currentIndexChanged.connect(self._on_family_changed)
-        self._env_combo.currentIndexChanged.connect(self._on_env_changed)
         self._train_btn.clicked.connect(self._on_train)
-        self._eval_btn.clicked.connect(self._on_evaluate)
-        self._policy_panel.evaluate_requested.connect(self._on_policy_evaluate)
-
-    def _on_policy_evaluate(self, config: dict) -> None:
-        """Handle policy evaluation request from the panel."""
-        # Add environment info to config
-        config["env_id"] = self._env_combo.currentData()
-        config["env_family"] = self._family_combo.currentData()
-        config["worker_id"] = self._worker_combo.currentData()
-        self.policy_evaluate_requested.emit(config)
+        self._evaluate_btn.clicked.connect(self._on_evaluate)
+        self._resume_btn.clicked.connect(self._on_resume)
+        self._script_btn.clicked.connect(self._on_script)
 
     def _populate_workers(self) -> None:
         """Populate worker dropdown."""
@@ -698,190 +708,84 @@ class MultiAgentCooperationTab(QtWidgets.QWidget):
         if self._workers:
             self._on_worker_changed(0)
 
-    def _populate_environments(self) -> None:
-        """Populate environment dropdowns with cooperative games."""
-        self._family_combo.clear()
-
-        # Add families that have cooperative games
-        families_with_coop = set()
-        for env_id in get_cooperative_envs():
-            if env_id in PETTINGZOO_ENV_METADATA:
-                family = PETTINGZOO_ENV_METADATA[env_id][0]
-                families_with_coop.add(family)
-
-        for family in PettingZooFamily:
-            if family in families_with_coop:
-                label = family.value.replace("_", " ").title()
-                self._family_combo.addItem(label, family.value)
-
-        if families_with_coop:
-            self._on_family_changed(0)
-
     def _on_worker_changed(self, index: int) -> None:
         """Handle worker selection change."""
         worker_id = self._worker_combo.currentData()
         if not worker_id:
             return
 
-        for worker in self._workers:
-            if worker.worker_id == worker_id:
-                self._worker_info.setText(worker.description)
+        worker = None
+        for w in self._workers:
+            if w.worker_id == worker_id:
+                worker = w
+                self._worker_info.setText(w.description)
                 break
 
         self.worker_changed.emit(worker_id)
 
-    def _on_family_changed(self, index: int) -> None:
-        """Handle family selection change."""
-        family_value = self._family_combo.currentData()
-        if not family_value:
-            return
-
-        try:
-            family = PettingZooFamily(family_value)
-        except ValueError:
-            return
-
-        self._env_combo.clear()
-
-        # Get cooperative envs for this family
-        coop_envs = get_cooperative_envs()
-        family_envs = get_envs_by_family(family)
-
-        for env_id in family_envs:
-            if env_id in coop_envs or get_game_type(env_id) == PettingZooGameType.MIXED:
-                display_name = get_display_name(env_id)
-                self._env_combo.addItem(display_name, env_id.value)
-
-        if self._env_combo.count() > 0:
-            self._env_combo.setCurrentIndex(0)
-            self._on_env_changed(0)
-
-    def _on_env_changed(self, index: int) -> None:
-        """Handle environment selection change."""
-        env_value = self._env_combo.currentData()
-        if not env_value:
-            self._env_info.setText("")
-            self._policy_panel.set_agents([])
-            return
-
-        try:
-            env_id = PettingZooEnvId(env_value)
-            description = get_description(env_id)
-            api_type = get_api_type(env_id)
-            self._env_info.setText(f"{description}\n(API: {api_type.value.upper()})")
-
-            # Detect agents for this environment
-            agent_ids = self._detect_agents(env_value)
-            self._current_agent_ids = agent_ids
-            self._policy_panel.set_agents(agent_ids)
-
-        except ValueError:
-            self._env_info.setText("")
-            self._policy_panel.set_agents([])
-
-    def _detect_agents(self, env_id: str) -> List[str]:
-        """Detect agent IDs for an environment.
-
-        Args:
-            env_id: PettingZoo environment ID
-
-        Returns:
-            List of agent IDs
-        """
-        family = self._family_combo.currentData()
-        if not family:
-            return []
-
-        try:
-            # Try to create environment and get agents
-            from gym_gui.core.adapters.pettingzoo import PettingZooAdapter, PettingZooConfig
-            from gym_gui.core.pettingzoo_enums import PettingZooEnvId
-            from gym_gui.core.pettingzoo_enums import PettingZooFamily as PZFamily
-
-            # Create config for the environment
-            try:
-                pz_env_id = PettingZooEnvId(env_id)
-                pz_family = PZFamily(family)
-            except ValueError:
-                return ["agent_0", "agent_1"]
-
-            config = PettingZooConfig(env_id=pz_env_id, family=pz_family)
-            adapter = PettingZooAdapter(config=config)
-            adapter.load()
-
-            # Get possible agents from the underlying environment
-            if hasattr(adapter, '_pz_env') and adapter._pz_env is not None:
-                agent_ids = list(adapter._pz_env.possible_agents)
-            else:
-                agent_ids = []
-            adapter.close()
-            return agent_ids
-        except Exception as e:
-            _LOGGER.warning("Could not detect agents for %s: %s", env_id, e)
-            # Return default agent pattern based on env
-            if "waterworld" in env_id:
-                return [f"pursuer_{i}" for i in range(5)]
-            elif "multiwalker" in env_id:
-                return [f"walker_{i}" for i in range(3)]
-            elif "pursuit" in env_id:
-                return [f"pursuer_{i}" for i in range(8)]
-            return ["agent_0", "agent_1"]
+        # Update button states based on worker capabilities
+        if worker:
+            factory = get_worker_form_factory()
+            self._train_btn.setEnabled(worker.supports_training)
+            self._evaluate_btn.setEnabled(worker.supports_policy_load)
+            self._resume_btn.setEnabled(worker.supports_training)
+            self._script_btn.setEnabled(factory.has_script_form(worker.worker_id))
+        else:
+            self._train_btn.setEnabled(False)
+            self._evaluate_btn.setEnabled(False)
+            self._resume_btn.setEnabled(False)
+            self._script_btn.setEnabled(False)
 
     def _on_train(self) -> None:
         """Handle train button click."""
         worker_id = self._worker_combo.currentData()
-        env_id = self._env_combo.currentData()
-        if worker_id and env_id:
-            self.train_requested.emit(worker_id, env_id)
+        if worker_id:
+            self.train_requested.emit(worker_id)
 
     def _on_evaluate(self) -> None:
-        """Handle evaluate/load policy button click."""
-        env_id = self._env_combo.currentData()
-
-        # Open the LoadPolicyDialog with environment filter
-        dialog = LoadPolicyDialog(
-            self,
-            filter_env=env_id,
-            filter_worker="ray",  # Default to Ray for multi-agent
-        )
-        dialog.policy_selected.connect(self._on_policy_loaded)
-        dialog.exec()
-
-    def _on_policy_loaded(self, checkpoint: Any) -> None:
-        """Handle policy loaded from dialog."""
+        """Handle evaluate button click."""
         worker_id = self._worker_combo.currentData()
-        env_id = self._env_combo.currentData()
-        if worker_id and env_id:
-            # Emit with checkpoint info
-            self.evaluate_requested.emit(worker_id, env_id)
-            _LOGGER.info(
-                "Policy loaded for evaluation: %s (env=%s)",
-                getattr(checkpoint, 'run_id', 'unknown'),
-                env_id,
-            )
+        if worker_id:
+            self.evaluate_requested.emit(worker_id)
+
+    def _on_resume(self) -> None:
+        """Handle resume button click."""
+        worker_id = self._worker_combo.currentData()
+        if worker_id:
+            self.resume_requested.emit(worker_id)
+
+    def _on_script(self) -> None:
+        """Handle custom script button click."""
+        worker_id = self._worker_combo.currentData()
+        if worker_id:
+            self.script_requested.emit(worker_id)
+
+    @property
+    def current_worker_id(self) -> Optional[str]:
+        """Get the currently selected worker ID."""
+        return self._worker_combo.currentData()
 
 
 class MultiAgentCompetitionTab(QtWidgets.QWidget):
     """Tab for competitive multi-agent training and evaluation.
 
     Supports environments where agents compete against each other,
-    including self-play and tournament modes.
+    including self-play and tournament modes. Uses headless training with worker backends.
     """
 
     # Signals
     worker_changed = pyqtSignal(str)  # worker_id
-    train_requested = pyqtSignal(str, str)  # worker_id, env_id
-    evaluate_requested = pyqtSignal(str, str)  # worker_id, env_id
-    policy_evaluate_requested = pyqtSignal(dict)  # Full evaluation config with policies
+    train_requested = pyqtSignal(str)  # worker_id
+    evaluate_requested = pyqtSignal(str)  # worker_id
+    resume_requested = pyqtSignal(str)  # worker_id
+    script_requested = pyqtSignal(str)  # worker_id
 
     def __init__(self, parent: Optional[QtWidgets.QWidget] = None) -> None:
         super().__init__(parent)
         self._workers: List[WorkerDefinition] = []
-        self._current_agent_ids: List[str] = []
         self._build_ui()
         self._connect_signals()
         self._populate_workers()
-        self._populate_environments()
 
     def _build_ui(self) -> None:
         """Build the UI layout."""
@@ -901,93 +805,87 @@ class MultiAgentCompetitionTab(QtWidgets.QWidget):
 
         # Worker selection
         worker_group = QtWidgets.QGroupBox("Worker Integration", self)
-        worker_layout = QtWidgets.QFormLayout(worker_group)
+        worker_layout = QtWidgets.QVBoxLayout(worker_group)
 
         self._worker_combo = QtWidgets.QComboBox(worker_group)
-        worker_layout.addRow("Worker:", self._worker_combo)
+        worker_layout.addWidget(self._worker_combo)
 
         self._worker_info = QtWidgets.QLabel("", worker_group)
         self._worker_info.setWordWrap(True)
         self._worker_info.setStyleSheet("color: #666; font-size: 11px;")
-        worker_layout.addRow("", self._worker_info)
+        worker_layout.addWidget(self._worker_info)
 
         layout.addWidget(worker_group)
 
-        # Environment selection
-        env_group = QtWidgets.QGroupBox("Competition Environment", self)
-        env_layout = QtWidgets.QFormLayout(env_group)
+        # Headless Training section (4 buttons, same as Single-Agent Mode)
+        training_group = QtWidgets.QGroupBox("Headless Training", self)
+        training_layout = QtWidgets.QVBoxLayout(training_group)
 
-        self._family_combo = QtWidgets.QComboBox(env_group)
-        env_layout.addRow("Family:", self._family_combo)
+        self._train_btn = QtWidgets.QPushButton("Train Agent", training_group)
+        self._train_btn.setToolTip(
+            "Start a fresh headless training run.\n"
+            "Training will run in the background with live telemetry streaming."
+        )
+        self._train_btn.setEnabled(False)
+        self._train_btn.setStyleSheet(
+            "QPushButton { font-weight: bold; padding: 8px; background-color: #1976d2; color: white; }"
+            "QPushButton:hover { background-color: #1565c0; }"
+            "QPushButton:pressed { background-color: #0d47a1; }"
+            "QPushButton:disabled { background-color: #90caf9; color: #E3F2FD; }"
+        )
+        training_layout.addWidget(self._train_btn)
 
-        self._env_combo = QtWidgets.QComboBox(env_group)
-        env_layout.addRow("Environment:", self._env_combo)
+        self._evaluate_btn = QtWidgets.QPushButton("Evaluate Policy", training_group)
+        self._evaluate_btn.setToolTip(
+            "Select an existing policy or checkpoint to evaluate inside the GUI."
+        )
+        self._evaluate_btn.setEnabled(False)
+        self._evaluate_btn.setStyleSheet(
+            "QPushButton { padding: 8px; font-weight: bold; background-color: #388e3c; color: white; }"
+            "QPushButton:hover { background-color: #2e7d32; }"
+            "QPushButton:pressed { background-color: #1b5e20; }"
+            "QPushButton:disabled { background-color: #a5d6a7; color: #E8F5E9; }"
+        )
+        training_layout.addWidget(self._evaluate_btn)
 
-        self._env_info = QtWidgets.QLabel("", env_group)
-        self._env_info.setWordWrap(True)
-        self._env_info.setStyleSheet("color: #666; font-size: 11px;")
-        env_layout.addRow("", self._env_info)
+        self._resume_btn = QtWidgets.QPushButton("Resume Training", training_group)
+        self._resume_btn.setToolTip(
+            "Load a checkpoint and continue training from where it left off."
+        )
+        self._resume_btn.setEnabled(False)
+        self._resume_btn.setStyleSheet(
+            "QPushButton { padding: 8px; font-weight: bold; background-color: #f57c00; color: white; }"
+            "QPushButton:hover { background-color: #ef6c00; }"
+            "QPushButton:pressed { background-color: #e65100; }"
+            "QPushButton:disabled { background-color: #ffcc80; color: #FFF3E0; }"
+        )
+        training_layout.addWidget(self._resume_btn)
 
-        layout.addWidget(env_group)
+        self._script_btn = QtWidgets.QPushButton("Custom Script", training_group)
+        self._script_btn.setToolTip(
+            "Run a custom bash script for multi-phase or curriculum training.\n"
+            "The script controls all training parameters (algorithm, environment, timesteps)."
+        )
+        self._script_btn.setEnabled(False)
+        self._script_btn.setStyleSheet(
+            "QPushButton { padding: 8px; font-weight: bold; background-color: #7b1fa2; color: white; }"
+            "QPushButton:hover { background-color: #6a1b9a; }"
+            "QPushButton:pressed { background-color: #4a148c; }"
+            "QPushButton:disabled { background-color: #ce93d8; color: #f3e5f5; }"
+        )
+        training_layout.addWidget(self._script_btn)
 
-        # Training mode
-        mode_group = QtWidgets.QGroupBox("Training Mode", self)
-        mode_layout = QtWidgets.QVBoxLayout(mode_group)
-
-        self._selfplay_radio = QtWidgets.QRadioButton("Self-Play", mode_group)
-        self._selfplay_radio.setChecked(True)
-        self._selfplay_radio.setToolTip("Agent plays against copies of itself")
-        mode_layout.addWidget(self._selfplay_radio)
-
-        self._population_radio = QtWidgets.QRadioButton("Population-Based", mode_group)
-        self._population_radio.setToolTip("Train a population of diverse agents")
-        mode_layout.addWidget(self._population_radio)
-
-        self._league_radio = QtWidgets.QRadioButton("League Training", mode_group)
-        self._league_radio.setToolTip("AlphaStar-style league training")
-        mode_layout.addWidget(self._league_radio)
-
-        layout.addWidget(mode_group)
-
-        # Action buttons
-        action_group = QtWidgets.QGroupBox("Actions", self)
-        action_layout = QtWidgets.QHBoxLayout(action_group)
-
-        self._train_btn = QtWidgets.QPushButton("Train Agents", action_group)
-        action_layout.addWidget(self._train_btn)
-
-        self._eval_btn = QtWidgets.QPushButton("Load Policy", action_group)
-        action_layout.addWidget(self._eval_btn)
-
-        self._tournament_btn = QtWidgets.QPushButton("Run Tournament", action_group)
-        self._tournament_btn.setEnabled(False)  # Future feature
-        action_layout.addWidget(self._tournament_btn)
-
-        action_layout.addStretch(1)
-
-        layout.addWidget(action_group)
-
-        # Policy Assignment panel
-        self._policy_panel = PolicyAssignmentPanel(self)
-        layout.addWidget(self._policy_panel)
+        layout.addWidget(training_group)
 
         layout.addStretch(1)
 
     def _connect_signals(self) -> None:
         """Connect widget signals."""
         self._worker_combo.currentIndexChanged.connect(self._on_worker_changed)
-        self._family_combo.currentIndexChanged.connect(self._on_family_changed)
-        self._env_combo.currentIndexChanged.connect(self._on_env_changed)
         self._train_btn.clicked.connect(self._on_train)
-        self._eval_btn.clicked.connect(self._on_evaluate)
-        self._policy_panel.evaluate_requested.connect(self._on_policy_evaluate)
-
-    def _on_policy_evaluate(self, config: dict) -> None:
-        """Handle policy evaluation request from the panel."""
-        config["env_id"] = self._env_combo.currentData()
-        config["env_family"] = self._family_combo.currentData()
-        config["worker_id"] = self._worker_combo.currentData()
-        self.policy_evaluate_requested.emit(config)
+        self._evaluate_btn.clicked.connect(self._on_evaluate)
+        self._resume_btn.clicked.connect(self._on_resume)
+        self._script_btn.clicked.connect(self._on_script)
 
     def _populate_workers(self) -> None:
         """Populate worker dropdown."""
@@ -1002,161 +900,62 @@ class MultiAgentCompetitionTab(QtWidgets.QWidget):
         if self._workers:
             self._on_worker_changed(0)
 
-    def _populate_environments(self) -> None:
-        """Populate environment dropdowns with competitive games."""
-        self._family_combo.clear()
-
-        # Add families that have competitive games
-        families_with_competitive = set()
-        for env_id in get_competitive_envs():
-            if env_id in PETTINGZOO_ENV_METADATA:
-                family = PETTINGZOO_ENV_METADATA[env_id][0]
-                families_with_competitive.add(family)
-
-        for family in PettingZooFamily:
-            if family in families_with_competitive:
-                label = family.value.replace("_", " ").title()
-                self._family_combo.addItem(label, family.value)
-
-        if families_with_competitive:
-            self._on_family_changed(0)
-
     def _on_worker_changed(self, index: int) -> None:
         """Handle worker selection change."""
         worker_id = self._worker_combo.currentData()
         if not worker_id:
             return
 
-        for worker in self._workers:
-            if worker.worker_id == worker_id:
-                self._worker_info.setText(worker.description)
+        worker = None
+        for w in self._workers:
+            if w.worker_id == worker_id:
+                worker = w
+                self._worker_info.setText(w.description)
                 break
 
         self.worker_changed.emit(worker_id)
 
-    def _on_family_changed(self, index: int) -> None:
-        """Handle family selection change."""
-        family_value = self._family_combo.currentData()
-        if not family_value:
-            return
-
-        try:
-            family = PettingZooFamily(family_value)
-        except ValueError:
-            return
-
-        self._env_combo.clear()
-
-        # Get competitive envs for this family
-        competitive_envs = get_competitive_envs()
-        family_envs = get_envs_by_family(family)
-
-        for env_id in family_envs:
-            if env_id in competitive_envs or get_game_type(env_id) == PettingZooGameType.MIXED:
-                display_name = get_display_name(env_id)
-                self._env_combo.addItem(display_name, env_id.value)
-
-        if self._env_combo.count() > 0:
-            self._env_combo.setCurrentIndex(0)
-            self._on_env_changed(0)
-
-    def _on_env_changed(self, index: int) -> None:
-        """Handle environment selection change."""
-        env_value = self._env_combo.currentData()
-        if not env_value:
-            self._env_info.setText("")
-            self._policy_panel.set_agents([])
-            return
-
-        try:
-            env_id = PettingZooEnvId(env_value)
-            description = get_description(env_id)
-            api_type = get_api_type(env_id)
-            self._env_info.setText(f"{description}\n(API: {api_type.value.upper()})")
-
-            # Detect agents for this environment
-            agent_ids = self._detect_agents(env_value)
-            self._current_agent_ids = agent_ids
-            self._policy_panel.set_agents(agent_ids)
-
-        except ValueError:
-            self._env_info.setText("")
-            self._policy_panel.set_agents([])
-
-    def _detect_agents(self, env_id: str) -> List[str]:
-        """Detect agent IDs for an environment."""
-        family = self._family_combo.currentData()
-        if not family:
-            return []
-
-        try:
-            from gym_gui.core.adapters.pettingzoo import PettingZooAdapter, PettingZooConfig
-            from gym_gui.core.pettingzoo_enums import PettingZooEnvId
-            from gym_gui.core.pettingzoo_enums import PettingZooFamily as PZFamily
-
-            # Create config for the environment
-            try:
-                pz_env_id = PettingZooEnvId(env_id)
-                pz_family = PZFamily(family)
-            except ValueError:
-                return ["agent_0", "agent_1"]
-
-            config = PettingZooConfig(env_id=pz_env_id, family=pz_family)
-            adapter = PettingZooAdapter(config=config)
-            adapter.load()
-
-            # Get possible agents from the underlying environment
-            if hasattr(adapter, '_pz_env') and adapter._pz_env is not None:
-                agent_ids = list(adapter._pz_env.possible_agents)
-            else:
-                agent_ids = []
-            adapter.close()
-            return agent_ids
-        except Exception as e:
-            _LOGGER.warning("Could not detect agents for %s: %s", env_id, e)
-            # Return default agents for competitive games
-            if "chess" in env_id:
-                return ["player_0", "player_1"]
-            elif "go" in env_id:
-                return ["black_0", "white_0"]
-            elif "connect_four" in env_id:
-                return ["player_0", "player_1"]
-            elif "tictactoe" in env_id:
-                return ["player_1", "player_2"]
-            return ["agent_0", "agent_1"]
+        # Update button states based on worker capabilities
+        if worker:
+            factory = get_worker_form_factory()
+            self._train_btn.setEnabled(worker.supports_training)
+            self._evaluate_btn.setEnabled(worker.supports_policy_load)
+            self._resume_btn.setEnabled(worker.supports_training)
+            self._script_btn.setEnabled(factory.has_script_form(worker.worker_id))
+        else:
+            self._train_btn.setEnabled(False)
+            self._evaluate_btn.setEnabled(False)
+            self._resume_btn.setEnabled(False)
+            self._script_btn.setEnabled(False)
 
     def _on_train(self) -> None:
         """Handle train button click."""
         worker_id = self._worker_combo.currentData()
-        env_id = self._env_combo.currentData()
-        if worker_id and env_id:
-            self.train_requested.emit(worker_id, env_id)
+        if worker_id:
+            self.train_requested.emit(worker_id)
 
     def _on_evaluate(self) -> None:
-        """Handle evaluate/load policy button click."""
-        env_id = self._env_combo.currentData()
-
-        # Open the LoadPolicyDialog with environment filter
-        dialog = LoadPolicyDialog(
-            self,
-            filter_env=env_id,
-            filter_worker="ray",  # Default to Ray for multi-agent
-        )
-        dialog.policy_selected.connect(self._on_policy_loaded)
-        dialog.exec()
-
-    def _on_policy_loaded(self, checkpoint: Any) -> None:
-        """Handle policy loaded from dialog."""
+        """Handle evaluate button click."""
         worker_id = self._worker_combo.currentData()
-        env_id = self._env_combo.currentData()
-        if worker_id and env_id:
-            # Emit with checkpoint info
-            self.evaluate_requested.emit(worker_id, env_id)
-            _LOGGER.info(
-                "Policy loaded for evaluation: %s (env=%s)",
-                getattr(checkpoint, 'run_id', 'unknown'),
-                env_id,
-            )
+        if worker_id:
+            self.evaluate_requested.emit(worker_id)
+
+    def _on_resume(self) -> None:
+        """Handle resume button click."""
+        worker_id = self._worker_combo.currentData()
+        if worker_id:
+            self.resume_requested.emit(worker_id)
+
+    def _on_script(self) -> None:
+        """Handle custom script button click."""
+        worker_id = self._worker_combo.currentData()
+        if worker_id:
+            self.script_requested.emit(worker_id)
+
+    @property
+    def current_worker_id(self) -> Optional[str]:
+        """Get the currently selected worker ID."""
+        return self._worker_combo.currentData()
 
 
 class MultiAgentTab(QtWidgets.QWidget):
@@ -1164,15 +963,16 @@ class MultiAgentTab(QtWidgets.QWidget):
 
     Contains:
     - Human vs Agent: Play against trained AI
-    - Cooperation: Train cooperative teams
-    - Competition: Train competitive agents
+    - Cooperation: Train cooperative teams with headless training
+    - Competition: Train competitive agents with headless training
     """
 
     # Forwarded signals
     worker_changed = pyqtSignal(str)
-    train_requested = pyqtSignal(str, str)  # worker_id, env_id
-    evaluate_requested = pyqtSignal(str, str)  # worker_id, env_id
-    policy_evaluate_requested = pyqtSignal(dict)  # Full evaluation config with policies
+    train_requested = pyqtSignal(str)  # worker_id
+    evaluate_requested = pyqtSignal(str)  # worker_id
+    resume_requested = pyqtSignal(str)  # worker_id
+    script_requested = pyqtSignal(str)  # worker_id
     load_policy_requested = pyqtSignal(str)  # env_id
     load_environment_requested = pyqtSignal(str, int)  # env_id, seed
     start_game_requested = pyqtSignal(str, str, int)  # env_id, human_agent, seed
@@ -1225,17 +1025,19 @@ class MultiAgentTab(QtWidgets.QWidget):
             self.ai_opponent_changed
         )
 
-        # Cooperation
+        # Cooperation - headless training signals
         self._cooperation_tab.worker_changed.connect(self.worker_changed)
         self._cooperation_tab.train_requested.connect(self.train_requested)
         self._cooperation_tab.evaluate_requested.connect(self.evaluate_requested)
-        self._cooperation_tab.policy_evaluate_requested.connect(self.policy_evaluate_requested)
+        self._cooperation_tab.resume_requested.connect(self.resume_requested)
+        self._cooperation_tab.script_requested.connect(self.script_requested)
 
-        # Competition
+        # Competition - headless training signals
         self._competition_tab.worker_changed.connect(self.worker_changed)
         self._competition_tab.train_requested.connect(self.train_requested)
         self._competition_tab.evaluate_requested.connect(self.evaluate_requested)
-        self._competition_tab.policy_evaluate_requested.connect(self.policy_evaluate_requested)
+        self._competition_tab.resume_requested.connect(self.resume_requested)
+        self._competition_tab.script_requested.connect(self.script_requested)
 
     @property
     def human_vs_agent(self) -> HumanVsAgentTab:

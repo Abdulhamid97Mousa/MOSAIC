@@ -86,6 +86,10 @@ class LLMService:
             return os.getenv("OPENROUTER_API_KEY")
         elif model.provider == LLMProvider.VLLM:
             return self.config.vllm_api_key or "EMPTY"
+        elif model.provider == LLMProvider.ZHIPU:
+            if self.config.zhipu_api_key:
+                return self.config.zhipu_api_key
+            return os.getenv("ZHIPU_API_KEY") or os.getenv("ZAI_API_KEY")
         return None
 
     def _get_base_url_for_model(self, model: ModelIdentity) -> str:
@@ -94,6 +98,8 @@ class LLMService:
             return self.config.openrouter_base_url
         elif model.provider == LLMProvider.VLLM:
             return self.config.vllm_base_url
+        elif model.provider == LLMProvider.ZHIPU:
+            return self.config.zhipu_base_url
         return self.config.openrouter_base_url
 
     def _get_headers_for_model(self, model: ModelIdentity, api_key: str) -> Dict[str, str]:

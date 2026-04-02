@@ -1,8 +1,13 @@
 """MOSAIC MultiGrid adapter - Competitive team-based multi-agent environments.
 
-PyPI Package: mosaic-multigrid v5.0.0
+PyPI Package: mosaic-multigrid v6.2.0
 GitHub: https://github.com/Abdulhamid97Mousa/mosaic_multigrid
 PyPI: https://pypi.org/project/mosaic-multigrid/
+
+NOTE: The upstream mosaic_multigrid package v6.2.0 still imports from legacy `gym`
+internally, which triggers deprecation warnings. We suppress these by setting
+environment variables before importing. This is harmless - the environments
+are registered with Gymnasium and work correctly.
 
 Original Environments (Deprecated):
 - MosaicMultiGrid-Soccer-v0: 4 agents (2v2 soccer), zero-sum competitive
@@ -97,6 +102,13 @@ try:  # pragma: no cover - import guard
     Collect2vs2TeamObsEnv           = getattr(_mmg, "Collect2vs2TeamObsEnv",           None)  # type: ignore[assignment]
     BasketballGame6HIndAgObsEnv19x11N3 = getattr(_mmg, "BasketballGame6HIndAgObsEnv19x11N3", None)  # type: ignore[assignment]
     Basketball3vs3TeamObsEnv        = getattr(_mmg, "Basketball3vs3TeamObsEnv",        None)  # type: ignore[assignment]
+    AmericanFootball1v1Env16x11     = getattr(_mmg, "AmericanFootball1v1Env16x11",     None)  # type: ignore[assignment]
+    AmericanFootball2v2Env16x11     = getattr(_mmg, "AmericanFootball2v2Env16x11",     None)  # type: ignore[assignment]
+    AmericanFootball3v3Env16x11     = getattr(_mmg, "AmericanFootball3v3Env16x11",     None)  # type: ignore[assignment]
+    AmericanFootball2v2TeamObsEnv   = getattr(_mmg, "AmericanFootball2v2TeamObsEnv",   None)  # type: ignore[assignment]
+    AmericanFootball3v3TeamObsEnv   = getattr(_mmg, "AmericanFootball3v3TeamObsEnv",   None)  # type: ignore[assignment]
+    AmericanFootballSoloGreenEnv16x11 = getattr(_mmg, "AmericanFootballSoloGreenEnv16x11", None)  # type: ignore[assignment]
+    AmericanFootballSoloBlueEnv16x11  = getattr(_mmg, "AmericanFootballSoloBlueEnv16x11",  None)  # type: ignore[assignment]
     # Log any classes that came back None (class name not in this install)
     _missing = [
         name for name, obj in [
@@ -112,6 +124,13 @@ try:  # pragma: no cover - import guard
             ("Collect2vs2TeamObsEnv",           Collect2vs2TeamObsEnv),
             ("BasketballGame6HIndAgObsEnv19x11N3", BasketballGame6HIndAgObsEnv19x11N3),
             ("Basketball3vs3TeamObsEnv",        Basketball3vs3TeamObsEnv),
+            ("AmericanFootball1v1Env16x11",     AmericanFootball1v1Env16x11),
+            ("AmericanFootball2v2Env16x11",     AmericanFootball2v2Env16x11),
+            ("AmericanFootball3v3Env16x11",     AmericanFootball3v3Env16x11),
+            ("AmericanFootball2v2TeamObsEnv",   AmericanFootball2v2TeamObsEnv),
+            ("AmericanFootball3v3TeamObsEnv",   AmericanFootball3v3TeamObsEnv),
+            ("AmericanFootballSoloGreenEnv16x11", AmericanFootballSoloGreenEnv16x11),
+            ("AmericanFootballSoloBlueEnv16x11",  AmericanFootballSoloBlueEnv16x11),
         ] if obj is None
     ]
     if _missing:
@@ -136,6 +155,13 @@ except ImportError as _import_err:  # pragma: no cover
     Collect2vs2TeamObsEnv           = None  # type: ignore[assignment, misc]
     BasketballGame6HIndAgObsEnv19x11N3 = None  # type: ignore[assignment, misc]
     Basketball3vs3TeamObsEnv        = None  # type: ignore[assignment, misc]
+    AmericanFootball1v1Env16x11     = None  # type: ignore[assignment, misc]
+    AmericanFootball2v2Env16x11     = None  # type: ignore[assignment, misc]
+    AmericanFootball3v3Env16x11     = None  # type: ignore[assignment, misc]
+    AmericanFootball2v2TeamObsEnv   = None  # type: ignore[assignment, misc]
+    AmericanFootball3v3TeamObsEnv   = None  # type: ignore[assignment, misc]
+    AmericanFootballSoloGreenEnv16x11 = None  # type: ignore[assignment, misc]
+    AmericanFootballSoloBlueEnv16x11  = None  # type: ignore[assignment, misc]
 
 
 # MOSAIC multigrid action names (8 actions — noop=0 for AEC compatibility)
@@ -265,6 +291,20 @@ class MultiGridAdapter(EnvironmentAdapter[List[np.ndarray], List[int]]):
             return "MosaicMultiGrid-Basketball-3vs3-IndAgObs-v0"
         elif self._env_id == "basketball_teamobs":
             return "MosaicMultiGrid-Basketball-3vs3-TeamObs-v0"
+        elif self._env_id == "american_football_1v1":
+            return "MosaicMultiGrid-AmericanFootball-1v1-v0"
+        elif self._env_id == "american_football_2v2":
+            return "MosaicMultiGrid-AmericanFootball-2v2-v0"
+        elif self._env_id == "american_football_3v3":
+            return "MosaicMultiGrid-AmericanFootball-3v3-v0"
+        elif self._env_id == "american_football_2v2_teamobs":
+            return "MosaicMultiGrid-AmericanFootball-2v2-TeamObs-v0"
+        elif self._env_id == "american_football_3v3_teamobs":
+            return "MosaicMultiGrid-AmericanFootball-3v3-TeamObs-v0"
+        elif self._env_id == "american_football_solo_green":
+            return "MosaicMultiGrid-AmericanFootball-Solo-Green-v0"
+        elif self._env_id == "american_football_solo_blue":
+            return "MosaicMultiGrid-AmericanFootball-Solo-Blue-v0"
         else:
             return self._env_id
 
@@ -382,6 +422,56 @@ class MultiGridAdapter(EnvironmentAdapter[List[np.ndarray], List[int]]):
                         "Install with: pip install mosaic-multigrid==6.0.0"
                     )
                 env = Basketball3vs3TeamObsEnv(render_mode='rgb_array', **extra_kwargs)
+            # American Football environments (v6.3.0)
+            elif self._env_id == "american_football_1v1" or self._env_id == "MosaicMultiGrid-AmericanFootball-1v1-v0":
+                if AmericanFootball1v1Env16x11 is None:
+                    raise RuntimeError(
+                        "mosaic_multigrid v6.3.0 not installed. "
+                        "Install with: pip install mosaic-multigrid==6.3.0"
+                    )
+                env = AmericanFootball1v1Env16x11(render_mode='rgb_array', **extra_kwargs)
+            elif self._env_id == "american_football_2v2" or self._env_id == "MosaicMultiGrid-AmericanFootball-2v2-v0":
+                if AmericanFootball2v2Env16x11 is None:
+                    raise RuntimeError(
+                        "mosaic_multigrid v6.3.0 not installed. "
+                        "Install with: pip install mosaic-multigrid==6.3.0"
+                    )
+                env = AmericanFootball2v2Env16x11(render_mode='rgb_array', **extra_kwargs)
+            elif self._env_id == "american_football_3v3" or self._env_id == "MosaicMultiGrid-AmericanFootball-3v3-v0":
+                if AmericanFootball3v3Env16x11 is None:
+                    raise RuntimeError(
+                        "mosaic_multigrid v6.3.0 not installed. "
+                        "Install with: pip install mosaic-multigrid==6.3.0"
+                    )
+                env = AmericanFootball3v3Env16x11(render_mode='rgb_array', **extra_kwargs)
+            elif self._env_id == "american_football_2v2_teamobs" or self._env_id == "MosaicMultiGrid-AmericanFootball-2v2-TeamObs-v0":
+                if AmericanFootball2v2TeamObsEnv is None:
+                    raise RuntimeError(
+                        "mosaic_multigrid v6.3.0 not installed. "
+                        "Install with: pip install mosaic-multigrid==6.3.0"
+                    )
+                env = AmericanFootball2v2TeamObsEnv(render_mode='rgb_array', **extra_kwargs)
+            elif self._env_id == "american_football_3v3_teamobs" or self._env_id == "MosaicMultiGrid-AmericanFootball-3v3-TeamObs-v0":
+                if AmericanFootball3v3TeamObsEnv is None:
+                    raise RuntimeError(
+                        "mosaic_multigrid v6.3.0 not installed. "
+                        "Install with: pip install mosaic-multigrid==6.3.0"
+                    )
+                env = AmericanFootball3v3TeamObsEnv(render_mode='rgb_array', **extra_kwargs)
+            elif self._env_id == "american_football_solo_green" or self._env_id == "MosaicMultiGrid-AmericanFootball-Solo-Green-v0":
+                if AmericanFootballSoloGreenEnv16x11 is None:
+                    raise RuntimeError(
+                        "mosaic_multigrid v6.3.0 not installed. "
+                        "Install with: pip install mosaic-multigrid==6.3.0"
+                    )
+                env = AmericanFootballSoloGreenEnv16x11(render_mode='rgb_array', **extra_kwargs)
+            elif self._env_id == "american_football_solo_blue" or self._env_id == "MosaicMultiGrid-AmericanFootball-Solo-Blue-v0":
+                if AmericanFootballSoloBlueEnv16x11 is None:
+                    raise RuntimeError(
+                        "mosaic_multigrid v6.3.0 not installed. "
+                        "Install with: pip install mosaic-multigrid==6.3.0"
+                    )
+                env = AmericanFootballSoloBlueEnv16x11(render_mode='rgb_array', **extra_kwargs)
             else:
                 # Try to make via gymnasium.make if registered (e.g., Solo variants)
                 try:
@@ -389,7 +479,7 @@ class MultiGridAdapter(EnvironmentAdapter[List[np.ndarray], List[int]]):
                 except Exception as e:
                     raise RuntimeError(
                         f"Unknown MOSAIC MultiGrid environment: {self._env_id}. "
-                        f"Available: Soccer/Collect/Basketball IndAgObs, TeamObs, and Solo variants. Error: {e}"
+                        f"Available: Soccer/Collect/Basketball/AmericanFootball IndAgObs, TeamObs, and Solo variants. Error: {e}"
                     )
 
             self._env = env
@@ -1244,6 +1334,122 @@ class MultiGridBasketballSoloBlueAdapter(MultiGridAdapter):
         super().__init__(context, config=config)
 
 
+# American Football adapter classes (v6.3.0)
+class MultiGridAmericanFootball1v1Adapter(MultiGridAdapter):
+    """Adapter for MOSAIC MultiGrid American Football 1v1 environment (2 players, 1v1).
+
+    Features: 16x11 brown field, end zones, touchdown scoring, ball stealing mechanics.
+    """
+
+    def __init__(
+        self,
+        context: AdapterContext | None = None,
+        *,
+        config: MultiGridConfig | None = None,
+    ) -> None:
+        if config is None:
+            config = MultiGridConfig(env_id="MosaicMultiGrid-AmericanFootball-1v1-v0")
+        super().__init__(context, config=config)
+
+
+class MultiGridAmericanFootball2v2Adapter(MultiGridAdapter):
+    """Adapter for MOSAIC MultiGrid American Football 2v2 environment (4 players, 2v2).
+
+    Features: 16x11 brown field, end zones, touchdown scoring, team-based gameplay.
+    """
+
+    def __init__(
+        self,
+        context: AdapterContext | None = None,
+        *,
+        config: MultiGridConfig | None = None,
+    ) -> None:
+        if config is None:
+            config = MultiGridConfig(env_id="MosaicMultiGrid-AmericanFootball-2v2-v0")
+        super().__init__(context, config=config)
+
+
+class MultiGridAmericanFootball3v3Adapter(MultiGridAdapter):
+    """Adapter for MOSAIC MultiGrid American Football 3v3 environment (6 players, 3v3).
+
+    Features: 16x11 brown field, end zones, touchdown scoring, 3v3 team-based gameplay.
+    """
+
+    def __init__(
+        self,
+        context: AdapterContext | None = None,
+        *,
+        config: MultiGridConfig | None = None,
+    ) -> None:
+        if config is None:
+            config = MultiGridConfig(env_id="MosaicMultiGrid-AmericanFootball-3v3-v0")
+        super().__init__(context, config=config)
+
+
+class MultiGridAmericanFootball2v2TeamObsAdapter(MultiGridAdapter):
+    """Adapter for MOSAIC MultiGrid American Football 2v2 TeamObs environment (4 players, 2v2).
+
+    Adds teammate_positions, teammate_directions, teammate_has_ball to obs.
+    American Football field rendering.
+    """
+
+    def __init__(
+        self,
+        context: AdapterContext | None = None,
+        *,
+        config: MultiGridConfig | None = None,
+    ) -> None:
+        if config is None:
+            config = MultiGridConfig(env_id="MosaicMultiGrid-AmericanFootball-2v2-TeamObs-v0")
+        super().__init__(context, config=config)
+
+
+class MultiGridAmericanFootball3v3TeamObsAdapter(MultiGridAdapter):
+    """Adapter for MOSAIC MultiGrid American Football 3v3 TeamObs environment (6 players, 3v3).
+
+    Adds teammate_positions, teammate_directions, teammate_has_ball to obs.
+    American Football field rendering.
+    """
+
+    def __init__(
+        self,
+        context: AdapterContext | None = None,
+        *,
+        config: MultiGridConfig | None = None,
+    ) -> None:
+        if config is None:
+            config = MultiGridConfig(env_id="MosaicMultiGrid-AmericanFootball-3v3-TeamObs-v0")
+        super().__init__(context, config=config)
+
+
+class MultiGridAmericanFootballSoloGreenAdapter(MultiGridAdapter):
+    """Adapter for American Football Solo Green (1 agent, scores in end zone, no opponent)."""
+
+    def __init__(
+        self,
+        context: AdapterContext | None = None,
+        *,
+        config: MultiGridConfig | None = None,
+    ) -> None:
+        if config is None:
+            config = MultiGridConfig(env_id="MosaicMultiGrid-AmericanFootball-Solo-Green-v0")
+        super().__init__(context, config=config)
+
+
+class MultiGridAmericanFootballSoloBlueAdapter(MultiGridAdapter):
+    """Adapter for American Football Solo Blue (1 agent, scores in end zone, no opponent)."""
+
+    def __init__(
+        self,
+        context: AdapterContext | None = None,
+        *,
+        config: MultiGridConfig | None = None,
+    ) -> None:
+        if config is None:
+            config = MultiGridConfig(env_id="MosaicMultiGrid-AmericanFootball-Solo-Blue-v0")
+        super().__init__(context, config=config)
+
+
 # MOSAIC MultiGrid adapter registry - competitive team-based environments from PyPI
 MOSAIC_MULTIGRID_ADAPTERS: Dict[GameId, type[MultiGridAdapter]] = {
     # Original environments (deprecated - kept for backward compatibility)
@@ -1267,6 +1473,14 @@ MOSAIC_MULTIGRID_ADAPTERS: Dict[GameId, type[MultiGridAdapter]] = {
     GameId.MOSAIC_MULTIGRID_SOCCER_SOLO_BLUE: MultiGridSoccerSoloBlueAdapter,
     GameId.MOSAIC_MULTIGRID_BASKETBALL_SOLO_GREEN: MultiGridBasketballSoloGreenAdapter,
     GameId.MOSAIC_MULTIGRID_BASKETBALL_SOLO_BLUE: MultiGridBasketballSoloBlueAdapter,
+    # American Football environments (v6.3.0)
+    GameId.MOSAIC_MULTIGRID_AMERICAN_FOOTBALL_1V1: MultiGridAmericanFootball1v1Adapter,
+    GameId.MOSAIC_MULTIGRID_AMERICAN_FOOTBALL_2V2: MultiGridAmericanFootball2v2Adapter,
+    GameId.MOSAIC_MULTIGRID_AMERICAN_FOOTBALL_3V3: MultiGridAmericanFootball3v3Adapter,
+    GameId.MOSAIC_MULTIGRID_AMERICAN_FOOTBALL_2V2_TEAMOBS: MultiGridAmericanFootball2v2TeamObsAdapter,
+    GameId.MOSAIC_MULTIGRID_AMERICAN_FOOTBALL_3V3_TEAMOBS: MultiGridAmericanFootball3v3TeamObsAdapter,
+    GameId.MOSAIC_MULTIGRID_AMERICAN_FOOTBALL_SOLO_GREEN: MultiGridAmericanFootballSoloGreenAdapter,
+    GameId.MOSAIC_MULTIGRID_AMERICAN_FOOTBALL_SOLO_BLUE: MultiGridAmericanFootballSoloBlueAdapter,
 }
 
 __all__ = [
@@ -1288,6 +1502,13 @@ __all__ = [
     "MultiGridSoccerSoloBlueAdapter",
     "MultiGridBasketballSoloGreenAdapter",
     "MultiGridBasketballSoloBlueAdapter",
+    "MultiGridAmericanFootball1v1Adapter",
+    "MultiGridAmericanFootball2v2Adapter",
+    "MultiGridAmericanFootball3v3Adapter",
+    "MultiGridAmericanFootball2v2TeamObsAdapter",
+    "MultiGridAmericanFootball3v3TeamObsAdapter",
+    "MultiGridAmericanFootballSoloGreenAdapter",
+    "MultiGridAmericanFootballSoloBlueAdapter",
     "MOSAIC_MULTIGRID_ADAPTERS",
     "MOSAIC_MULTIGRID_ACTIONS",
 ]

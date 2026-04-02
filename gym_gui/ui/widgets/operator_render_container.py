@@ -399,6 +399,7 @@ class OperatorRenderContainer(QtWidgets.QFrame):
     status_changed = pyqtSignal(str, str)  # operator_id, new_status
     # Human interaction signals
     human_action_submitted = pyqtSignal(str, int)  # operator_id, action_index
+    mouse_delta_input = pyqtSignal(str, int, int)  # operator_id, dx, dy
     board_game_move_made = pyqtSignal(str, str, str)  # operator_id, from_square, to_square
     chess_move_button_clicked = pyqtSignal(str, str)  # operator_id, uci_move (e.g., "e2e4")
     # Resize signal: emitted when user drags the container edge to a new size
@@ -464,6 +465,13 @@ class OperatorRenderContainer(QtWidgets.QFrame):
         self._selected_action: Optional[int] = None  # Currently selected action index
         self._game_id: Optional[GameId] = None  # Current game for key mappings
         self._key_mappings: dict[int, int] = {}  # Qt key -> action index
+
+        # Mouse capture state
+        self._mouse_captured = False
+        self._mouse_center = QtCore.QPoint(0, 0)
+        # Enable mouse capture for Malmo only (native speed hack)
+        env_lower = self._config.env_name.lower() if self._config.env_name else ""
+        self._mouse_capture_enabled = "malmo" in env_lower or "minecraft" in env_lower
 
         self._build_ui()
         self._update_header()
@@ -1101,7 +1109,7 @@ class OperatorRenderContainer(QtWidgets.QFrame):
                 # Use BoardGameRendererStrategy for board games
                 if not self._board_game_renderer:
                     self._board_game_renderer = BoardGameRendererStrategy(self._render_container)
-                    self._render_layout.addWidget(self._board_game_renderer.widget)
+                    self._render_layout.addWidget(self._board_game_renderer.widget, 1)
                     # Connect board click signals for Human operators
                     _LOGGER.debug(
                         f"Created board game renderer, _is_interactive={self._is_interactive}",
@@ -1112,6 +1120,11 @@ class OperatorRenderContainer(QtWidgets.QFrame):
                 # Switch to board game renderer if needed
                 if not self._is_board_game:
                     self._is_board_game = True
+                    # Remove the "Waiting for data..." placeholder (mirrors _switch_to_renderer)
+                    if self._placeholder and self._placeholder.parent():
+                        self._render_layout.removeWidget(self._placeholder)
+                        self._placeholder.deleteLater()
+                        self._placeholder = None
                     # Hide other renderers
                     if self._grid_renderer:
                         self._grid_renderer.widget.hide()
@@ -1949,6 +1962,11 @@ class OperatorRenderContainer(QtWidgets.QFrame):
 
         key = event.key()
 
+        # If mouse is captured, Escape releases it
+        if self._mouse_captured and key == QtCore.Qt.Key.Key_Escape:
+            self._release_mouse()
+            return
+
         # First, try game-specific mappings from human_input.py (supports WASD, arrows, etc.)
         if key in self._key_mappings:
             action_idx = self._key_mappings[key]
@@ -1995,7 +2013,63 @@ class OperatorRenderContainer(QtWidgets.QFrame):
         """Handle mouse clicks - set focus for keyboard input."""
         if self._is_interactive:
             self.setFocus()
+            # Capture mouse if enabled and not already captured
+            if self._mouse_capture_enabled and not self._mouse_captured:
+                if event.button() == QtCore.Qt.MouseButton.LeftButton:
+                    self._grab_mouse()
+                    event.accept()
+                    return
+
         super().mousePressEvent(event)
+
+    def _grab_mouse(self):
+        self._mouse_captured = True
+        self.setCursor(QtCore.Qt.CursorShape.BlankCursor)
+        self.setMouseTracking(True)
+        # Center mouse in widget initially
+        self._center_mouse()
+        _LOGGER.info(f"Mouse captured for {self._config.operator_id}")
+
+    def _release_mouse(self):
+        if self._mouse_captured:
+            self._mouse_captured = False
+            self.setCursor(QtCore.Qt.CursorShape.ArrowCursor)
+            self.setMouseTracking(False)
+            _LOGGER.info(f"Mouse released for {self._config.operator_id}")
+
+    def _center_mouse(self):
+        # Center mouse in widget coordinates
+        center = self.rect().center()
+        # Map to global coordinates for QCursor.setPos
+        global_center = self.mapToGlobal(center)
+        self._mouse_center = global_center
+        QtGui.QCursor.setPos(global_center)
+
+    def mouseMoveEvent(self, event) -> None:
+        if self._mouse_captured:
+            global_pos = event.globalPosition().toPoint()
+            # Check if this is the synthetic move caused by setPos
+            if global_pos == self._mouse_center:
+                return
+
+            dx = global_pos.x() - self._mouse_center.x()
+            dy = global_pos.y() - self._mouse_center.y()
+
+            if dx != 0 or dy != 0:
+                self.mouse_delta_input.emit(self._config.operator_id, dx, dy)
+                # Re-center mouse to keep it captured
+                self._center_mouse()
+
+            event.accept()
+            return
+
+        super().mouseMoveEvent(event)
+
+    def focusOutEvent(self, event) -> None:
+        if self._mouse_captured:
+            self._release_mouse()
+        super().focusOutEvent(event)
+
 
     def connect_board_game_signals(self) -> None:
         """Connect board game renderer signals to container signals.

@@ -186,7 +186,7 @@ class TestResolverSelection:
         class MockMultiGridGameId:
             value = "MosaicMultiGrid-Soccer-v0"
 
-        resolver = get_key_combination_resolver(MockMultiGridGameId())
+        resolver = get_key_combination_resolver(MockMultiGridGameId())  # type: ignore[arg-type]
         assert isinstance(resolver, MultiGridKeyCombinationResolver)
 
     def test_minigrid_uses_minigrid_resolver(self):

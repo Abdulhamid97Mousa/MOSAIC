@@ -30,20 +30,20 @@ def _base_form(qt_app) -> XuanCeTrainForm:
     # Set required fields to valid values
     if hasattr(form, "_method_combo"):
         # Try to set a valid method like "DQN" or "PPO"
-        index = form._method_combo.findText("DQN")
+        index = form._method_combo.findText("DQN")  # type: ignore[attr-defined]
         if index >= 0:
-            form._method_combo.setCurrentIndex(index)
+            form._method_combo.setCurrentIndex(index)  # type: ignore[attr-defined]
     if hasattr(form, "_env_combo"):
         # Set environment
-        index = form._env_combo.findText("Classic Control")
+        index = form._env_combo.findText("Classic Control")  # type: ignore[attr-defined]
         if index >= 0:
-            form._env_combo.setCurrentIndex(index)
+            form._env_combo.setCurrentIndex(index)  # type: ignore[attr-defined]
     if hasattr(form, "_env_id_combo"):
         # Set env_id
-        index = form._env_id_combo.findText("CartPole-v1")
+        index = form._env_id_combo.findText("CartPole-v1")  # type: ignore[attr-defined]
         if index < 0:
             index = 0
-        form._env_id_combo.setCurrentIndex(index)
+        form._env_id_combo.setCurrentIndex(index)  # type: ignore[attr-defined]
     return form
 
 

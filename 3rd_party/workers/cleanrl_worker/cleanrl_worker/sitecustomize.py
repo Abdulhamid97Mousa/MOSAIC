@@ -162,7 +162,8 @@ try:  # pragma: no cover - gym optional
     _wrapped_make._mosaic_wrapped = True  # type: ignore[attr-defined]
     _wrapped_make._mosaic_orig_make = _ORIG_MAKE  # type: ignore[attr-defined]
     gym.make = _wrapped_make
-except Exception:  # pragma: no cover - gym optional
+
+except Exception as e:  # pragma: no cover - gym optional
     pass
 
 try:  # pragma: no cover - gym optional
@@ -170,11 +171,11 @@ try:  # pragma: no cover - gym optional
     from gymnasium.wrappers import TransformObservation as _OrigTransformObservation
 
     class _MosaicTransformObservation(_OrigTransformObservation):
-        def __init__(self, env, func, *, observation_space=None):
+        def __init__(self, env, func, observation_space=None, **kwargs):
             obs_space = observation_space or getattr(env, "observation_space", None)
             if obs_space is None:
                 raise ValueError("TransformObservation requires an observation_space")
-            super().__init__(env, func, observation_space=obs_space)
+            super().__init__(env, func, observation_space=obs_space, **kwargs)
 
     gym.wrappers.TransformObservation = _MosaicTransformObservation
 except Exception:  # pragma: no cover - gym optional
@@ -198,6 +199,7 @@ except Exception:  # pragma: no cover - torch optional
 # Patches torch.nn.Module.to() to automatically load checkpoint weights when
 # CLEANRL_RESUME_PATH is set. Works for any algorithm transparently.
 try:  # pragma: no cover - torch optional
+    import torch
     import torch.nn as nn
 
     # Guard against double-patching on module reload
@@ -266,9 +268,9 @@ try:  # pragma: no cover - torch optional
         return result
 
     # Apply patch and mark as patched to prevent recursion on reload
-    _mosaic_module_to._mosaic_patched = True
-    nn.Module._orig_to = _ORIG_MODULE_TO  # Store original for reload access
-    nn.Module.to = _mosaic_module_to
+    _mosaic_module_to._mosaic_patched = True  # type: ignore[attr-defined]
+    nn.Module._orig_to = _ORIG_MODULE_TO  # type: ignore[attr-defined]  # Store original for reload access
+    nn.Module.to = _mosaic_module_to  # type: ignore[assignment]
 except Exception:  # pragma: no cover - torch optional
     pass
 
@@ -278,7 +280,7 @@ try:  # pragma: no cover - cleanrl optional
 
     _ORIG_PPO_EVALUATE = _ppo_eval.evaluate
 
-    def _mosaic_ppo_evaluate(model_path, make_env, env_id, eval_episodes, run_name, Model, *, device="cpu", capture_video=True, gamma=0.99):
+    def _mosaic_ppo_evaluate(model_path, make_env, env_id, eval_episodes, run_name, Model, *, device: "str | torch.device" = "cpu", capture_video=True, gamma=0.99):
         override = os.getenv("MOSAIC_CLEANRL_EVAL_EPISODES")
         if override is not None:
             try:
@@ -308,9 +310,16 @@ try:  # pragma: no cover - tensorboard optional
     from torch.utils.tensorboard import writer as _tb_writer_mod
 
     def _resolve_tensorboard_logdir(root: str, log_dir: str | os.PathLike | None) -> str:
-        base = Path(root)
+        base = Path(root).resolve()
         if not log_dir:
             return str(base)
+        resolved = Path(log_dir).resolve()
+        # If log_dir is already under the override root, don't redirect again
+        try:
+            resolved.relative_to(base)
+            return str(resolved)
+        except ValueError:
+            pass
         leaf = Path(log_dir).name or "events"
         return str(base / leaf)
 

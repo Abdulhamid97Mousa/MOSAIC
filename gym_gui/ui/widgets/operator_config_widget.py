@@ -1284,8 +1284,11 @@ class PlayerAssignmentRow(QtWidgets.QWidget):
         self._algorithm_combo.setVisible(visible)
 
         # Find and hide/show the labels
-        for i in range(self._rl_row.layout().count()):
-            item = self._rl_row.layout().itemAt(i)
+        layout = self._rl_row.layout()
+        if layout is None:
+            return
+        for i in range(layout.count()):
+            item = layout.itemAt(i)
             if item and item.widget():
                 widget = item.widget()
                 if isinstance(widget, QtWidgets.QLabel):

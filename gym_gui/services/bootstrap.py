@@ -146,6 +146,75 @@ def bootstrap_default_services() -> ServiceLocator:
         category=OPERATOR_CATEGORY_RL,
         supports_training=True,
     )
+    operators.register_operator(
+        WorkerOperator(id="tianshou_worker", name="Tianshou Worker", worker_id="tianshou_worker"),
+        display_name="Tianshou Worker",
+        description="Deep RL platform based on PyTorch with 20+ algorithms (PPO, DQN, SAC, TD3, A2C).",
+        category=OPERATOR_CATEGORY_RL,
+        supports_training=True,
+    )
+    operators.register_operator(
+        WorkerOperator(id="sb3_worker", name="Stable-Baselines3 Worker", worker_id="sb3_worker"),
+        display_name="Stable-Baselines3 Worker",
+        description="Reliable RL implementations (PPO, A2C, DQN, SAC, TD3, HER). PyTorch backend.",
+        category=OPERATOR_CATEGORY_RL,
+        supports_training=True,
+    )
+    operators.register_operator(
+        WorkerOperator(id="sbx_worker", name="SBX (JAX) Worker", worker_id="sbx_worker"),
+        display_name="SBX (JAX) Worker",
+        description="JAX-accelerated RL (PPO, DQN, SAC, TQC, CrossQ). Drop-in SB3 replacement.",
+        category=OPERATOR_CATEGORY_RL,
+        supports_training=True,
+    )
+    operators.register_operator(
+        WorkerOperator(id="mushroomrl_worker", name="MushroomRL Worker", worker_id="mushroomrl_worker"),
+        display_name="MushroomRL Worker",
+        description="Model-free and model-based RL (PPO, TRPO, SAC, TD3). Continuous control focus.",
+        category=OPERATOR_CATEGORY_RL,
+        supports_training=True,
+    )
+    operators.register_operator(
+        WorkerOperator(id="pearl_worker", name="Pearl Worker", worker_id="pearl_worker"),
+        display_name="Pearl Worker",
+        description="Production-ready RL from Meta (PPO, DQN, SAC, bandits). Modular agent design.",
+        category=OPERATOR_CATEGORY_RL,
+        supports_training=True,
+    )
+    operators.register_operator(
+        WorkerOperator(id="torchrl_worker", name="TorchRL Worker", worker_id="torchrl_worker"),
+        display_name="TorchRL Worker",
+        description="PyTorch official RL library with modular collector/loss/advantage design.",
+        category=OPERATOR_CATEGORY_RL,
+        supports_training=True,
+    )
+    operators.register_operator(
+        WorkerOperator(id="omnisafe_worker", name="OmniSafe Worker", worker_id="omnisafe_worker"),
+        display_name="OmniSafe Worker",
+        description="Safe RL (PPOLag, CPO, FOCOPS, CUP). 30+ constrained RL algorithms.",
+        category=OPERATOR_CATEGORY_RL,
+        supports_training=True,
+    )
+    operators.register_operator(
+        WorkerOperator(id="mctx_worker", name="MCTX GPU Worker", worker_id="mctx_worker"),
+        display_name="MCTX GPU Worker",
+        description="GPU-accelerated MCTS (AlphaZero, MuZero, Gumbel MuZero) via JAX.",
+        category=OPERATOR_CATEGORY_RL,
+        supports_training=True,
+    )
+    operators.register_operator(
+        WorkerOperator(id="marllib_worker", name="MARLlib Worker", worker_id="marllib_worker"),
+        display_name="MARLlib Worker",
+        description="Multi-Agent RLlib with 18 algorithms across IL, CC, and VD paradigms.",
+        category=OPERATOR_CATEGORY_RL,
+        supports_training=True,
+    )
+    operators.register_operator(
+        WorkerOperator(id="chess_worker", name="Chess LLM Worker", worker_id="chess_worker"),
+        display_name="Chess LLM Worker",
+        description="LLM-based chess using multi-turn prompting. Works with PettingZoo chess_v6.",
+        category=OPERATOR_CATEGORY_LLM,
+    )
 
     action_mapper: ContinuousActionMapper = create_default_action_mapper()
     renderer_registry: RendererRegistry = create_default_renderer_registry()  # default strategies

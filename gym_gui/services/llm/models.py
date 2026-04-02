@@ -14,6 +14,7 @@ class LLMProvider(Enum):
     VLLM = "vllm"
     OPENAI = "openai"
     ANTHROPIC = "anthropic"
+    ZHIPU = "zhipu"
 
 
 @dataclass(frozen=True)

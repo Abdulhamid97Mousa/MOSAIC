@@ -20,9 +20,11 @@ The registry is auto-populated at module load to support service discovery.
 from .chess_worker_presenter import ChessWorkerPresenter
 from .cleanrl_worker_presenter import CleanRlWorkerPresenter
 from .human_worker_presenter import HumanWorkerPresenter
+from .jumanji_worker_presenter import JumanjiWorkerPresenter
 from .mctx_worker_presenter import MctxWorkerPresenter
 from .ray_worker_presenter import RayWorkerPresenter
 from .registry import WorkerPresenter, WorkerPresenterRegistry
+from .tianshou_worker_presenter import TianshouWorkerPresenter
 from .xuance_worker_presenter import XuanCeWorkerPresenter
 
 # Create and auto-register default presenters
@@ -38,6 +40,8 @@ _registry.register("human_worker", HumanWorkerPresenter())
 _registry.register("mctx_worker", MctxWorkerPresenter())
 _registry.register("ray_worker", RayWorkerPresenter())
 _registry.register("xuance_worker", XuanCeWorkerPresenter())
+_registry.register("tianshou_worker", TianshouWorkerPresenter())
+_registry.register("jumanji_worker", JumanjiWorkerPresenter())
 
 
 def get_worker_presenter_registry() -> WorkerPresenterRegistry:
@@ -55,8 +59,10 @@ __all__ = [
     "ChessWorkerPresenter",
     "CleanRlWorkerPresenter",
     "HumanWorkerPresenter",
+    "JumanjiWorkerPresenter",
     "MctxWorkerPresenter",
     "RayWorkerPresenter",
     "XuanCeWorkerPresenter",
+    "TianshouWorkerPresenter",
     "get_worker_presenter_registry",
 ]

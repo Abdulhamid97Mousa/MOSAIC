@@ -1,9 +1,12 @@
 from __future__ import annotations
 
+import socket
+import struct
 from abc import ABC, abstractmethod
 from typing import Any, List, Optional
 
 import numpy as np
+from qtpy.QtCore import Qt
 
 
 class InteractionController(ABC):
@@ -28,6 +31,14 @@ class InteractionController(ABC):
     def step_dt(self) -> float:
         """Fixed simulation dt if applicable (physics), else 0.0."""
         raise NotImplementedError
+
+    def handle_native_key(self, key_code: int, pressed: bool) -> bool:
+        """Handle a raw key event. Return True if handled."""
+        return False
+
+    def handle_native_mouse(self, dx: int, dy: int) -> bool:
+        """Handle a raw mouse delta event. Return True if handled."""
+        return False
 
 
 class Box2DInteractionController(InteractionController):
@@ -64,6 +75,20 @@ class TurnBasedInteractionController(InteractionController):
 
     def step_dt(self) -> float:
         return 0.0
+
+
+def _get_qt_key(name: str) -> int:
+    """Get Qt key constant by name, handling Qt5/Qt6 differences."""
+    key_enum = getattr(Qt, "Key", None)
+    if key_enum is not None and hasattr(key_enum, name):
+        return int(getattr(key_enum, name))
+    legacy = getattr(Qt, name, None)
+    if legacy is not None:
+        return int(legacy)
+    # Return 0 or specific marker if not found, to avoid crashing.
+    # But usually we want to know if it's missing.
+    # For this mapping table, we can skip missing keys.
+    return 0
 
 
 class AleInteractionController(InteractionController):

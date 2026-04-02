@@ -1,20 +1,54 @@
 // Collapsible sidebar sections + sidebar toggle for Furo theme
 document.addEventListener("DOMContentLoaded", function () {
 
-  // ── Section fold/unfold ──
+  // ── Section fold/unfold (caption-level) ──
   var captions = document.querySelectorAll(".sidebar-tree p.caption");
 
   captions.forEach(function (captionP) {
     var list = captionP.nextElementSibling;
     if (!list || list.tagName !== "UL") return;
 
-    var isActive = list.querySelector("a.current") !== null;
-    if (!isActive) captionP.classList.add("collapsed");
+    // All sections start expanded (no collapsed class added)
 
     captionP.addEventListener("click", function () {
       captionP.classList.toggle("collapsed");
     });
   });
+
+  // ── Expand all nested toctree checkboxes (Furo sub-items) ──
+  // Furo uses hidden checkboxes to toggle sub-trees; check them all
+  // so everything is unfolded by default, but users can still click
+  // the arrow label to fold them.
+  document.querySelectorAll(".sidebar-tree input[type='checkbox']").forEach(function (cb) {
+    cb.checked = true;
+  });
+
+  // ── Scroll the active sidebar link into view ──
+  var currentPage = document.querySelector(".sidebar-tree .current-page > .reference") ||
+                    document.querySelector(".sidebar-tree li.current > .reference");
+  var currentLink = currentPage;
+  if (currentLink) {
+    // Ensure all parent <li> checkboxes are checked (expanded)
+    var parent = currentLink.closest("li");
+    while (parent) {
+      var cb = parent.querySelector(":scope > input[type='checkbox']");
+      if (cb) cb.checked = true;
+      parent = parent.parentElement ? parent.parentElement.closest("li") : null;
+    }
+    // Ensure the parent caption section is not collapsed
+    var ul = currentLink.closest("ul");
+    while (ul) {
+      var prev = ul.previousElementSibling;
+      if (prev && prev.classList.contains("caption")) {
+        prev.classList.remove("collapsed");
+      }
+      ul = ul.parentElement ? ul.parentElement.closest("ul") : null;
+    }
+    // Scroll into view
+    setTimeout(function () {
+      currentLink.scrollIntoView({ block: "center", behavior: "smooth" });
+    }, 100);
+  }
 
   // ── Desktop sidebar collapse button (inside sidebar brand) ──
   var sidebarBrand = document.querySelector(".sidebar-brand");

@@ -23,7 +23,7 @@ httpx>=0.27.0
 # vLLM for local GPU inference
 # See: https://docs.vllm.ai/en/latest/
 # Note: Requires NVIDIA GPU with CUDA support
-vllm>=0.6.0
+vllm>=0.17.0
 
 # ═══════════════════════════════════════════════════════════════
 # vLLM Server Setup

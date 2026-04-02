@@ -108,6 +108,10 @@ Subsystems
 
 **Keyboard Input:** Per-environment key mappings covering all 26 environment
 families, and multi-keyboard support for multi-agent play via Linux ``evdev``.
+For multi-agent environments with blocking ``adapter.step()`` calls, each
+keyboard can be assigned to a ``human_worker`` subprocess
+(``--mode keyboard``) that reads evdev events in its own process,
+keeping the GUI responsive.
 See :doc:`keyboard_input` for the full reference.
 
 **Render View:** A strategy-pattern rendering pipeline that converts environment

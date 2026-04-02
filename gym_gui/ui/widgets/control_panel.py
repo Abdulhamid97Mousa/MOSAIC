@@ -81,6 +81,11 @@ from gym_gui.ui.config_panels.single_agent.gym import (
     build_lunarlander_controls,
     build_taxi_controls,
 )
+from gym_gui.ui.config_panels.single_agent.malmo import (
+    DEFAULT_MALMO_CONFIG,
+    MALMOENV_FAMILY,
+    build_malmo_controls,
+)
 from gym_gui.ui.config_panels.single_agent.minigrid.config_panel import (
     MINIGRID_GAME_IDS,
     build_minigrid_controls,
@@ -817,10 +822,11 @@ class ControlPanelWidget(QtWidgets.QWidget):
         # Connect multi-agent signals
         self._multi_agent_tab.train_requested.connect(self._on_multi_agent_train_requested)
         self._multi_agent_tab.evaluate_requested.connect(self._on_multi_agent_evaluate_requested)
+        self._multi_agent_tab.resume_requested.connect(self._on_multi_agent_resume_requested)
+        self._multi_agent_tab.script_requested.connect(self._on_multi_agent_script_requested)
         self._multi_agent_tab.load_environment_requested.connect(self._on_multi_agent_load_requested)
         self._multi_agent_tab.start_game_requested.connect(self.multi_agent_start_requested)
         self._multi_agent_tab.reset_game_requested.connect(self.multi_agent_reset_requested)
-        self._multi_agent_tab.policy_evaluate_requested.connect(self._on_policy_evaluate_requested)
 
         # MuJoCo MPC Tab - launcher for MPC visualization in Render View
         self._mujoco_mpc_tab = MuJoCoMPCTab(self)
@@ -1163,6 +1169,14 @@ class ControlPanelWidget(QtWidgets.QWidget):
             player_id: The player whose turn it is ("player_0" or "player_1").
         """
         self._operators_tab.set_current_player(player_id)
+
+    def set_step_count(self, count: int) -> None:
+        """Set the step counter (called after each successful env step).
+
+        Args:
+            count: The current step count to display.
+        """
+        self._operators_tab.set_step_count(count)
 
     def _create_control_group(self, parent: QtWidgets.QWidget) -> QtWidgets.QGroupBox:
         group = QtWidgets.QGroupBox("Game Control Flow", parent)
@@ -1691,6 +1705,7 @@ class ControlPanelWidget(QtWidgets.QWidget):
             EnvironmentFamily.MELTINGPOT,
             EnvironmentFamily.OVERCOOKED,
         )
+        is_malmo = env_family == EnvironmentFamily.MALMOENV
 
         # Create combo box
         input_mode_combo = QtWidgets.QComboBox(self._config_group)
@@ -1703,6 +1718,13 @@ class ControlPanelWidget(QtWidgets.QWidget):
             input_mode_combo.addItem(label, mode.value)
             # Force the override to state-based to prevent accidental misconfiguration
             overrides["input_mode"] = InputMode.STATE_BASED.value
+        elif is_malmo:
+            # RESTRICTION: MalmoEnv requires state-based mode for real-time control
+            mode = InputMode.STATE_BASED
+            label, _ = INPUT_MODE_INFO[mode]
+            input_mode_combo.addItem(label, mode.value)
+            # Ensure state-based is selected
+            overrides["input_mode"] = InputMode.STATE_BASED.value
         else:
             # Other games: Allow both modes
             for mode in InputMode:
@@ -1710,7 +1732,7 @@ class ControlPanelWidget(QtWidgets.QWidget):
                 input_mode_combo.addItem(label, mode.value)
 
         # Set current input mode (state-based for multi-agent, shortcut-based for others)
-        default_mode = InputMode.STATE_BASED.value if is_multi_agent else InputMode.SHORTCUT_BASED.value
+        default_mode = InputMode.STATE_BASED.value if (is_multi_agent or is_malmo) else InputMode.SHORTCUT_BASED.value
         current_input_mode = overrides.get("input_mode", default_mode)
         for i in range(input_mode_combo.count()):
             if input_mode_combo.itemData(i) == current_input_mode:
@@ -1731,6 +1753,8 @@ class ControlPanelWidget(QtWidgets.QWidget):
                 # Add multi-agent environment note
                 if is_multi_agent:
                     description += "\n\n✓ Required for multi-keyboard support. Shortcut-based mode is disabled to prevent conflicts with evdev monitoring."
+                elif is_malmo:
+                    description += "\n\n✓ Required for MalmoEnv real-time control."
 
                 input_mode_desc.setText(description)
             except (ValueError, KeyError):
@@ -1939,6 +1963,18 @@ class ControlPanelWidget(QtWidgets.QWidget):
                 overrides=overrides,
                 on_change=self._on_rware_config_changed,
             )
+        elif self._current_game is not None and self._current_game in MALMOENV_FAMILY:
+            current_game = self._current_game
+            overrides = self._game_overrides.setdefault(current_game, {})
+            # Set default values
+            for key, value in DEFAULT_MALMO_CONFIG.items():
+                overrides.setdefault(key, value)
+            build_malmo_controls(
+                layout=self._config_layout,
+                group=self._config_group,
+                overrides=overrides,
+                on_change=self._on_malmo_config_changed,
+            )
         else:
             label = QtWidgets.QLabel(
                 "No additional configuration options for this environment.",
@@ -1994,44 +2030,40 @@ class ControlPanelWidget(QtWidgets.QWidget):
         """Handle RWARE config changes (overrides dict already mutated in-place)."""
         pass  # overrides dict is shared; mutation already applied by build_rware_controls
 
+    def _on_malmo_config_changed(self, param_name: str, value: object) -> None:
+        """Handle MalmoEnv config changes."""
+        current_game = self._current_game
+        if current_game is None:
+            return
+        overrides = self._game_overrides.setdefault(current_game, {})
+        overrides[param_name] = value
+
     # ------------------------------------------------------------------
     # Multi-Agent Tab Handlers
     # ------------------------------------------------------------------
-    def _on_multi_agent_train_requested(self, worker_id: str, env_id: str) -> None:
-        """Handle train request from Multi-Agent tab."""
+    def _on_multi_agent_train_requested(self, worker_id: str) -> None:
+        """Handle train request from Multi-Agent Cooperation/Competition tab."""
         self._current_worker_id = worker_id
         self.worker_changed.emit(worker_id)
         self.train_agent_requested.emit(worker_id)
 
-    def _on_multi_agent_evaluate_requested(self, worker_id: str, env_id: str) -> None:
-        """Handle evaluate/policy load request from Multi-Agent tab."""
+    def _on_multi_agent_evaluate_requested(self, worker_id: str) -> None:
+        """Handle evaluate/policy load request from Multi-Agent Cooperation/Competition tab."""
         self._current_worker_id = worker_id
         self.worker_changed.emit(worker_id)
         self.trained_agent_requested.emit(worker_id)
 
-    def _on_policy_evaluate_requested(self, config: dict) -> None:
-        """Handle policy evaluation request from PolicyAssignmentPanel.
+    def _on_multi_agent_resume_requested(self, worker_id: str) -> None:
+        """Handle resume training request from Multi-Agent Cooperation/Competition tab."""
+        self._current_worker_id = worker_id
+        self.worker_changed.emit(worker_id)
+        self.resume_training_requested.emit(worker_id)
 
-        This is triggered when user clicks 'Evaluate Policies' in the
-        Cooperation/Competition tab after assigning policies to agents.
-
-        Args:
-            config: Evaluation configuration containing:
-                - mode: "evaluate"
-                - agent_policies: {agent_id: checkpoint_path}
-                - policy_types: {agent_id: "ray" | "cleanrl" | "random"}
-                - agents: list of agent IDs
-                - env_id: environment ID
-                - env_family: environment family
-                - worker_id: worker ID
-        """
-        import logging
-        _logger = logging.getLogger(__name__)
-
-        _logger.info("Policy evaluation requested: %s", config)
-
-        # Forward to main window via signal
-        self.policy_evaluate_requested.emit(config)
+    def _on_multi_agent_script_requested(self, worker_id: str) -> None:
+        """Handle custom script request from Multi-Agent Cooperation/Competition tab."""
+        self._current_worker_id = worker_id
+        self.worker_changed.emit(worker_id)
+        self.custom_script_requested.emit(worker_id)
 
     def _on_multi_agent_load_requested(self, env_id: str, seed: int) -> None:
         """Handle environment load request from Multi-Agent tab (Human vs Agent mode)."""
