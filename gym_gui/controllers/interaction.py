@@ -31,7 +31,7 @@ class InteractionController(ABC):
     def step_dt(self) -> float:
         """Fixed simulation dt if applicable (physics), else 0.0."""
         raise NotImplementedError
-    
+
     def handle_native_key(self, key_code: int, pressed: bool) -> bool:
         """Handle a raw key event. Return True if handled."""
         return False

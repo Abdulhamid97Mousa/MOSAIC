@@ -335,10 +335,10 @@ def _suppress_annoying_warnings():
             if "replace 'import gym' with 'import gymnasium as gym'" in data:
                 return
             self.stream.write(data)
-            
+
         def flush(self):
             self.stream.flush()
-            
+
         def __getattr__(self, name):
             return getattr(self.stream, name)
 
@@ -355,7 +355,7 @@ def _suppress_annoying_warnings():
     original_stdout = sys.stdout
     sys.stderr = StreamFilter(original_stderr)
     sys.stdout = StreamFilter(original_stdout)
-    
+
     try:
         yield
     finally:

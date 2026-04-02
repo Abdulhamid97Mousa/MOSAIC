@@ -169,7 +169,7 @@ def build_malmo_controls(
     # --- Connection Section (REMOVED) ---
     # User requested removal of manual port/server configuration
     # These defaults are still applied via DEFAULT_MALMO_CONFIG but not shown in UI.
-    
+
     # conn_group = QtWidgets.QGroupBox("Minecraft Connection", group)
     # conn_layout = QtWidgets.QFormLayout(conn_group)
     # ...

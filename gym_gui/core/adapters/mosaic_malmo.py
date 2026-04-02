@@ -308,7 +308,7 @@ class MalmoEnvAdapter(EnvironmentAdapter[np.ndarray, int]):
                 f"  ./run_malmo.sh\n\n"
                 f"Wait for 'CLIENT enter state: DORMANT' then try again."
             ) from exc
-        
+
         # Inject "move 0" (NOOP) into the action space for passive ticking
         # This allows the GUI to step the environment without causing movement
         try:
@@ -319,7 +319,7 @@ class MalmoEnvAdapter(EnvironmentAdapter[np.ndarray, int]):
                     env.action_space = malmoenv.ActionSpace(actions)
         except Exception:
             pass
-            
+
         self._malmo_env = env
         self.log_constant(
             LOG_ADAPTER_ENV_CREATED,

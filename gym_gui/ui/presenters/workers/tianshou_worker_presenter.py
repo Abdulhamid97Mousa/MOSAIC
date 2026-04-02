@@ -24,26 +24,26 @@ class TianshouWorkerPresenter:
 
     def build_train_request(self, policy_path: Any, current_game: Optional[Any]) -> dict:
         """Construct a training request for policy evaluation.
-        
+
         This allows the "Load Policy" dialog to launch a Tianshou evaluation run.
         """
         # We can implement a basic eval request here
         # Assuming policy_path is a Path object or string
         import pathlib
         path = pathlib.Path(policy_path)
-        
+
         # Infer algo from path if possible, default to ppo
         algo = "ppo"
         if "dqn" in path.name.lower():
             algo = "dqn"
-            
+
         ulid = str(ULID())
         run_id = f"tianshou-eval-{path.stem}-{ulid}"
-        
+
         # Default environment if not known (user can change in form, but here we construct direct request)
         # Actually, build_train_request usually returns a CONFIG dict that is passed to the worker launcher
         # via the main window's run_worker method.
-        
+
         return {
             "run_id": run_id,
             "worker_id": "tianshou_worker",
@@ -62,12 +62,12 @@ class TianshouWorkerPresenter:
     def create_tabs(self, run_id: str, agent_id: str, first_payload: dict, parent: Any) -> List[Any]:
         """Create analytics tabs for a running worker."""
         tabs = []
-        
+
         # Check if FastLane is enabled in the config
         # The payload structure usually has 'config' key
         config = first_payload.get("config", {})
         extras = config.get("extras", {})
-        
+
         if extras.get("fastlane_enabled"):
             try:
                 # FastLane tab for live video
@@ -79,7 +79,7 @@ class TianshouWorkerPresenter:
                 tabs.append(tab)
             except Exception as e:
                 _LOGGER.error(f"Failed to create FastLane tab for {run_id}: {e}")
-                
+
         return tabs
 
 

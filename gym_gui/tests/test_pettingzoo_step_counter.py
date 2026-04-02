@@ -25,7 +25,6 @@ from unittest.mock import MagicMock
 
 import pytest
 
-
 # ---------------------------------------------------------------------------
 # OperatorsTab – step counter behaviour
 # ---------------------------------------------------------------------------
@@ -180,13 +179,17 @@ class TestControlPanelSetStepCount:
 
     @pytest.fixture
     def panel(self, qtbot):
-        from gym_gui.ui.widgets.control_panel import ControlPanelWidget, ControlPanelConfig
-        from gym_gui.core.enums import ControlMode, GameId
         from gym_gui.config.game_configs import (
-            FrozenLakeConfig, TaxiConfig, CliffWalkingConfig,
-            LunarLanderConfig, CarRacingConfig, BipedalWalkerConfig,
+            BipedalWalkerConfig,
+            CarRacingConfig,
+            CliffWalkingConfig,
+            FrozenLakeConfig,
+            LunarLanderConfig,
             MiniGridConfig,
+            TaxiConfig,
         )
+        from gym_gui.core.enums import ControlMode, GameId
+        from gym_gui.ui.widgets.control_panel import ControlPanelConfig, ControlPanelWidget
         config = ControlPanelConfig(
             available_modes={GameId.FROZEN_LAKE: [ControlMode.HUMAN_ONLY]},
             default_mode=ControlMode.HUMAN_ONLY,

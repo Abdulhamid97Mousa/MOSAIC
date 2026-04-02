@@ -28,7 +28,7 @@ except ImportError:
         seed: Optional[int] = None
         extras: Dict[str, Any] = None
         worker_id: Optional[str] = None
-        
+
         def to_dict(self):
             return self.__dict__
 
@@ -42,49 +42,49 @@ class TianshouResumeForm(QtWidgets.QDialog):
         super().__init__(parent)
         self.setWindowTitle("Resume Tianshou Training")
         self.resize(600, 400)
-        
+
         self._setup_ui()
 
     def _setup_ui(self):
         layout = QtWidgets.QVBoxLayout(self)
-        
+
         # --- Checkpoint Selection ---
         group_ckpt = QtWidgets.QGroupBox("Checkpoint Selection")
         form_ckpt = QtWidgets.QFormLayout(group_ckpt)
-        
+
         self._ckpt_path_edit = QtWidgets.QLineEdit()
         self._ckpt_btn = QtWidgets.QPushButton("Browse...")
         self._ckpt_btn.clicked.connect(self._on_browse_ckpt)
-        
+
         ckpt_layout = QtWidgets.QHBoxLayout()
         ckpt_layout.addWidget(self._ckpt_path_edit)
         ckpt_layout.addWidget(self._ckpt_btn)
-        
+
         form_ckpt.addRow("Checkpoint File:", ckpt_layout)
-        
+
         layout.addWidget(group_ckpt)
-        
+
         # --- Config Override ---
         group_config = QtWidgets.QGroupBox("Configuration")
         form_config = QtWidgets.QFormLayout(group_config)
-        
+
         self._algo_edit = QtWidgets.QLineEdit()
         self._algo_edit.setPlaceholderText("e.g. ppo")
         form_config.addRow("Algorithm:", self._algo_edit)
-        
+
         self._env_edit = QtWidgets.QLineEdit()
         self._env_edit.setPlaceholderText("e.g. CartPole-v1")
         form_config.addRow("Environment:", self._env_edit)
-        
+
         self._timesteps_spin = QtWidgets.QSpinBox()
         self._timesteps_spin.setRange(1000, 1_000_000_000)
         self._timesteps_spin.setValue(100_000)
         self._timesteps_spin.setSingleStep(10_000)
         self._timesteps_spin.setSuffix(" additional steps")
         form_config.addRow("Additional Steps:", self._timesteps_spin)
-        
+
         layout.addWidget(group_config)
-        
+
         # --- FastLane ---
         group_video = QtWidgets.QGroupBox("Rendering")
         form_video = QtWidgets.QFormLayout(group_video)
@@ -92,7 +92,7 @@ class TianshouResumeForm(QtWidgets.QDialog):
         self._fastlane_check.setChecked(True)
         form_video.addRow(self._fastlane_check)
         layout.addWidget(group_video)
-        
+
         # --- Buttons ---
         button_box = QtWidgets.QDialogButtonBox(
             QtWidgets.QDialogButtonBox.StandardButton.Ok | QtWidgets.QDialogButtonBox.StandardButton.Cancel
@@ -128,12 +128,12 @@ class TianshouResumeForm(QtWidgets.QDialog):
         algo = self._algo_edit.text() or "ppo"
         env_id = self._env_edit.text() or "CartPole-v1"
         additional_steps = self._timesteps_spin.value()
-        
+
         extras = {
             "resume_from": ckpt_path,
             "resume": True
         }
-        
+
         if self._fastlane_check.isChecked():
             extras["fastlane_enabled"] = True
             extras["video_mode"] = VideoModes.SINGLE.value

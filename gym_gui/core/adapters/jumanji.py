@@ -470,7 +470,12 @@ class JumanjiSudokuAdapter(JumanjiAdapter):
         """Execute one step and update stored observation."""
         env = self._require_env()
 
-        obs, reward, terminated, truncated, info = env.step(action)
+        # Jumanji Sudoku expects a 3-element array [row, col, digit] not a
+        # flat integer.  Decode from our flat encoding (row*81 + col*9 + digit).
+        row, col, digit = self.decode_action(action)
+        action_array = np.array([row, col, digit - 1], dtype=np.int32)
+
+        obs, reward, terminated, truncated, info = env.step(action_array)
 
         # Store raw observation BEFORE _package_step calls render()
         self._last_obs = obs if isinstance(obs, dict) else None

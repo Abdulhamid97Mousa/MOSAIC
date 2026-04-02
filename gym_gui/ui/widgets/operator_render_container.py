@@ -2059,10 +2059,10 @@ class OperatorRenderContainer(QtWidgets.QFrame):
                 self.mouse_delta_input.emit(self._config.operator_id, dx, dy)
                 # Re-center mouse to keep it captured
                 self._center_mouse()
-            
+
             event.accept()
             return
-            
+
         super().mouseMoveEvent(event)
 
     def focusOutEvent(self, event) -> None:

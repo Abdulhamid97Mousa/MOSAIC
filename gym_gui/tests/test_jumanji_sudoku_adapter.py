@@ -136,7 +136,6 @@ class TestJumanjiSudokuAdapterStep:
     standard gym convention is Python ints.
     """
 
-    @pytest.mark.xfail(reason="Jumanji gymnasium wrapper has action type issues")
     def test_sudoku_step_basic(self) -> None:
         """Test basic step functionality."""
         adapter = _make_sudoku_adapter()
@@ -158,7 +157,6 @@ class TestJumanjiSudokuAdapterStep:
         finally:
             adapter.close()
 
-    @pytest.mark.xfail(reason="Jumanji gymnasium wrapper has action type issues")
     def test_sudoku_step_updates_last_obs(self) -> None:
         """Test that step updates _last_obs."""
         adapter = _make_sudoku_adapter()

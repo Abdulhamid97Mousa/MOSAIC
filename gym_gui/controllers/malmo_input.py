@@ -4,15 +4,15 @@ import logging
 from typing import Any, Optional, Set
 
 from gym_gui.controllers.input_utils import (
-    KeyCombinationResolver,
-    _KEYS_DOWN,
-    _KEYS_LEFT,
-    _KEYS_RIGHT,
-    _KEYS_UP,
     _KEY_E,
     _KEY_F,
     _KEY_RETURN,
     _KEY_SPACE,
+    _KEYS_DOWN,
+    _KEYS_LEFT,
+    _KEYS_RIGHT,
+    _KEYS_UP,
+    KeyCombinationResolver,
 )
 
 _LOGGER = logging.getLogger(__name__)

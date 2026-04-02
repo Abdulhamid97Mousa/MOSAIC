@@ -4,36 +4,36 @@ import logging
 from dataclasses import dataclass
 from typing import Dict, Iterable, Optional, Set, Tuple
 
-from gym_gui.core.enums import GameId
 from gym_gui.controllers.input_utils import (
-    KeyCombinationResolver,
-    _KEYS_DOWN,
-    _KEYS_LEFT,
-    _KEYS_RIGHT,
-    _KEYS_UP,
     _KEY_1,
     _KEY_2,
     _KEY_3,
     _KEY_A,
     _KEY_C,
+    _KEY_CONTROL,
     _KEY_D,
+    _KEY_DOWN,
     _KEY_E,
     _KEY_F,
     _KEY_G,
     _KEY_H,
+    _KEY_LEFT,
     _KEY_Q,
+    _KEY_RETURN,
+    _KEY_RIGHT,
     _KEY_S,
+    _KEY_SPACE,
+    _KEY_UP,
     _KEY_W,
     _KEY_X,
     _KEY_Z,
-    _KEY_RETURN,
-    _KEY_SPACE,
-    _KEY_CONTROL,
-    _KEY_LEFT,
-    _KEY_RIGHT,
-    _KEY_UP,
-    _KEY_DOWN,
+    _KEYS_DOWN,
+    _KEYS_LEFT,
+    _KEYS_RIGHT,
+    _KEYS_UP,
+    KeyCombinationResolver,
 )
+from gym_gui.core.enums import GameId
 
 _LOGGER = logging.getLogger(__name__)
 

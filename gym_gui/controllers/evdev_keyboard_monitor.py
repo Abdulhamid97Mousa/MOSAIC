@@ -14,7 +14,8 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Dict, List, Optional
 
-from qtpy.QtCore import QObject, QThread, Signal as pyqtSignal
+from qtpy.QtCore import QObject, QThread
+from qtpy.QtCore import Signal as pyqtSignal
 
 _LOGGER = logging.getLogger(__name__)
 

@@ -14,10 +14,10 @@ from __future__ import annotations
 
 import logging
 import os
-from pathlib import Path
 import re
 import subprocess
 import time
+from pathlib import Path
 from typing import Callable, Mapping
 
 from qtpy import QtCore, QtGui, QtWidgets
@@ -345,7 +345,7 @@ class _MalmoView(QtWidgets.QWidget):
             return
 
         self._last_stream_frame_num = frame.frame_number
-        
+
         # Convert to QImage directly from bytes (fast path)
         w, h = frame.width, frame.height
         if w <= 0 or h <= 0 or not frame.rgb_data:
@@ -360,15 +360,15 @@ class _MalmoView(QtWidgets.QWidget):
         # Note: We must copy() because QImage doesn't own the buffer by default
         # and frame.rgb_data might be reclaimed.
         img = QtGui.QImage(
-            frame.rgb_data, 
-            w, 
-            h, 
-            w * 3, 
+            frame.rgb_data,
+            w,
+            h,
+            w * 3,
             QtGui.QImage.Format.Format_RGB888
         ).copy()
 
         self._current_pixmap = QtGui.QPixmap.fromImage(img)
-        
+
         # Build HUD from frame metadata
         # self._hud_lines = self._build_hud_from_frame(frame)
         self.update()
@@ -396,10 +396,10 @@ class _MalmoView(QtWidgets.QWidget):
     #        status_parts.append(f"Food {frame.food:.0f}")
     #    if frame.HasField("xp"):
     #        status_parts.append(f"XP {frame.xp}")
-    #    
+    #
     #    if status_parts:
     #        lines.append(" | ".join(status_parts))
-    #        
+    #
     #    if frame.HasField("reward"):
     #        lines.append(f"Reward: {frame.reward:.2f}")
     #

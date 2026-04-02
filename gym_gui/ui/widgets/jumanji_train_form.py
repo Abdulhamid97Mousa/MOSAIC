@@ -14,12 +14,12 @@ from dataclasses import dataclass
 from typing import Any, Dict, Optional
 
 from qtpy import QtCore, QtWidgets
+from ulid import ULID
 
 from gym_gui.core.enums import EnvironmentFamily, GameId
-from gym_gui.logging_config.helpers import LogConstantMixin
 from gym_gui.fastlane.worker_helpers import apply_fastlane_environment
+from gym_gui.logging_config.helpers import LogConstantMixin
 from gym_gui.telemetry.semconv import VideoModes
-from ulid import ULID
 
 try:
     from jumanji_worker.config import JumanjiWorkerConfig

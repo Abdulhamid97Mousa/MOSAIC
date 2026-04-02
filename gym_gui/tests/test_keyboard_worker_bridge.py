@@ -14,21 +14,20 @@ Test groups:
 
 from __future__ import annotations
 
-import json
 import io
+import json
 from typing import Any, Dict, List, Optional
-from unittest.mock import MagicMock, patch, PropertyMock
+from unittest.mock import MagicMock, PropertyMock, patch
 
 import pytest
 from qtpy import QtCore
 from qtpy.QtWidgets import QApplication
 
 from gym_gui.controllers.keyboard_worker_bridge import (
+    _STATE_READY,
     KeyboardWorkerBridge,
     _KeyboardWorkerHandle,
-    _STATE_READY,
 )
-
 
 # ---------------------------------------------------------------------------
 # Helpers

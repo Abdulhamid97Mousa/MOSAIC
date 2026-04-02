@@ -190,7 +190,6 @@ def ensure_minecraft_running(
 
     ports = [agent_port(base_port, role) for role in range(agent_count)]
     launched: list[subprocess.Popen] = []
-    ports_to_wait: list[int] = []
 
     _report(
         f"Multi-agent Minecraft: {agent_count} client(s) needed, "

@@ -49,7 +49,6 @@ from gym_gui.controllers.human_input import (
     MultiGridKeyCombinationResolver,
 )
 
-
 # ---------------------------------------------------------------------------
 # Minimal reproduction of the singleShot-chained game-tick logic.
 # ---------------------------------------------------------------------------

@@ -27,7 +27,7 @@ except ImportError:
         seed: Optional[int] = None
         extras: Dict[str, Any] = None
         worker_id: Optional[str] = None
-        
+
         def to_dict(self):
             return self.__dict__
 
@@ -42,39 +42,39 @@ class TianshouScriptForm(QtWidgets.QDialog):
         self.setWindowTitle("Tianshou Script Execution")
         self.setMinimumWidth(500)
         self.setMinimumHeight(300)
-        
+
         self._setup_ui()
         self._populate_scripts()
 
     def _setup_ui(self):
         layout = QtWidgets.QVBoxLayout(self)
-        
+
         # --- Script Selection ---
         group_script = QtWidgets.QGroupBox("Script Selection")
         form_script = QtWidgets.QFormLayout(group_script)
-        
+
         self._script_combo = QtWidgets.QComboBox()
         form_script.addRow("Script:", self._script_combo)
-        
+
         self._browse_btn = QtWidgets.QPushButton("Browse...")
         self._browse_btn.clicked.connect(self._on_browse_clicked)
         form_script.addRow("", self._browse_btn)
-        
+
         layout.addWidget(group_script)
-        
+
         # --- General Settings ---
         group_general = QtWidgets.QGroupBox("Settings")
         form_general = QtWidgets.QFormLayout(group_general)
-        
+
         self._run_id_edit = QtWidgets.QLineEdit()
         self._run_id_edit.setReadOnly(True)
         form_general.addRow("Run ID:", self._run_id_edit)
-        
+
         self._env_id_edit = QtWidgets.QLineEdit("CartPole-v1") # Default placeholder
         form_general.addRow("Env ID:", self._env_id_edit)
-        
+
         layout.addWidget(group_general)
-        
+
         # --- FastLane ---
         group_video = QtWidgets.QGroupBox("Rendering")
         form_video = QtWidgets.QFormLayout(group_video)
@@ -82,7 +82,7 @@ class TianshouScriptForm(QtWidgets.QDialog):
         self._fastlane_check.setChecked(True)
         form_video.addRow(self._fastlane_check)
         layout.addWidget(group_video)
-        
+
         # --- Buttons ---
         button_box = QtWidgets.QDialogButtonBox(
             QtWidgets.QDialogButtonBox.StandardButton.Ok | QtWidgets.QDialogButtonBox.StandardButton.Cancel
@@ -90,7 +90,7 @@ class TianshouScriptForm(QtWidgets.QDialog):
         button_box.accepted.connect(self.accept)
         button_box.rejected.connect(self.reject)
         layout.addWidget(button_box)
-        
+
         self._update_run_id()
 
     def _update_run_id(self):
@@ -104,7 +104,7 @@ class TianshouScriptForm(QtWidgets.QDialog):
         if TIANSHOU_SCRIPTS_DIR.exists():
             scripts = sorted(TIANSHOU_SCRIPTS_DIR.glob("*.py"))
             self._script_combo.addItems([s.name for s in scripts])
-        
+
         if self._script_combo.count() == 0:
             self._script_combo.addItem("No scripts found")
             self._script_combo.setEnabled(False)
@@ -121,11 +121,11 @@ class TianshouScriptForm(QtWidgets.QDialog):
         run_id = self._run_id_edit.text()
         algo = "script" # Special algo type for scripts
         env_id = self._env_id_edit.text()
-        
+
         extras = {
             "script_path": str(TIANSHOU_SCRIPTS_DIR / self._script_combo.currentText())
         }
-        
+
         if self._fastlane_check.isChecked():
             extras["fastlane_enabled"] = True
             extras["video_mode"] = VideoModes.SINGLE.value

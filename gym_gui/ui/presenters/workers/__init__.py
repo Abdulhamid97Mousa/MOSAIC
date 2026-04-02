@@ -20,12 +20,12 @@ The registry is auto-populated at module load to support service discovery.
 from .chess_worker_presenter import ChessWorkerPresenter
 from .cleanrl_worker_presenter import CleanRlWorkerPresenter
 from .human_worker_presenter import HumanWorkerPresenter
+from .jumanji_worker_presenter import JumanjiWorkerPresenter
 from .mctx_worker_presenter import MctxWorkerPresenter
 from .ray_worker_presenter import RayWorkerPresenter
 from .registry import WorkerPresenter, WorkerPresenterRegistry
-from .xuance_worker_presenter import XuanCeWorkerPresenter
 from .tianshou_worker_presenter import TianshouWorkerPresenter
-from .jumanji_worker_presenter import JumanjiWorkerPresenter
+from .xuance_worker_presenter import XuanCeWorkerPresenter
 
 # Create and auto-register default presenters
 _registry = WorkerPresenterRegistry()

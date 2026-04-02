@@ -7,10 +7,8 @@ import subprocess
 import tempfile
 import unittest
 from pathlib import Path
-from unittest.mock import MagicMock, PropertyMock, patch
-
-
 from typing import TYPE_CHECKING
+from unittest.mock import MagicMock, PropertyMock, patch
 
 
 def _has_pyqt6() -> bool:

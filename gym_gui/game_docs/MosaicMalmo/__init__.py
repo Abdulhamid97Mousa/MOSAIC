@@ -14,8 +14,8 @@ from .FindTheGoal import MALMOENV_FINDTHEGOAL_HTML, get_findthegoal_html
 from .MazeRunner import MALMOENV_MAZERUNNER_HTML, get_mazerunner_html
 from .MobChase import MALMOENV_MOBCHASE_HTML, get_mobchase_html
 from .Obstacles import MALMOENV_OBSTACLES_HTML, get_obstacles_html
-from .TrickyArena import MALMOENV_TRICKYARENA_HTML, get_trickyarena_html
 from .TreasureHunt import MALMOENV_TREASUREHUNT_HTML, get_treasurehunt_html
+from .TrickyArena import MALMOENV_TRICKYARENA_HTML, get_trickyarena_html
 from .Vertical import MALMOENV_VERTICAL_HTML, get_vertical_html
 
 # Backward-compatibility aliases (old MARLO_ prefix)
