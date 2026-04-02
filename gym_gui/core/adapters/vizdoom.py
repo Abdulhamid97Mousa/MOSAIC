@@ -100,6 +100,12 @@ class ViZDoomAdapter(EnvironmentAdapter[np.ndarray, Sequence[int]]):
         vzd = _ensure_vizdoom()
         self._game = vzd.DoomGame()
 
+        # Write _vizdoom.ini into var/data/vizdoom/ instead of the repo root.
+        from gym_gui.config.paths import VAR_DATA_DIR
+        vizdoom_dir = VAR_DATA_DIR / "vizdoom"
+        vizdoom_dir.mkdir(parents=True, exist_ok=True)
+        self._game.set_doom_config_path(str(vizdoom_dir / "_vizdoom.ini"))
+
         scenario_path = os.path.join(vzd.scenarios_path, self._scenario_file)
         self._game.load_config(scenario_path)
 

@@ -336,7 +336,7 @@ def main(args: Optional[list[str]] = None) -> int:
 
         logger.info(
             "Run completed: status=%s env=%s",
-            summary.status,
+            summary.get("status", "unknown") if isinstance(summary, dict) else getattr(summary, "status", "unknown"),
             config.env_id,
         )
         return 0

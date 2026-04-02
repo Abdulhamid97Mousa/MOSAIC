@@ -7,6 +7,7 @@ from gym_gui.controllers.interaction import (
     Box2DInteractionController,
     TurnBasedInteractionController,
 )
+from gym_gui.controllers.malmo_interaction import MalmoInteractionController
 from gym_gui.controllers.session import SessionController
 from gym_gui.core.adapters.base import AdapterStep
 from gym_gui.core.enums import ControlMode, EnvironmentFamily, GameId
@@ -42,9 +43,15 @@ def test_session_defaults_to_turn_based_controller():
     assert isinstance(controller, TurnBasedInteractionController)
 
 
+def test_session_selects_malmo_controller_for_malmo_family():
+    session = _make_session()
+    controller = session._create_interaction_controller(EnvironmentFamily.MALMOENV)
+    assert isinstance(controller, MalmoInteractionController)
+
+
 def test_idle_tick_requires_game_started():
     session = _make_session()
-    session._adapter = object()
+    session._adapter = object()  # type: ignore[assignment]
     session._game_id = GameId.ALE_ASSAULT_V5
     session._control_mode = ControlMode.HUMAN_ONLY
     session._passive_action = 0

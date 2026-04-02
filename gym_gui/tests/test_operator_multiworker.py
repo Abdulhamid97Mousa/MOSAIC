@@ -414,8 +414,10 @@ class TestOperatorConfigMultiAgent:
         human_worker = config.get_worker_for_player("player_0")
         ai_worker = config.get_worker_for_player("player_1")
 
+        assert human_worker is not None
         assert human_worker.worker_type == "human", \
             "player_0 should be human"
+        assert ai_worker is not None
         assert ai_worker.worker_type == "llm", \
             "player_1 should be llm"
 
@@ -757,8 +759,10 @@ class TestOperatorConfigIntegration:
         white = config.get_worker_for_player("player_0")
         black = config.get_worker_for_player("player_1")
 
+        assert white is not None
         assert white.settings["model_id"] == "gpt-4o", \
             "White (player_0) should be GPT-4"
+        assert black is not None
         assert black.settings["model_id"] == "claude-3-opus", \
             "Black (player_1) should be Claude"
 

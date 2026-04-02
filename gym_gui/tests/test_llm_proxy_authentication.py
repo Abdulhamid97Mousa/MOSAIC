@@ -10,7 +10,7 @@ from __future__ import annotations
 
 import os
 from pathlib import Path
-from typing import Optional
+from typing import TYPE_CHECKING, Optional
 from unittest.mock import MagicMock, Mock, patch
 
 import pytest
@@ -31,6 +31,9 @@ except ImportError as e:
     LLM_CHAT_AVAILABLE = False
     _HAS_HF_HUB = False
     SKIP_REASON = f"LLM chat dependencies not available: {e}"
+
+if TYPE_CHECKING:
+    from gym_gui.services.llm import HuggingFaceAuth, ModelDownloader, ProxyConfig
 
 _SKIP = not LLM_CHAT_AVAILABLE or not _HAS_HF_HUB
 

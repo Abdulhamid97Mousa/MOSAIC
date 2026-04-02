@@ -21,7 +21,9 @@ Protocol:
 
 import json
 import logging
+import select
 import sys
+import time
 from datetime import datetime
 from typing import Any, Dict, List, Optional
 
@@ -733,7 +735,295 @@ class HumanWorkerRuntime:
         print(json.dumps(data), flush=True)
 
 
+class HumanKeyboardRuntime:
+    """Keyboard-driven human worker that reads a physical USB keyboard.
+
+    Runs in a subprocess, owns a single ``/dev/input/eventX`` device,
+    and responds to ``select_action`` commands by waiting for the human
+    to press a recognized key combination on the assigned keyboard.
+
+    This keeps keyboard I/O and key-to-action resolution entirely off
+    the Qt main thread, solving the UI-freeze problem that occurs when
+    ``adapter.step()`` blocks the event loop.
+
+    Protocol (JSON over stdin/stdout)::
+
+        GUI -> Worker: {"cmd": "init_agent", "game_name": "MultiGrid-Soccer-v0",
+                        "player_id": "agent_0"}
+        Worker -> GUI: {"type": "agent_initialized", ...}
+
+        GUI -> Worker: {"cmd": "select_action", "player_id": "agent_0"}
+        (Worker blocks reading keyboard until a key is pressed)
+        Worker -> GUI: {"type": "action_selected", "action": 3, ...}
+
+        GUI -> Worker: {"cmd": "stop"}
+        Worker -> GUI: {"type": "stopped"}
+    """
+
+    def __init__(self, config: HumanWorkerConfig, device_path: str, mouse_path: Optional[str] = None) -> None:
+        self.config = config
+        self._device_path = device_path
+        self._mouse_path = mouse_path
+        self._player_id: str = ""
+        self._game_name: str = ""
+        self._resolver = None
+        self._reader = None
+        self._mouse_reader = None
+        self._setup_logging()
+
+    def _setup_logging(self) -> None:
+        handler = logging.StreamHandler(sys.stderr)
+        handler.setFormatter(
+            logging.Formatter("%(asctime)s | %(levelname)-8s | %(name)s | %(message)s")
+        )
+        logger.addHandler(handler)
+        logger.setLevel(logging.INFO)
+
+    def _emit(self, data: Dict[str, Any]) -> None:
+        """Emit JSON response to stdout."""
+        print(json.dumps(data), flush=True)
+
+    def _handle_init_agent(self, cmd: Dict[str, Any]) -> None:
+        """Handle init_agent: open keyboard device and create resolver."""
+        from .evdev_input import EvdevDeviceReader, create_resolver
+
+        self._game_name = cmd.get("game_name", "")
+        self._player_id = cmd.get("player_id", "")
+        env_name = self.config.env_name or "multigrid"
+
+        # Create the keycode resolver.  Priority:
+        # 1. key_action_map: dynamic mapping from GUI (works for ALL envs)
+        # 2. action_list: Malmo's mission-specific action names
+        # 3. env_name: fallback to hardcoded per-environment resolver
+        key_action_map = cmd.get("key_action_map")
+        action_list = cmd.get("action_list")
+        self._resolver = create_resolver(
+            env_name,
+            action_list=action_list,
+            key_action_map=key_action_map,
+        )
+
+        # Open the evdev device
+        self._reader = EvdevDeviceReader(self._device_path)
+        try:
+            self._reader.open()
+        except PermissionError:
+            msg = (
+                f"Permission denied: {self._device_path}. "
+                f"Run: sudo usermod -a -G input $USER"
+            )
+            logger.error(msg)
+            self._emit({"type": "error", "message": msg})
+            return
+        except OSError as exc:
+            msg = f"Failed to open {self._device_path}: {exc}"
+            logger.error(msg)
+            self._emit({"type": "error", "message": msg})
+            return
+
+        # Open optional mouse device
+        if self._mouse_path:
+            from .evdev_input import MouseDeviceReader
+            self._mouse_reader = MouseDeviceReader(self._mouse_path)
+            try:
+                self._mouse_reader.open()
+                logger.info("Mouse device opened: %s", self._mouse_path)
+            except (PermissionError, OSError) as exc:
+                logger.warning(
+                    "Failed to open mouse %s: %s (continuing without mouse)",
+                    self._mouse_path, exc,
+                )
+                self._mouse_reader = None
+
+        logger.info(
+            "Keyboard agent initialized: %s as %s (device: %s, mouse: %s, env: %s)",
+            self._game_name, self._player_id, self._device_path,
+            self._mouse_path or "none", env_name,
+        )
+        self._emit({
+            "type": "agent_initialized",
+            "run_id": self.config.run_id,
+            "game_name": self._game_name,
+            "player_id": self._player_id,
+            "device_path": self._device_path,
+            "mouse_path": self._mouse_path or "",
+        })
+
+    def _handle_select_action(self, cmd: Dict[str, Any]) -> None:
+        """Handle select_action: read keyboard input, return action or NOOP.
+
+        In tick mode (``tick_timeout > 0``), returns NOOP if no key is
+        pressed within the timeout window. This allows multi-agent games
+        to step continuously without agents blocking each other.
+
+        In blocking mode (``tick_timeout <= 0``, default for single-agent),
+        waits indefinitely until the human presses a recognized key.
+        """
+        if self._reader is None or self._resolver is None:
+            self._emit({
+                "type": "error",
+                "message": "Keyboard not initialized. Send init_agent first.",
+            })
+            return
+
+        player_id = cmd.get("player_id", self._player_id)
+        noop_action = cmd.get("noop_action", 0)
+        tick_timeout = cmd.get("tick_timeout", 0.0)  # 0 = blocking (single-agent)
+        use_tick = tick_timeout > 0
+
+        action = None
+        mouse_dx, mouse_dy = 0, 0
+        raw_keys: List[Dict[str, Any]] = []  # [{keycode, pressed}] for native forwarding
+        deadline = time.monotonic() + tick_timeout if use_tick else 0
+
+        while action is None:
+            # Check stdin for stop/cancel (non-blocking)
+            stdin_readable, _, _ = select.select([sys.stdin], [], [], 0.0)
+            if stdin_readable:
+                line = sys.stdin.readline().strip()
+                if line:
+                    try:
+                        interrupt_cmd = json.loads(line)
+                        if interrupt_cmd.get("cmd") in ("stop", "cancel_input"):
+                            logger.info("Keyboard input cancelled by GUI")
+                            if interrupt_cmd.get("cmd") == "stop":
+                                self._emit({
+                                    "type": "stopped",
+                                    "run_id": self.config.run_id,
+                                })
+                                return
+                            self._emit({
+                                "type": "input_cancelled",
+                                "run_id": self.config.run_id,
+                                "player_id": player_id,
+                            })
+                            return
+                    except json.JSONDecodeError:
+                        pass
+
+            # Build fd list: keyboard fd + optional mouse fd
+            fds = []
+            kbd_fd = getattr(self._reader, '_fd', None)
+            mouse_fd = None
+            if self._mouse_reader is not None and self._mouse_reader.is_open:
+                mouse_fd = self._mouse_reader.fd
+
+            if kbd_fd is not None:
+                fds.append(kbd_fd)
+            if mouse_fd is not None:
+                fds.append(mouse_fd)
+
+            if not fds:
+                break
+
+            # In tick mode, limit how long we wait
+            if use_tick:
+                remaining = deadline - time.monotonic()
+                if remaining <= 0:
+                    action = noop_action  # Timeout: return NOOP
+                    break
+                wait = min(remaining, 0.05)
+            else:
+                wait = 0.1
+
+            readable, _, _ = select.select(fds, [], [], wait)
+
+            # Drain mouse deltas if mouse fd is ready (accumulate across loop)
+            if mouse_fd is not None and mouse_fd in readable:
+                mdx, mdy = self._mouse_reader.drain_deltas()
+                mouse_dx += mdx
+                mouse_dy += mdy
+
+            # Read keyboard: drain ALL key events (press + release) for native
+            # forwarding, and resolve press events to game actions.
+            if kbd_fd is not None and kbd_fd in readable:
+                events = self._reader.drain_key_events()
+                for keycode, pressed in events:
+                    raw_keys.append({"keycode": keycode, "pressed": pressed})
+                    if pressed and action is None:
+                        action = self._resolver.resolve({keycode})
+
+        response: Dict[str, Any] = {
+            "type": "action_selected",
+            "run_id": self.config.run_id,
+            "player_id": player_id,
+            "action": action,
+            "source": "keyboard" if action != noop_action else "noop",
+            "device_path": self._device_path,
+            "timestamp": datetime.utcnow().isoformat(),
+        }
+        if mouse_dx != 0 or mouse_dy != 0:
+            response["mouse_dx"] = mouse_dx
+            response["mouse_dy"] = mouse_dy
+        if raw_keys:
+            response["raw_keys"] = raw_keys
+
+        if action != noop_action:
+            logger.info(
+                "Keyboard action: %s -> action %d (mouse_dx=%d, mouse_dy=%d, raw_keys=%d)",
+                player_id, action, mouse_dx, mouse_dy, len(raw_keys),
+            )
+        self._emit(response)
+
+    def run(self) -> None:
+        """Main loop: read commands from stdin, handle keyboard input."""
+        logger.info(
+            "Human Keyboard Runtime started (device: %s). "
+            "Waiting for commands on stdin...",
+            self._device_path,
+        )
+
+        self._emit({
+            "type": "init",
+            "run_id": self.config.run_id,
+            "player_name": self.config.player_name,
+            "version": "2.0",
+            "mode": "keyboard",
+            "device_path": self._device_path,
+            "mouse_path": self._mouse_path or "",
+        })
+
+        try:
+            for line in sys.stdin:
+                line = line.strip()
+                if not line:
+                    continue
+
+                try:
+                    cmd = json.loads(line)
+                except json.JSONDecodeError as exc:
+                    self._emit({"type": "error", "message": f"Invalid JSON: {exc}"})
+                    continue
+
+                cmd_type = cmd.get("cmd", "").lower()
+
+                if cmd_type == "init_agent":
+                    self._handle_init_agent(cmd)
+                elif cmd_type == "select_action":
+                    self._handle_select_action(cmd)
+                elif cmd_type == "stop":
+                    logger.info("Stop command received")
+                    self._emit({"type": "stopped", "run_id": self.config.run_id})
+                    break
+                elif cmd_type == "ping":
+                    self._emit({"type": "pong", "run_id": self.config.run_id})
+                else:
+                    self._emit({
+                        "type": "error",
+                        "message": f"Unknown command: {cmd_type}",
+                    })
+        except KeyboardInterrupt:
+            logger.info("Interrupted")
+        finally:
+            if self._reader is not None:
+                self._reader.close()
+            if self._mouse_reader is not None:
+                self._mouse_reader.close()
+            logger.info("Human Keyboard Runtime stopped")
+
+
 __all__ = [
     "HumanInteractiveRuntime",
+    "HumanKeyboardRuntime",
     "HumanWorkerRuntime",
 ]

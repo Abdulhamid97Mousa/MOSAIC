@@ -1,8 +1,35 @@
-Installation Guide
-==================
+Installation and Usage Guide
+============================
 
-This guide documents the complete installation of **Microsoft Malmo** (MalmoEnv) as used in
-MOSAIC. Follow these steps once; after that, starting Minecraft takes only seconds.
+This guide covers the complete setup and usage of **Microsoft Malmo** (MalmoEnv)
+in MOSAIC — from first-time installation to running environments in both
+human play and RL training modes.
+
+Quick Start (3 commands)
+------------------------
+
+If you just want to get running:
+
+.. code-block:: bash
+
+   # 1. One-time setup (installs Java deps, downloads assets, builds mod):
+   ./setup_malmo.sh
+
+   # 2. Start Minecraft (Terminal 1):
+   ./run_malmo.sh
+
+   # 3. Start MOSAIC (Terminal 2, after "DORMANT" appears):
+   ./run.sh
+
+Then select any **MalmoEnv** environment from the dropdown, click **Load Environment**,
+then **Start Game**.
+
+.. important::
+
+   Minecraft must be running BEFORE you load a MalmoEnv environment in MOSAIC.
+   If Minecraft is not running, MOSAIC will show:
+   ``Cannot connect to Minecraft on localhost:9000``.
+
 
 Prerequisites
 -------------
@@ -14,211 +41,270 @@ Prerequisites
    * - Dependency
      - Notes
    * - **Java 8 (JDK)**
-     - **Exactly Java 8** — Gradle 2.14 (bundled) does not support Java 9+.
+     - **Exactly Java 8** — Gradle 2.14 does not support Java 9+.
        On Ubuntu: ``sudo apt install openjdk-8-jdk``
+   * - **xvfb**
+     - Required for headless Minecraft (no visible window).
+       On Ubuntu: ``sudo apt install xvfb``
    * - **MOSAIC virtual environment**
      - All Python steps assume ``.venv`` is activated:
        ``source .venv/bin/activate``
-   * - **Git LFS** (optional)
-     - Only needed if cloning the full MOSAIC repo with binary assets.
 
 .. warning::
 
-   The Gradle wrapper bundled with Malmo (``gradlew``) requires **Java 8 exactly**.
-   Running with Java 17 or any other version prints:
-   ``Could not determine java version from '17.0.x'`` and aborts.
+   The Gradle wrapper bundled with Malmo requires **Java 8 exactly**.
+   Running with Java 17 prints ``Could not determine java version`` and aborts.
+   The ``setup_malmo.sh`` and ``run_malmo.sh`` scripts handle Java 8 detection
+   automatically.
 
-   Always set ``JAVA_HOME`` before any Malmo/Minecraft command::
 
-       export JAVA_HOME=/usr/lib/jvm/java-8-openjdk-amd64
+Automated Setup: ``setup_malmo.sh``
+------------------------------------
 
-Step 1: Install the MalmoEnv Python package
---------------------------------------------
-
-The MalmoEnv Python package lives in the MOSAIC repository under
-``3rd_party/environments/malmo/MalmoEnv/``.  Install it in editable mode:
+The ``setup_malmo.sh`` script at the repository root automates the entire
+first-time setup:
 
 .. code-block:: bash
 
-   source .venv/bin/activate
-   pip install --no-build-isolation -e 3rd_party/environments/malmo/MalmoEnv/
+   ./setup_malmo.sh
 
-Verify the installation:
+What it does (7 steps):
+
+1. Detects Java 8 JDK (searches ``/usr/lib/jvm/``)
+2. Verifies ``xvfb`` is installed
+3. Sets ``MALMO_XSD_PATH`` environment variable
+4. Creates ``version.properties`` if missing
+5. Downloads all 1196 Minecraft 1.11.2 assets via HTTPS (bypasses Mojang's broken HTTP CDN)
+6. Builds the Malmo Forge mod (``./gradlew build``)
+7. Installs the MalmoEnv Python package (``pip install -e``)
+
+.. note::
+
+   The asset download (step 5) takes a few minutes on first run. One asset
+   (``nether2.ogg``) always fails because Mojang removed it — this is harmless.
+
+   Subsequent runs of ``setup_malmo.sh`` skip already-completed steps.
+
+
+Launching Minecraft: ``run_malmo.sh``
+--------------------------------------
+
+The ``run_malmo.sh`` script launches Minecraft in headless mode:
 
 .. code-block:: bash
 
-   python -c "import malmoenv; print('malmoenv OK')"
+   ./run_malmo.sh                  # Default: headless on port 9000
+   ./run_malmo.sh -port 9001       # Custom port
+   ./run_malmo.sh --visible         # Show Minecraft window (for debugging)
 
-Step 2: Set ``MALMO_XSD_PATH``
---------------------------------
+The script automatically:
 
-MalmoEnv requires an environment variable pointing to the Malmo XML schema directory:
+- Kills any existing Minecraft process holding ports 9000/9001
+- Finds Java 8 and sets ``JAVA_HOME``
+- Builds the mod if needed
+- Launches Minecraft via ``xvfb-run`` (headless)
+
+When Minecraft is ready, you will see::
+
+   MOSAIC NativeInputHandler listening on port 9001
+   ***** Start MalmoEnvServer on port 9000
+   CLIENT enter state: DORMANT
+
+Minecraft is now waiting for MOSAIC connections.
+
+
+Launching MOSAIC: ``run.sh``
+-----------------------------
+
+In a **second terminal**, launch MOSAIC:
 
 .. code-block:: bash
 
-   export MALMO_XSD_PATH=/home/hamid/Desktop/software/mosaic/3rd_party/environments/malmo/Schemas
+   ./run.sh
 
-To make this permanent, add it to ``~/.bashrc``:
+Then:
+
+1. Select **Family: MalmoEnv** from the dropdown
+2. Choose any mission (e.g. ``MalmoEnv-CatchTheMob-v0``)
+3. Click **Load Environment** — the Minecraft frame appears in Render View
+4. Click **Start Game** — keyboard and mouse input become active
+
+
+Two Input Modes
+---------------
+
+MOSAIC supports two modes for Malmo environments. The mode is selected
+automatically based on the **Control Mode** setting:
+
+Human Play Mode (``Human Only``)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+When you select **Human Only** control mode:
+
+- **Keyboard**: Press/release events go directly to Minecraft via TCP port 9001.
+  Press W to walk, release W to stop. Feels like playing Minecraft natively.
+- **Mouse**: Raw dx/dy deltas go to Minecraft for smooth mouse look
+  (horizontal and vertical).
+- **Observations**: The MalmoEnv step loop runs in the background sending
+  ``noop`` commands to fetch frames for the Render View.
+
+This mode uses Minecraft's native ``KeyBinding`` system. The Java mod
+automatically switches to ``InputType.HUMAN`` when MOSAIC connects to port 9001.
+
+RL Training Mode (``Agent Only``)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+When you select **Agent Only** control mode (or use a worker like CleanRL):
+
+- **Actions**: The RL agent picks a discrete action integer each step
+  (e.g. ``0`` = ``move 1``, ``2`` = ``turn 1``).
+- **Step loop**: ``MalmoEnv.step(action)`` sends the command string to
+  Minecraft via TCP port 9000.
+- **Movement**: For continuous missions, ``move 1`` sets a persistent
+  velocity — the agent must learn to send ``move 0`` to stop.
+- **No native input**: Port 9001 is not used. The Java mod stays in
+  ``InputType.AI`` mode.
+
+.. note::
+
+   The two modes coexist — Minecraft automatically detects which mode to use
+   based on whether a human player is connected to port 9001. No configuration
+   needed.
+
+
+TCP Port Reference
+------------------
+
+.. list-table::
+   :header-rows: 1
+   :widths: 15 20 65
+
+   * - Port
+     - Service
+     - Description
+   * - **9000**
+     - MalmoEnv TCP
+     - Observations, rewards, and discrete action commands.
+       Used by BOTH human play and RL training.
+       Started by ``MalmoEnvServer`` in the Java mod.
+   * - **9001**
+     - NativeInputHandler TCP
+     - Raw keyboard press/release and mouse dx/dy.
+       Used by human play ONLY.
+       Started by ``NativeInputHandler`` in the Java mod.
+
+
+Manual Setup (Advanced)
+-----------------------
+
+If you prefer to set up manually instead of using ``setup_malmo.sh``:
+
+Step 1: Install Java 8
+~~~~~~~~~~~~~~~~~~~~~~~
 
 .. code-block:: bash
 
-   echo 'export MALMO_XSD_PATH=/home/hamid/Desktop/software/mosaic/3rd_party/environments/malmo/Schemas' >> ~/.bashrc
-   source ~/.bashrc
+   sudo apt install openjdk-8-jdk
+   export JAVA_HOME=/usr/lib/jvm/java-8-openjdk-amd64
 
-Step 3: Create ``version.properties``
----------------------------------------
+Step 2: Install xvfb
+~~~~~~~~~~~~~~~~~~~~~
 
-The Minecraft Forge mod requires a version file to identify itself.  This file is not tracked
-in the repository and must be created manually:
+.. code-block:: bash
+
+   sudo apt install xvfb
+
+Step 3: Set MALMO_XSD_PATH
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. code-block:: bash
+
+   export MALMO_XSD_PATH=$(pwd)/3rd_party/environments/malmo/Schemas
+
+   # To make permanent:
+   echo "export MALMO_XSD_PATH=$(pwd)/3rd_party/environments/malmo/Schemas" >> ~/.bashrc
+
+Step 4: Create version.properties
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. code-block:: bash
 
    echo "malmomod.version=0.37.0" > \
-     3rd_party/environments/malmo/Minecraft/src/main/resources/version.properties
+     3rd_party/environments/malmo_updated/Minecraft/src/main/resources/version.properties
 
-Step 4: Download Minecraft Assets (One-time, critical)
----------------------------------------------------------
+Step 5: Download Minecraft Assets
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. warning::
 
-   **Mojang dropped HTTP support** for their CDN.  The ForgeGradle 2.14 wrapper bundled
-   with Malmo 0.37.0 downloads all 1 196 Minecraft 1.11.2 assets over **HTTP**, which now
-   returns HTTP 400 errors for every single asset.
+   Mojang dropped HTTP support for their asset CDN. ForgeGradle 2.14 uses HTTP,
+   which returns 400 errors. You must download assets via HTTPS manually.
 
-   You must download the assets **manually via HTTPS** before Minecraft will launch
-   successfully.
+The ``setup_malmo.sh`` script embeds the download logic. Alternatively, save and
+run this Python script:
 
-The assets index for Minecraft 1.11.2 is at::
+.. code-block:: bash
 
-    https://launchermeta.mojang.com/v1/packages/...
-
-Run the following Python script to download all missing assets (safe to re-run — skips
-already-downloaded files):
-
-.. code-block:: python
-
-   #!/usr/bin/env python3
-   """Download Minecraft 1.11.2 assets via HTTPS to bypass ForgeGradle's broken HTTP downloader."""
-
-   import hashlib
-   import json
-   import os
-   import time
-   import urllib.request
+   python3 -c "
+   import json, urllib.request, time
    from pathlib import Path
 
-   ASSETS_DIR = Path.home() / ".gradle/caches/minecraft/assets/objects"
-   INDEX_URL = (
-       "https://launchermeta.mojang.com/v1/packages/"
-       "d5a285bdf7b0c8f1dd6e57f36564da0ea17e3c87/1.11.json"
-   )
-   CDN = "https://resources.download.minecraft.net"
+   ASSETS = Path.home() / '.gradle/caches/minecraft/assets/objects'
+   INDEX = 'https://launchermeta.mojang.com/v1/packages/d5a285bdf7b0c8f1dd6e57f36564da0ea17e3c87/1.11.json'
+   CDN = 'https://resources.download.minecraft.net'
 
-   print("Fetching asset index …")
-   with urllib.request.urlopen(INDEX_URL) as r:
-       index = json.load(r)
-
-   objects = index["objects"]
-   total = len(objects)
-   downloaded = skipped = 0
-
-   for i, (name, info) in enumerate(objects.items(), 1):
-       h = info["hash"]
-       prefix = h[:2]
-       dest = ASSETS_DIR / prefix / h
+   with urllib.request.urlopen(INDEX) as r:
+       objects = json.load(r)['objects']
+   for name, info in objects.items():
+       h = info['hash']
+       dest = ASSETS / h[:2] / h
        dest.parent.mkdir(parents=True, exist_ok=True)
-       if dest.exists() and dest.stat().st_size == info["size"]:
-           skipped += 1
+       if dest.exists() and dest.stat().st_size == info['size']:
            continue
-       url = f"{CDN}/{prefix}/{h}"
-       for attempt in range(1, 6):
-           try:
-               urllib.request.urlretrieve(url, dest)
-               downloaded += 1
-               print(f"[{i}/{total}] {name}")
-               break
-           except Exception as exc:
-               print(f"  attempt {attempt} failed: {exc}")
-               time.sleep(2 ** attempt)
+       try:
+           urllib.request.urlretrieve(f'{CDN}/{h[:2]}/{h}', dest)
+       except Exception:
+           pass
+   print('Done')
+   "
 
-   print(f"\nDone. Downloaded: {downloaded}  Skipped (already present): {skipped}  Total: {total}")
-
-Save the script as ``download_assets.py`` and run it once:
+Step 6: Build the Malmo Forge Mod
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. code-block:: bash
 
-   python download_assets.py
-
-Expected output ends with something like::
-
-   Done. Downloaded: 1196  Skipped (already present): 0  Total: 1196
-
-.. note::
-
-   One asset (``minecraft/sounds/music/game/nether/nether2.ogg``) consistently fails to
-   download because it no longer exists on Mojang's CDN.  This is benign — Minecraft logs
-   a warning but launches and runs fine without it.
-
-Step 5: Build and Launch Minecraft
--------------------------------------
-
-Before the first run, Gradle needs to compile the Malmo Forge mod:
-
-.. code-block:: bash
-
+   cd 3rd_party/environments/malmo_updated/Minecraft
    export JAVA_HOME=/usr/lib/jvm/java-8-openjdk-amd64
-   cd 3rd_party/environments/malmo/Minecraft
+   ./gradlew build
+
+Step 7: Install MalmoEnv Python Package
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. code-block:: bash
+
+   pip install --no-build-isolation -e 3rd_party/environments/malmo/MalmoEnv/
+
+Step 8: Launch Minecraft
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. code-block:: bash
+
+   # Headless (recommended):
+   cd 3rd_party/environments/mosaic_malmo
+   ./launch_malmo_headless.sh -port 9000 -env
+
+   # Or with visible window (debugging):
+   cd 3rd_party/environments/malmo_updated/Minecraft
+   export JAVA_HOME=/usr/lib/jvm/java-8-openjdk-amd64
    bash launchClient.sh -port 9000 -env
 
-The first run takes several minutes as Gradle downloads dependencies and compiles the mod.
-Subsequent launches take only a few seconds.
+Step 9: Launch MOSAIC
+~~~~~~~~~~~~~~~~~~~~~~
 
-When Minecraft is ready you will see in the terminal::
+.. code-block:: bash
 
-   [Client thread/INFO] [STDOUT]: ***** Start MalmoEnvServer on port 9000
-   [Client thread/INFO] [STDOUT]: CLIENT enter state: DORMANT
+   ./run.sh
 
-Minecraft is now waiting for MalmoEnv connections on port 9000.
-
-.. important::
-
-   **Always use the ``-env`` flag** — without it, Minecraft starts in interactive mode and
-   ignores Python connections.
-
-Step 6: Eclipse / IDE Launch Configuration
---------------------------------------------
-
-The file ``3rd_party/environments/malmo/Minecraft/Minecraft_Client.launch`` is a
-pre-configured Eclipse launch configuration that passes the correct JVM arguments
-(``-Xmx2G``) and sets ``JAVA_HOME`` automatically.  You can use it with Eclipse or
-IntelliJ (via the Eclipse Compatibility plugin) to launch Minecraft without the terminal.
-
-Step 7: Verify the Integration
----------------------------------
-
-With Minecraft running, test the MOSAIC integration:
-
-.. code-block:: python
-
-   import malmoenv
-
-   env = malmoenv.Env(reshape=True)
-
-   # Read the mission XML
-   from pathlib import Path
-   xml = (Path("3rd_party/environments/malmo/MalmoEnv/missions") / "mobchase_single_agent.xml").read_text()
-
-   env.init(xml, 9000, server="localhost")
-   obs = env.reset()
-   print("Observation shape:", obs.shape)   # (84, 84, 3) RGB
-
-   obs, reward, done, info = env.step(0)    # action 0 = move forward
-   print("Reward:", reward, "Done:", done)
-   env.close()
-
-Then launch MOSAIC, click **Add Operator**, select game family **MalmoEnv**, choose any
-mission (e.g. ``MalmoEnv-MobChase-v0``), and the RGB frame from Minecraft will appear in
-the render panel.
 
 Troubleshooting
 ---------------
@@ -230,18 +316,51 @@ Troubleshooting
    * - Error
      - Fix
    * - ``Could not determine java version from '17.0.x'``
-     - Set ``export JAVA_HOME=/usr/lib/jvm/java-8-openjdk-amd64`` before running ``launchClient.sh``
-   * - ``HTTP 400`` errors for all 1 196 assets during first run
-     - Run the asset download script from Step 4 above
+     - Java 8 not found. Run ``sudo apt install openjdk-8-jdk``.
+       The scripts auto-detect Java 8 in ``/usr/lib/jvm/``.
+   * - ``Address already in use`` on port 9000 or 9001
+     - Old Minecraft still running. Use ``run_malmo.sh`` which auto-kills old processes,
+       or manually: ``kill $(lsof -ti :9000)``
+   * - ``Cannot connect to Minecraft on localhost:9000``
+     - Minecraft not running. Start it with ``./run_malmo.sh`` and wait for ``DORMANT``.
+   * - ``HTTP 400`` errors during asset download
+     - Run ``./setup_malmo.sh`` which downloads via HTTPS, or use the manual script above.
    * - ``malmoenv package is not installed``
-     - Activate the venv and run ``pip install -e 3rd_party/environments/malmo/MalmoEnv/``
+     - Run ``pip install -e 3rd_party/environments/malmo/MalmoEnv/``
    * - ``MALMO_XSD_PATH not set``
-     - Export the variable as shown in Step 2
-   * - ``Mission XML not found``
-     - Verify that ``3rd_party/environments/malmo/MalmoEnv/missions/`` contains ``.xml`` files
-   * - Minecraft launches but MOSAIC can't connect
-     - Confirm Minecraft was started with ``-env`` flag and port 9000 is free
-   * - ``Connection refused`` on env.reset()
-     - Wait until the terminal shows ``CLIENT enter state: DORMANT`` before connecting
+     - Run ``./setup_malmo.sh`` or export manually (see Step 3 above).
    * - ``nether2.ogg does not exist`` warning
-     - Benign — Mojang removed this file; Minecraft runs fine without it
+     - Harmless — Mojang removed this sound file. Minecraft works fine without it.
+   * - Black screen on TreasureHunt
+     - This is a **2-agent mission**. The server waits for both agents.
+       Single-agent mode is not supported for this mission.
+   * - Keys don't move the agent
+     - Make sure you clicked **Start Game** after loading the environment.
+       Check Java log for ``MOSAIC: Human connected - switching to HUMAN input mode``.
+   * - Agent keeps moving after key release (continuous missions)
+     - This happens if ``InputType.AI`` is still active. Restart Minecraft
+       with ``./run_malmo.sh`` to get the latest Java mod with auto-detection.
+
+
+Repository Layout
+-----------------
+
+.. code-block:: text
+
+   mosaic/
+   ├── setup_malmo.sh          ← One-time setup (Java, assets, build, pip)
+   ├── run_malmo.sh            ← Launch Minecraft headless (port 9000+9001)
+   ├── run.sh                  ← Launch MOSAIC GUI
+   │
+   ├── 3rd_party/environments/
+   │   ├── malmo/              ← Upstream Malmo (git submodule, read-only)
+   │   ├── malmo_updated/      ← MOSAIC's modified Malmo (NativeInputHandler)
+   │   ├── marLo/              ← Upstream MarLo (git submodule, read-only)
+   │   ├── mosaic_malmo/       ← MOSAIC Malmo integration (scripts, docs)
+   │   └── mosaic_marLo/       ← MOSAIC MarLo integration (planned)
+   │
+   └── gym_gui/
+       ├── core/adapters/mosaic_malmo.py    ← MalmoEnv adapter (13 missions)
+       ├── controllers/malmo_input.py       ← Key resolver (RL path)
+       ├── controllers/malmo_interaction.py ← Native input (human path)
+       └── rendering/strategies/mosaic_malmo.py ← Minecraft renderer

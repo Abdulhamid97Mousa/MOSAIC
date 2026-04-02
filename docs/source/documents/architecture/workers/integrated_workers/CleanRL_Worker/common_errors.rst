@@ -133,6 +133,26 @@ FastLane Telemetry Issues
 - Switch from ``grid`` to ``single`` video mode to reduce the number
   of environments rendering simultaneously.
 
+**Leaked shared-memory segments (``/dev/shm/psm_*``)**
+
+.. code-block:: text
+
+   resource_tracker: There appear to be N leaked shared_memory objects
+   to clean up at shutdown
+
+**Cause:** When a training subprocess is killed (SIGKILL, OOM, or IDE
+crash), Python's ``resource_tracker`` cannot clean up the POSIX
+shared-memory semaphore files (``/dev/shm/psm_*``).  These accumulate
+over repeated crash cycles.
+
+**Fix:** The runtime now auto-cleans orphaned segments before each
+launch.  To clean manually: ``rm -f /dev/shm/psm_*``.
+
+See also
+:ref:`MuJoCo Training: Subprocess Killed <cleanrl-mujoco-sigkill>`
+above for the root cause (PYTHONPATH misconfiguration causing
+``sitecustomize.py`` to load in every forked env process).
+
 Curriculum Training Errors
 --------------------------
 
@@ -260,6 +280,143 @@ heavy load with many concurrent runs).
 - Reduce the number of concurrent training runs.
 - Check system resources (CPU, memory) to ensure the daemon is not
   starved.
+
+MuJoCo Training: Subprocess Killed (SIGKILL / exit code -9)
+------------------------------------------------------------
+
+.. code-block:: text
+
+   subprocess.CalledProcessError: Command '...' died with <Signals.SIGKILL: 9>.
+
+or in the GUI, training starts (dry-run succeeds) but TensorBoard shows
+"Inactive — No dashboards are active" and the ``cleanrl.stdout.log`` is
+empty.
+
+**Cause:** The ``PYTHONPATH`` set by the runtime included the
+``cleanrl_worker`` *package directory* itself
+(``cleanrl_worker/cleanrl_worker/``).  Python auto-imports any
+``sitecustomize.py`` found on ``PYTHONPATH`` at interpreter startup.
+When ``gymnasium.vector.SyncVectorEnv`` forks worker processes, **each
+fork** loaded ``sitecustomize.py``, which patches ``gym.make()`` to
+inject FastLane wrapping and ``render_mode="rgb_array"``.  Every forked
+env then created its own shared-memory segment, flooding ``/dev/shm``
+with ``psm_*`` tracker entries and ultimately causing the kernel's OOM
+killer (or the resource tracker) to SIGKILL the process before the first
+training iteration could complete.
+
+**Symptoms:**
+
+- Dry-run succeeds, but the actual training subprocess dies silently.
+- ``cleanrl.stdout.log`` is empty (no SPS output).
+- ``cleanrl.stderr.log`` contains hundreds of
+  ``resource_tracker: There appear to be N leaked shared_memory objects``
+  warnings.
+- The TensorBoard event file is tiny (< 100 bytes) — only the file
+  header, no scalar data.
+- Running the same command *directly* in a terminal works fine (because
+  the launcher loads ``sitecustomize.py`` once, explicitly).
+
+**Fix (applied in MOSAIC):** The runtime now sets ``PYTHONPATH`` to
+the *parent* of the ``cleanrl_worker`` package
+(``3rd_party/workers/cleanrl_worker/``) rather than the package
+directory itself.  This prevents Python's automatic ``sitecustomize``
+import in forked ``SyncVectorEnv`` workers while still allowing the
+launcher to import it explicitly.
+
+Additionally, the runtime now calls ``_cleanup_orphaned_shm()`` before
+launching a new subprocess and after detecting an abnormal exit, so
+stale ``/dev/shm/psm_*`` segments from crashed runs are cleaned up
+automatically.
+
+**If you still see leaked segments**, you can clean them manually:
+
+.. code-block:: bash
+
+   rm -f /dev/shm/psm_*
+
+TransformObservation: missing argument 'observation_space'
+-----------------------------------------------------------
+
+.. code-block:: text
+
+   TypeError: TransformObservation.__init__() missing 1 required
+   positional argument: 'observation_space'
+
+or the inverse error:
+
+.. code-block:: text
+
+   TypeError: _MosaicTransformObservation.__init__() takes 3
+   positional arguments but 4 were given
+
+**Cause:** ``gymnasium`` 1.0+ changed
+``TransformObservation.__init__()`` to require ``observation_space``
+as a mandatory argument.  The upstream CleanRL ``ppo_continuous_action.py``
+was written for an older gymnasium version that did not require it.
+MOSAIC's ``sitecustomize.py`` provides a compatibility shim
+(``_MosaicTransformObservation``) that auto-fills the argument from
+``env.observation_space``, but the shim's constructor signature must
+accept ``observation_space`` both positionally and as a keyword argument
+to support both the upstream and MOSAIC copies of the algorithm.
+
+**Fix (applied in MOSAIC):** The shim now uses
+``def __init__(self, env, func, observation_space=None, **kwargs)``
+instead of keyword-only syntax.
+
+TensorBoard UI shows "Inactive" despite data existing
+------------------------------------------------------
+
+**Symptoms:** Training is running (SPS output in ``cleanrl.stdout.log``,
+growing event file), but the TensorBoard web UI shows "Inactive — No
+dashboards are active for the current data set."
+
+**Cause:** This is a TensorBoard frontend caching issue, not a data
+problem.  The Scalars plugin may not auto-activate on the default
+dashboard view.
+
+**Fixes:**
+
+- Hard-refresh the browser (``Ctrl+Shift+R``).
+- Click the **Scalars** tab in the left sidebar.
+- Navigate directly to ``http://127.0.0.1:6006/#scalars``.
+- Verify data exists via the API:
+  ``curl http://127.0.0.1:6006/data/plugin/scalars/tags``
+
+**Verifying event files programmatically:**
+
+.. code-block:: python
+
+   from tensorboard.backend.event_processing.event_accumulator import EventAccumulator
+   ea = EventAccumulator("path/to/tensorboard/dir")
+   ea.Reload()
+   print(ea.Tags()["scalars"])  # Should list scalar tag names
+
+Algorithm Registry: upstream vs MOSAIC copies
+-----------------------------------------------
+
+The CleanRL worker maintains two copies of each algorithm:
+
+- **Upstream** (``cleanrl.ppo_continuous_action``): the original
+  single-file script from the CleanRL repository.  Uses
+  ``if __name__ == "__main__":`` — no ``main()`` function.
+- **MOSAIC** (``cleanrl_worker.algorithms.ppo_continuous_action``):
+  an adapted copy with ``main()`` and ``run()`` functions, MOSAIC
+  video-path support, and ``Optional`` type annotations.
+
+The runtime's ``DEFAULT_ALGO_REGISTRY`` maps algorithm names to module
+paths.  Algorithms that need ``sitecustomize.py`` patches (FastLane,
+TensorBoard redirect, checkpoint resume) **must** use the MOSAIC copy
+because:
+
+1. The launcher looks for a ``main()`` function.  If it finds one, it
+   runs the module in-process (with ``sitecustomize.py`` already loaded).
+2. If no ``main()`` exists, the launcher falls back to
+   ``subprocess.call()``, which starts a fresh interpreter where the
+   ``sitecustomize.py`` patches may not be active.
+
+For MuJoCo continuous-action algorithms, the MOSAIC copy is required
+because the upstream version does not pass ``observation_space`` to
+``TransformObservation`` (required by gymnasium 1.0+).
 
 Environment Import Errors
 --------------------------

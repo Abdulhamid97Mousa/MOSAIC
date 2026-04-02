@@ -1,0 +1,2 @@
+-e .[tianshou]
+-e 3rd_party/workers/tianshou_worker/tianshou

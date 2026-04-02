@@ -133,8 +133,9 @@ class TestRayWorkerPresenter:
 
         registry = get_worker_presenter_registry()
         presenter = registry.get("ray_worker")
+        assert presenter is not None
 
-        paradigms = presenter.get_available_paradigms()
+        paradigms = presenter.get_available_paradigms()  # type: ignore[attr-defined]
         assert len(paradigms) == 4
 
         paradigm_ids = [p["id"] for p in paradigms]
@@ -149,8 +150,9 @@ class TestRayWorkerPresenter:
 
         registry = get_worker_presenter_registry()
         presenter = registry.get("ray_worker")
+        assert presenter is not None
 
-        config = presenter.build_train_config(
+        config = presenter.build_train_config(  # type: ignore[attr-defined]
             env_id="waterworld_v4",
             env_family="sisl",
             paradigm="parameter_sharing",

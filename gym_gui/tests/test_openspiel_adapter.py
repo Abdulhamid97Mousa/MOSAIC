@@ -11,6 +11,7 @@ Shimmy: https://shimmy.farama.org/environments/open_spiel/
 from __future__ import annotations
 
 import logging
+from typing import TYPE_CHECKING
 
 import numpy as np
 import pytest
@@ -26,7 +27,15 @@ except ImportError:
     OPENSPIEL_AVAILABLE = False
 
 # Conditionally import adapter classes
-if OPENSPIEL_AVAILABLE:
+if TYPE_CHECKING:
+    from gym_gui.core.adapters.base import AdapterContext
+    from gym_gui.core.adapters.open_spiel import (
+        OPENSPIEL_ADAPTERS,
+        CheckersEnvironmentAdapter,
+        CheckersRenderPayload,
+    )
+    from gym_gui.core.factories.adapters import create_adapter, get_adapter_cls
+elif OPENSPIEL_AVAILABLE:
     from gym_gui.core.adapters.base import AdapterContext
     from gym_gui.core.adapters.open_spiel import (
         OPENSPIEL_ADAPTERS,

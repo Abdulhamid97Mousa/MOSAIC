@@ -43,6 +43,7 @@ dependency; install only the ones you need.
 
    vizdoom/index
    malmo/index
+   marlo/index
    minihack/index
    nethack/index
    crafter/index

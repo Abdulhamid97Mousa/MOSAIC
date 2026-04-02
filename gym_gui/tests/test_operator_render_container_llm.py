@@ -8,6 +8,11 @@ Tests cover:
 - Button visibility based on operator type
 """
 
+import os
+
+# Ensure Qt renders offscreen in CI environments
+os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
+
 from unittest.mock import patch
 
 import pytest
@@ -23,7 +28,8 @@ def qapp():
     """Ensure QApplication exists for widget tests."""
     app = QtWidgets.QApplication.instance()
     if app is None:
-        app = QtWidgets.QApplication([])
+        # Use offscreen platform for headless CI environments
+        app = QtWidgets.QApplication(["-platform", "offscreen"])
     return app
 
 

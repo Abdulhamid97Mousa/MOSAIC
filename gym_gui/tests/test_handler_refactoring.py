@@ -331,7 +331,7 @@ class TestTrainingMonitorHandler:
         mock_run_metadata: Dict[tuple, Dict[str, Any]] = {}
 
         handler = TrainingMonitorHandler(
-            parent=None,
+            parent=None,  # type: ignore[arg-type]
             live_controller=mock_live_controller,
             analytics_tabs=mock_analytics_tabs,
             render_tabs=mock_render_tabs,
@@ -346,7 +346,7 @@ class TestTrainingMonitorHandler:
         from gym_gui.ui.handlers import TrainingMonitorHandler
 
         handler = TrainingMonitorHandler(
-            parent=None,
+            parent=None,  # type: ignore[arg-type]
             live_controller=MagicMock(),
             analytics_tabs=MagicMock(),
             render_tabs=MagicMock(),

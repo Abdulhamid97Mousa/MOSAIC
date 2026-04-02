@@ -1,0 +1,199 @@
+{
+  "algorithms": {
+    "ppo": {
+      "fields": [
+        {
+          "name": "num_envs",
+          "type": "int",
+          "default": 1,
+          "help": "Number of parallel environments"
+        },
+        {
+          "name": "lr",
+          "type": "float",
+          "default": 3e-4,
+          "help": "Learning rate"
+        },
+        {
+          "name": "hidden_sizes",
+          "type": "list[int]",
+          "default": [64, 64],
+          "help": "Hidden layer sizes"
+        },
+        {
+          "name": "eps_clip",
+          "type": "float",
+          "default": 0.2,
+          "help": "PPO epsilon clipping"
+        },
+        {
+          "name": "dual_clip",
+          "type": "float",
+          "default": null,
+          "optional": true,
+          "help": "Dual clipping (None to disable)"
+        },
+        {
+          "name": "value_clip",
+          "type": "bool",
+          "default": false,
+          "help": "Use value clipping"
+        },
+        {
+          "name": "vf_coef",
+          "type": "float",
+          "default": 0.5,
+          "help": "Value function coefficient"
+        },
+        {
+          "name": "ent_coef",
+          "type": "float",
+          "default": 0.01,
+          "help": "Entropy coefficient"
+        },
+        {
+          "name": "gae_lambda",
+          "type": "float",
+          "default": 0.95,
+          "help": "GAE lambda"
+        },
+        {
+          "name": "max_grad_norm",
+          "type": "float",
+          "default": 0.5,
+          "help": "Max gradient norm"
+        },
+        {
+          "name": "buffer_size",
+          "type": "int",
+          "default": 20000,
+          "help": "Replay buffer size"
+        },
+        {
+          "name": "epoch",
+          "type": "int",
+          "default": 10,
+          "help": "Number of epochs"
+        },
+        {
+          "name": "step_per_epoch",
+          "type": "int",
+          "default": 10000,
+          "help": "Steps per epoch"
+        },
+        {
+          "name": "step_per_collect",
+          "type": "int",
+          "default": 2048,
+          "help": "Steps per collection"
+        },
+        {
+          "name": "repeat_per_collect",
+          "type": "int",
+          "default": 10,
+          "help": "Repetitions per collection"
+        },
+        {
+          "name": "batch_size",
+          "type": "int",
+          "default": 64,
+          "help": "Batch size"
+        }
+      ]
+    },
+    "dqn": {
+      "fields": [
+        {
+          "name": "num_envs",
+          "type": "int",
+          "default": 1,
+          "help": "Number of parallel environments"
+        },
+        {
+          "name": "lr",
+          "type": "float",
+          "default": 1e-3,
+          "help": "Learning rate"
+        },
+        {
+          "name": "hidden_sizes",
+          "type": "list[int]",
+          "default": [128, 128],
+          "help": "Hidden layer sizes"
+        },
+        {
+          "name": "gamma",
+          "type": "float",
+          "default": 0.99,
+          "help": "Discount factor"
+        },
+        {
+          "name": "n_step",
+          "type": "int",
+          "default": 3,
+          "help": "N-step return"
+        },
+        {
+          "name": "target_update_freq",
+          "type": "int",
+          "default": 320,
+          "help": "Target network update frequency"
+        },
+        {
+          "name": "eps_train",
+          "type": "float",
+          "default": 0.1,
+          "help": "Epsilon greedy (training)"
+        },
+        {
+          "name": "eps_test",
+          "type": "float",
+          "default": 0.05,
+          "help": "Epsilon greedy (testing)"
+        },
+        {
+          "name": "is_double",
+          "type": "bool",
+          "default": true,
+          "help": "Use Double DQN"
+        },
+        {
+          "name": "buffer_size",
+          "type": "int",
+          "default": 20000,
+          "help": "Replay buffer size"
+        },
+        {
+          "name": "batch_size",
+          "type": "int",
+          "default": 64,
+          "help": "Batch size"
+        },
+        {
+          "name": "epoch",
+          "type": "int",
+          "default": 10,
+          "help": "Number of epochs"
+        },
+        {
+          "name": "step_per_epoch",
+          "type": "int",
+          "default": 10000,
+          "help": "Steps per epoch"
+        },
+        {
+          "name": "step_per_collect",
+          "type": "int",
+          "default": 10,
+          "help": "Steps per collection"
+        },
+        {
+          "name": "update_per_step",
+          "type": "float",
+          "default": 0.1,
+          "help": "Updates per step"
+        }
+      ]
+    }
+  }
+}

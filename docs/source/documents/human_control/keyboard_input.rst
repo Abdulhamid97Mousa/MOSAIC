@@ -178,6 +178,13 @@ bypasses X11 entirely by reading raw ``/dev/input/eventX`` file
 descriptors through ``EvdevKeyboardMonitor``, a background ``QThread``
 that emits per-device ``key_pressed`` / ``key_released`` signals.
 
+**Worker-based keyboard mode (subprocess):** For environments where
+``adapter.step()`` blocks the GUI, each keyboard can be assigned to a
+``human_worker`` subprocess (``--mode keyboard``).  The subprocess reads
+evdev events in its own process using pure Python (no Qt dependency),
+resolves keys to actions, and returns them via JSON pipes.  The GUI
+stays responsive because it never blocks on keyboard I/O or env.step().
+
 For the full architecture, data flow, hardware requirements, setup
 instructions, and troubleshooting guide, see the dedicated page:
 :doc:`multi_keyboard_evdev`.

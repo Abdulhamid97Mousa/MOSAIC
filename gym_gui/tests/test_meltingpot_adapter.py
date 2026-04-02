@@ -94,14 +94,14 @@ class TestMeltingPotAdapterBasics:
     )
 
     @pytest.fixture
-    def adapter(self) -> "MeltingPotAdapter":
+    def adapter(self) -> "MeltingPotAdapter":  # type: ignore[return-type]
         """Create a Melting Pot adapter for testing."""
         from gym_gui.config.game_configs import MeltingPotConfig
         from gym_gui.core.adapters.meltingpot import MeltingPotAdapter
 
         config = MeltingPotConfig(substrate_name="collaborative_cooking__circuit")
         adapter = MeltingPotAdapter(config=config)
-        yield adapter
+        yield adapter  # type: ignore[misc]
         if adapter._env is not None:
             adapter.close()
 

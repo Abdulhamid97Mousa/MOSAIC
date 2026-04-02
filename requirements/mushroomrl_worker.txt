@@ -1,0 +1,10 @@
+# MushroomRL Worker Dependencies
+# Install this when launching MushroomRL-based training runs.
+
+# Include base requirements
+-r base.txt
+
+# MushroomRL core
+mushroom-rl>=1.10.0
+torch>=2.0.0
+tensorboard>=2.11.0

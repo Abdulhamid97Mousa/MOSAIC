@@ -75,10 +75,10 @@ class TestBoardConfigDialogFactory:
             def _get_notation_placeholder(self):
                 return "mock"
 
-            def _create_board_widget(self):
+            def _create_board_widget(self):  # type: ignore[override]
                 return None
 
-            def _create_piece_tray(self):
+            def _create_piece_tray(self):  # type: ignore[override]
                 return None
 
             def _get_presets(self):
@@ -90,7 +90,7 @@ class TestBoardConfigDialogFactory:
             def _get_validation_error(self, notation):
                 return ""
 
-            def _create_state_from_notation(self, notation):
+            def _create_state_from_notation(self, notation):  # type: ignore[override]
                 return None
 
         # Register and verify

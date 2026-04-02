@@ -121,7 +121,7 @@ class TestOvercookedFactory:
 
         assert adapter is not None
         assert adapter.id == "overcooked/cramped_room"
-        assert adapter.num_agents == 2
+        assert adapter.num_agents == 2  # type: ignore[attr-defined]
 
     def test_create_all_layout_adapters(self):
         """Test creating adapters for all 5 layouts."""
@@ -166,7 +166,7 @@ class TestOvercookedAdapter:
 
         adapter.load()
         assert adapter._env is not None
-        assert adapter._mdp is not None
+        assert adapter._mdp is not None  # type: ignore[attr-defined]
 
     def test_adapter_reset(self):
         """Test resetting the environment."""
@@ -237,8 +237,8 @@ class TestOvercookedAdapter:
         adapter.load()
         adapter.reset()
 
-        obs0 = adapter.get_agent_observation(0)
-        obs1 = adapter.get_agent_observation(1)
+        obs0 = adapter.get_agent_observation(0)  # type: ignore[attr-defined]
+        obs1 = adapter.get_agent_observation(1)  # type: ignore[attr-defined]
 
         assert isinstance(obs0, np.ndarray)
         assert isinstance(obs1, np.ndarray)
@@ -251,8 +251,8 @@ class TestOvercookedAdapter:
         adapter.reset()
         adapter.step([4, 4])
 
-        reward0 = adapter.get_agent_reward(0)
-        reward1 = adapter.get_agent_reward(1)
+        reward0 = adapter.get_agent_reward(0)  # type: ignore[attr-defined]
+        reward1 = adapter.get_agent_reward(1)  # type: ignore[attr-defined]
 
         assert isinstance(reward0, (int, float))
         assert isinstance(reward1, (int, float))
@@ -265,7 +265,7 @@ class TestOvercookedAdapter:
 
         adapter.close()
         assert adapter._env is None
-        assert adapter._mdp is None
+        assert adapter._mdp is None  # type: ignore[attr-defined]
 
     def test_featurization_methods(self):
         """Test both featurization methods work."""

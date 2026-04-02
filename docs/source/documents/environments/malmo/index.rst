@@ -1,139 +1,196 @@
-Microsoft Malmo / MalmoEnv
-==========================
+Project Malmo (Microsoft Research)
+===================================
 
-`Microsoft Malmo <https://github.com/microsoft/malmo>`_ is a platform for AI research and
-experimentation **built on top of Minecraft** (Java Edition 1.11.2).  MOSAIC integrates with
-Malmo through the **MalmoEnv** Python interface, which connects directly to a running
-Minecraft JVM process over TCP — no native compilation or Minecraft account required.
+.. image:: https://www.microsoft.com/en-us/research/wp-content/uploads/2016/06/malmo_human_ai_interaction-web.png
+   :width: 400px
+   :align: center
 
-.. note::
+**STATUS: Experimental - Under Active Development**
 
-   Unlike most MOSAIC environments, Malmo requires a **running Minecraft server** before any
-   experiments can start.  Follow the :doc:`installation` guide to set it up once;
-   subsequent launches take only a few seconds.
+Project Malmo is a sophisticated AI experimentation platform built on top of
+Minecraft, designed to support fundamental research in artificial intelligence.
+It consists of a Forge mod for Minecraft Java Edition (1.11.2) and a Python
+environment interface (MalmoEnv) that exposes a Gymnasium-compatible API.
 
-:Install: see :doc:`installation`
-:Paradigm: Single-agent (Minecraft missions)
-:Stepping: ``SINGLE_AGENT``
-:Render mode: RGB frame from Minecraft (first-person view)
-:Action space: Discrete (8 movement / action commands)
-:Keyboard: W/S (forward/back), A/D (strafe), Q/E (turn left/right), Space (jump), F (attack)
+MOSAIC integrates Malmo via **MalmoEnv**, the TCP-based Python wrapper that
+communicates with the Minecraft Java client. The 13 mission environments
+available in MOSAIC originate from the `MarLo <https://github.com/crowdAI/marlo>`_
+benchmark (2018 MarLo Challenge) but are served directly through MalmoEnv.
+The MarLo Python package itself is not required.
 
-.. toctree::
-   :maxdepth: 2
+Quick Start
+-----------
 
-   installation
-   environments
+.. code-block:: bash
 
+   ./setup_malmo.sh        # One-time setup (Java, assets, build)
+   ./run_malmo.sh           # Terminal 1: Start Minecraft headless
+   ./run.sh                 # Terminal 2: Start MOSAIC GUI
 
-Overview
---------
-
-MOSAIC uses the **MalmoEnv** protocol, which communicates with the Malmo Mod running inside
-Minecraft over a lightweight TCP socket on port **9000**.  This means:
-
-* The Python agent process and the Minecraft JVM are **separate** — they communicate over localhost.
-* Minecraft must be **started first** before launching any MOSAIC experiment.
-* The mission is described by an **XML file** (shipped with MalmoEnv); each call to
-  ``env.init()`` sends the XML to Minecraft, which resets the world accordingly.
-
-Architecture
-~~~~~~~~~~~~
-
-.. code-block:: text
-
-   MOSAIC GUI
-   ├── MalmoEnvAdapter (gym_gui/core/adapters/mosaic_malmo.py)
-   │     ├── malmoenv.Env  ←→  TCP socket (port 9000)
-   │     │                          │
-   │     │                    Minecraft JVM
-   │     │                    (Malmo Mod 0.37.0 running inside ForgeGradle)
-   │     └── Render: RGB frame → MosaicMalmoRendererStrategy
-   └── Human input: W/A/S/D + Space + F → discrete action index
-
-Keyboard Controls
+Two Control Modes
 -----------------
 
+**Human Play** (``Human Only``): Keyboard and mouse go directly to Minecraft
+via a native TCP side-channel (port 9001). Press W to walk, release to stop.
+Feels like playing Minecraft natively. The Java mod auto-detects the human
+connection and switches to ``InputType.HUMAN``.
+
+**RL Training** (``Agent Only``): An RL worker sends discrete actions
+(``move 1``, ``turn 1``) through the MalmoEnv step loop (port 9000).
+The Java mod stays in ``InputType.AI`` mode where movement commands set
+persistent velocities. The agent must learn to send ``move 0`` to stop.
+
+Both modes use port 9000 for observations. Only human play uses port 9001.
+
+Architecture
+------------
+
+.. mermaid::
+
+   graph TB
+       subgraph Minecraft["Minecraft Java Client (1.11.2)"]
+           Forge["Forge 13.20.0.2228"]
+           MalmoMod["Malmo Mod 0.37.0"]
+           MalmoEnvServer["MalmoEnv Server<br/>Port 9000"]
+           NativeInput["NativeInputHandler<br/>Port 9001"]
+       end
+
+       subgraph MOSAIC["MOSAIC GUI (PyQt6)"]
+           Adapter["MalmoEnvAdapter"]
+           Interaction["MalmoInteractionController"]
+       end
+
+       subgraph MarLo["MarLo Missions"]
+           XMLs["Mission XML files<br/>(13 environments)"]
+       end
+
+       Adapter -- "observations, rewards, actions<br/>TCP :9000" --> MalmoEnvServer
+       Interaction -- "keyboard, mouse<br/>TCP :9001" --> NativeInput
+       XMLs -- "loaded at reset()" --> Adapter
+
+Installation
+------------
+
+.. code-block:: bash
+
+   pip install -e ".[malmo]"
+
+See :doc:`installation` for the full setup guide (Java 8, Gradle build, headless
+launch).
+
+Movement Types
+--------------
+
+Missions use either **Discrete** or **Continuous** movement commands.
+See :doc:`environments` for details on each mission's movement type.
+
+- **Discrete**: One-shot block-based movement (``move 1`` = one block forward).
+- **Continuous**: Persistent velocity (``move 1`` = keep moving until ``move 0``).
+
+Available Environments (13)
+---------------------------
+
+**Discrete Movement** (one-shot, block-based):
+
 .. list-table::
-   :header-rows: 1
-   :widths: 20 20 60
+   :header-rows: 0
+   :widths: 2 2 2
+   :align: center
 
-   * - Key
-     - Action index
-     - Description
-   * - W / ↑
-     - 0
-     - Move forward
-   * - S / ↓
-     - 1
-     - Move backward
-   * - A / ←
-     - 2
-     - Strafe left
-   * - D / →
-     - 3
-     - Strafe right
-   * - Q
-     - 4
-     - Turn left
-   * - E
-     - 5
-     - Turn right
-   * - Space
-     - 6
-     - Jump
-   * - F
-     - 7
-     - Attack / break block
-
-Available Missions
-------------------
-
-All missions are bundled with the MalmoEnv package and located in
-``3rd_party/environments/malmo/MalmoEnv/missions/``.
-
-.. list-table::
-   :header-rows: 1
-   :widths: 40 60
-
-   * - MOSAIC Game ID
-     - Mission / Description
    * - ``MalmoEnv-MobChase-v0``
-     - Chase and catch a mob in an open arena
+         .. image:: https://media.giphy.com/media/9A1gHZrWcaS4AYzcIU/giphy.gif
+           :align: center
+           :width: 200
+
+     - ``MalmoEnv-CatchTheMob-v0``
+         .. image:: https://media.giphy.com/media/9A1gHZrWcaS4AYzcIU/giphy.gif
+           :align: center
+           :width: 200
+
+     - ``MalmoEnv-CliffWalking-v0``
+         .. image:: https://media.giphy.com/media/ef4lPGNqaLlKr45rWB/giphy.gif
+           :align: center
+           :width: 200
+
+**Continuous Movement** (persistent velocity):
+
+.. list-table::
+   :header-rows: 0
+   :widths: 2 2 2
+   :align: center
+
    * - ``MalmoEnv-MazeRunner-v0``
-     - Navigate a procedurally generated maze to the goal
+         .. image:: https://media.giphy.com/media/u45fNQxG59wfnRpzwJ/giphy.gif
+           :align: center
+           :width: 200
+
+     - ``MalmoEnv-FindTheGoal-v0``
+         .. image:: https://media.giphy.com/media/1gWkQbDsHOfo4kZXZv/giphy.gif
+           :align: center
+           :width: 200
+
+     - ``MalmoEnv-Attic-v0``
+         .. image:: https://media.giphy.com/media/47C7AYB3FA6kgrMiQ3/giphy.gif
+           :align: center
+           :width: 200
+
    * - ``MalmoEnv-Vertical-v0``
-     - Climb a vertical tower of blocks
-   * - ``MalmoEnv-CliffWalking-v0``
-     - Walk along a cliff edge without falling (dense reward)
-   * - ``MalmoEnv-CatchTheMob-v0``
-     - Catch a moving mob in an enclosed space
-   * - ``MalmoEnv-FindTheGoal-v0``
-     - Find a goal block hidden in a large flat world
-   * - ``MalmoEnv-Attic-v0``
-     - Navigate an indoor attic environment
-   * - ``MalmoEnv-DefaultFlatWorld-v0``
-     - Flat creative-mode world (open exploration)
-   * - ``MalmoEnv-DefaultWorld-v0``
-     - Default Minecraft world generation (survival-style)
+         .. image:: https://media.giphy.com/media/ZcaMeSnzLrMY1NWM7f/giphy.gif
+           :align: center
+           :width: 200
+
+     - ``MalmoEnv-DefaultFlatWorld-v0``
+         .. image:: https://media.giphy.com/media/L0s9QXuR6vIJh6A0dq/giphy.gif
+           :align: center
+           :width: 200
+
+     - ``MalmoEnv-DefaultWorld-v0``
+         .. image:: https://media.giphy.com/media/4Nx7gYiM9NDrMrMao7/giphy.gif
+           :align: center
+           :width: 200
+
    * - ``MalmoEnv-Eating-v0``
-     - Collect food items for a positive reward
-   * - ``MalmoEnv-Obstacles-v0``
-     - Navigate over and around obstacles
-   * - ``MalmoEnv-TrickyArena-v0``
-     - Survive in a tricky arena with pits and hazards
+         .. image:: https://media.giphy.com/media/pObNMjjfcGI5tVhmX6/giphy.gif
+           :align: center
+           :width: 200
+
+     - ``MalmoEnv-Obstacles-v0``
+         .. image:: https://media.giphy.com/media/5sYmFFkq7aEMKTbKP4/giphy.gif
+           :align: center
+           :width: 200
+
+     - ``MalmoEnv-TrickyArena-v0``
+         .. image:: https://media.giphy.com/media/1g1bxw2nD3G9fz2WVV/giphy.gif
+           :align: center
+           :width: 200
+
+**Multi-Agent** (turn-based, discrete):
+
+.. list-table::
+   :header-rows: 0
+   :widths: 2 2
+   :align: center
+
    * - ``MalmoEnv-TreasureHunt-v0``
-     - Find treasure chests scattered across the world
 
-Citation
---------
+     - *Requires 2 agents. Single-agent mode not supported.*
 
-.. code-block:: bibtex
+.. warning::
 
-   @article{johnson2016malmo,
-     author  = {Matthew Johnson and Katja Hofmann and Tim Hutton and David Bignell},
-     title   = {The Malmo Platform for Artificial Intelligence Experimentation},
-     journal = {Proceedings of the 25th International Joint Conference on Artificial Intelligence},
-     year    = {2016},
-     pages   = {4246--4247},
-   }
+   **TreasureHunt** requires 2 agents. The Malmo server waits for both agents
+   to connect before starting. Running in single-agent mode causes a timeout.
+
+References
+----------
+
+- `Microsoft Research - Project Malmo <https://www.microsoft.com/en-us/research/project/project-malmo/>`_
+- `Project Malmo GitHub <https://github.com/Microsoft/malmo>`_
+- `Malmo Documentation <https://microsoft.github.io/malmo/>`_
+- `MarLo Challenge (2018) <https://www.crowdai.org/challenges/marlo-2018>`_
+
+.. toctree::
+   :maxdepth: 1
+   :hidden:
+
+   environments
+   installation

@@ -5,6 +5,7 @@ from gym_gui.controllers.interaction import (
     Box2DInteractionController,
     TurnBasedInteractionController,
 )
+from gym_gui.controllers.malmo_interaction import MalmoInteractionController
 
 
 class _OwnerStub:
@@ -14,10 +15,14 @@ class _OwnerStub:
         self._control_mode = _CM()
         self._game_paused = False
         self._passive_action = 0
-        self._adapter = object()
         self._game_id = object()
         self._game_started = True
         self._last_step = None
+
+        # Minimal adapter stub with no action_space (e.g. Malmo before env load)
+        class _AdapterStub:
+            action_space = None
+        self._adapter = _AdapterStub()
 
 
 def test_turn_based_controller_behavior():
@@ -44,6 +49,15 @@ def test_ale_controller_noop_and_interval():
     assert ctrl.maybe_passive_action() == 0
 
 
+def test_malmo_controller_interval_and_passive_action_fallback():
+    owner = _OwnerStub()
+    ctrl = MalmoInteractionController(owner, target_hz=20)
+    assert ctrl.idle_interval_ms() == 50
+    assert ctrl.should_idle_tick() is True
+    # With no action_space, falls back to action 0
+    assert ctrl.maybe_passive_action() == 0
+
+
 essential_dummy = object()  # keep module non-empty for pytest collectors
 
 
@@ -57,8 +71,8 @@ def test_session_components_constructs_without_runtime_imports():
         pass
 
     comp = SessionComponents(
-        adapter=DummyAdapter(),
-        renderer=DummyRenderer(),
+        adapter=DummyAdapter(),  # type: ignore[arg-type]
+        renderer=DummyRenderer(),  # type: ignore[arg-type]
         interaction=TurnBasedInteractionController(),
     )
     assert comp.adapter is not None and comp.renderer is not None and comp.interaction is not None

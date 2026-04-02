@@ -7,14 +7,20 @@ an XML file bundled in ``3rd_party/environments/malmo/MalmoEnv/missions/``.
 Action Space
 ------------
 
-All MalmoEnv missions share the same **8-action discrete** action space:
+MalmoEnv action spaces are **mission-specific** — each mission XML defines which
+commands are allowed.  The default action filter is ``{move, turn, use, attack}``
+but individual missions may deny specific commands (e.g. ``attack``).
+
+Three action-space profiles exist across the 13 missions:
+
+**Discrete(4)** — move + turn only (FindTheGoal, TreasureHunt agent 0):
 
 .. list-table::
    :header-rows: 1
    :widths: 10 25 65
 
    * - Index
-     - Command sent to Malmo
+     - Command
      - Description
    * - 0
      - ``move 1``
@@ -23,23 +29,75 @@ All MalmoEnv missions share the same **8-action discrete** action space:
      - ``move -1``
      - Move backward
    * - 2
-     - ``strafe -1``
-     - Strafe left
-   * - 3
-     - ``strafe 1``
-     - Strafe right
-   * - 4
-     - ``turn -1``
-     - Turn left
-   * - 5
      - ``turn 1``
      - Turn right
-   * - 6
-     - ``jump 1``
-     - Jump
-   * - 7
+   * - 3
+     - ``turn -1``
+     - Turn left
+
+**Discrete(6)** — move + turn + use (Attic, MobChase, Vertical, CliffWalking,
+CatchTheMob, Eating, Obstacles, TrickyArena):
+
+.. list-table::
+   :header-rows: 1
+   :widths: 10 25 65
+
+   * - Index
+     - Command
+     - Description
+   * - 0
+     - ``move 1``
+     - Move forward
+   * - 1
+     - ``move -1``
+     - Move backward
+   * - 2
+     - ``turn 1``
+     - Turn right
+   * - 3
+     - ``turn -1``
+     - Turn left
+   * - 4
+     - ``use 1``
+     - Use / interact
+   * - 5
+     - ``use 0``
+     - Stop use
+
+**Discrete(8)** — move + turn + attack + use (MazeRunner, DefaultFlatWorld,
+DefaultWorld):
+
+.. list-table::
+   :header-rows: 1
+   :widths: 10 25 65
+
+   * - Index
+     - Command
+     - Description
+   * - 0
+     - ``move 1``
+     - Move forward
+   * - 1
+     - ``move -1``
+     - Move backward
+   * - 2
+     - ``turn 1``
+     - Turn right
+   * - 3
+     - ``turn -1``
+     - Turn left
+   * - 4
      - ``attack 1``
      - Attack / break block
+   * - 5
+     - ``attack 0``
+     - Stop attack
+   * - 6
+     - ``use 1``
+     - Use / place
+   * - 7
+     - ``use 0``
+     - Stop use
 
 Observation Space
 -----------------
@@ -53,6 +111,33 @@ to the Python agent.
    The frame dimensions are controlled by the ``<VideoProducer>`` element in the mission XML.
    You can edit the XML to change the resolution; just remember to re-init the env.
 
+Movement Types
+--------------
+
+Malmo missions use one of two movement command handlers, defined in the mission XML.
+This fundamentally affects how actions behave:
+
+**DiscreteMovementCommands** — each action is a one-shot, block-based movement:
+
+- ``move 1`` moves the agent exactly **one block** forward, then stops.
+- ``turn 1`` rotates the agent exactly **90 degrees**, then stops.
+- No persistence — the agent is stationary between commands.
+- Best for: grid-world style reasoning, turn-based evaluation.
+
+**ContinuousMovementCommands** — each action sets a persistent velocity:
+
+- ``move 1`` sets forward velocity to 1.0 — the agent **keeps moving** until ``move 0`` is sent.
+- ``turn 1`` sets rotation velocity — the agent **keeps turning** until ``turn 0`` is sent.
+- Values between -1 and 1 control speed (e.g. ``move 0.5`` = half speed).
+- The agent has inertia (velocity is interpolated over ~6 ticks).
+- Best for: smooth navigation, FPS-style control, realistic physics.
+
+.. note::
+
+   For **RL training**, the agent must learn to manage velocity in continuous missions
+   (e.g. send ``move 0`` to stop). For **human play**, MOSAIC routes keyboard input
+   through a native side-channel (TCP port 9001) that handles press/release naturally.
+
 Missions
 --------
 
@@ -60,6 +145,8 @@ MalmoEnv-MobChase-v0
 ~~~~~~~~~~~~~~~~~~~~~
 
 :XML: ``mobchase_single_agent.xml``
+:Movement: **Discrete:** one block per ``move``, 90° per ``turn``
+:Actions: Discrete(6): move, turn, use
 :Objective: Chase and reach a mob (pig/cow) in an open flat arena.
 :Reward: Positive reward when the agent reaches within a threshold distance of the mob.
 :Termination: Fixed time limit (in Malmo ticks).
@@ -72,6 +159,8 @@ MalmoEnv-MazeRunner-v0
 ~~~~~~~~~~~~~~~~~~~~~~~~
 
 :XML: ``mazerunner.xml``
+:Movement: **Continuous:** persistent velocity
+:Actions: Discrete(8): move, turn, attack, use
 :Objective: Navigate from the start position to the goal block at the exit of a maze.
 :Reward: Positive reward on reaching the goal; small negative step penalty.
 :Termination: Time limit or goal reached.
@@ -83,6 +172,8 @@ MalmoEnv-Vertical-v0
 ~~~~~~~~~~~~~~~~~~~~~~
 
 :XML: ``vertical.xml``
+:Movement: **Continuous:** persistent velocity
+:Actions: Discrete(6): move, turn, use
 :Objective: Climb a vertical tower of blocks placed on a platform over a void.
 :Reward: Reward proportional to height gained.
 :Termination: Agent falls off or time limit expires.
@@ -94,6 +185,8 @@ MalmoEnv-CliffWalking-v0
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 
 :XML: ``cliffwalking.xml``
+:Movement: **Discrete:** one block per ``move``, 90° per ``turn``
+:Actions: Discrete(6): move, turn, use
 :Objective: Walk along the top of a cliff from start to goal without falling.
 :Reward: +1 for each step toward the goal; large negative reward for falling.
 :Termination: Agent falls or reaches the goal.
@@ -105,6 +198,8 @@ MalmoEnv-CatchTheMob-v0
 ~~~~~~~~~~~~~~~~~~~~~~~~
 
 :XML: ``catchthemob.xml``
+:Movement: **Discrete:** one block per ``move``, 90° per ``turn``
+:Actions: Discrete(6): move, turn, use
 :Objective: Catch a mob that is enclosed in a small arena.
 :Reward: Reward on contact with the mob.
 :Termination: Time limit.
@@ -116,6 +211,8 @@ MalmoEnv-FindTheGoal-v0
 ~~~~~~~~~~~~~~~~~~~~~~~~
 
 :XML: ``findthegoal.xml``
+:Movement: **Continuous:** persistent velocity
+:Actions: Discrete(4): move, turn only
 :Objective: Locate and stand on a gold block hidden somewhere in a large flat world.
 :Reward: Large positive reward on reaching the goal block.
 :Termination: Time limit.
@@ -128,6 +225,8 @@ MalmoEnv-Attic-v0
 ~~~~~~~~~~~~~~~~~~
 
 :XML: ``attic.xml``
+:Movement: **Continuous:** persistent velocity
+:Actions: Discrete(6): move, turn, use
 :Objective: Navigate an indoor "attic" layout (corridors, rooms, furniture).
 :Reward: Positive reward on reaching the designated exit.
 :Termination: Time limit.
@@ -139,6 +238,8 @@ MalmoEnv-DefaultFlatWorld-v0
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 :XML: ``defaultflatworld.xml``
+:Movement: **Continuous:** persistent velocity
+:Actions: Discrete(8): move, turn, attack, use
 :Objective: Open-ended flat creative world — no specific mission goal.
 :Reward: No default reward (extendable via XML).
 :Termination: Time limit.
@@ -150,6 +251,8 @@ MalmoEnv-DefaultWorld-v0
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 
 :XML: ``defaultworld.xml``
+:Movement: **Continuous:** persistent velocity
+:Actions: Discrete(8): move, turn, attack, use
 :Objective: Open-ended default Minecraft world generation (survival-style terrain).
 :Reward: No default reward.
 :Termination: Time limit.
@@ -162,6 +265,8 @@ MalmoEnv-Eating-v0
 ~~~~~~~~~~~~~~~~~~~
 
 :XML: ``eating.xml``
+:Movement: **Continuous:** persistent velocity
+:Actions: Discrete(6): move, turn, use
 :Objective: Collect food items (bread, carrots, etc.) placed in the world.
 :Reward: Positive reward for each food item collected.
 :Termination: All items collected or time limit.
@@ -173,6 +278,8 @@ MalmoEnv-Obstacles-v0
 ~~~~~~~~~~~~~~~~~~~~~~
 
 :XML: ``obstacles.xml``
+:Movement: **Continuous:** persistent velocity
+:Actions: Discrete(6): move, turn, use
 :Objective: Navigate from start to goal while bypassing a series of obstacles
             (walls, pits, lava).
 :Reward: Positive reward on reaching the goal.
@@ -185,6 +292,8 @@ MalmoEnv-TrickyArena-v0
 ~~~~~~~~~~~~~~~~~~~~~~~~
 
 :XML: ``trickyarena.xml``
+:Movement: **Continuous:** persistent velocity
+:Actions: Discrete(6): move, turn, use
 :Objective: Survive in an arena with pits, moving platforms, and hazards.
 :Reward: Reward for time survived; penalty for falling into pits.
 :Termination: Agent dies or time limit.
@@ -196,9 +305,18 @@ MalmoEnv-TreasureHunt-v0
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 
 :XML: ``treasurehunt.xml``
+:Movement: **Discrete (Turn-Based):** one block per ``move``, 90° per ``turn``
+:Actions: Discrete(4): move, turn only (Agent 0)
+:Agents: **2 agents required:** Agent 0 (deny attack) + Agent 1 (deny use). Single-agent mode not supported.
 :Objective: Find and collect treasure chests scattered across the world.
 :Reward: Positive reward for each chest opened.
 :Termination: All chests collected or time limit.
+
+.. warning::
+
+   This is a **2-agent mission**. The Malmo server waits for both agents to connect
+   before starting the episode. Running in single-agent mode causes a timeout
+   (``ERROR_TIMED_OUT_WAITING_FOR_EPISODE_START``).
 
 **Use case:** Multi-target collection with sparse rewards and exploration requirement.
 

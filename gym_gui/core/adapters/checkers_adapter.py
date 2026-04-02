@@ -262,42 +262,40 @@ class CheckersAdapter:
     def _parse_board_from_string(self, state_str: str) -> None:
         """Parse board from OpenSpiel state string representation.
 
-        OpenSpiel checkers state string format shows the board with:
-        - 'o' or 'O': Black pieces (normal/king)
-        - 'x' or 'X': White pieces (normal/king)
-        - '.' or ' ': Empty squares
+        OpenSpiel checkers state string format:
+        - 'o': Black piece (player_0)
+        - '8': Black king (player_0 king, always the character '8')
+        - '+': White piece (player_1)
+        - '*': White king (player_1 king)
+        - '.': Empty square
+
+        Each line starts with a rank digit (8-1), followed by 8 piece chars.
         """
         lines = state_str.strip().split('\n')
 
-        # Find board lines (8 lines with board content)
-        board_lines = []
-        for line in lines:
-            # Look for lines that could be board rows
-            cleaned = line.strip()
-            if len(cleaned) >= 8:
-                # Extract just the piece characters
-                pieces = []
-                for ch in cleaned:
-                    if ch in 'oOxX. ':
-                        pieces.append(ch)
-                if len(pieces) >= 8:
-                    board_lines.append(pieces[:8])
+        # Reset board
+        self._board = [[0] * 8 for _ in range(8)]
 
-        if len(board_lines) >= 8:
-            # Parse the board
-            for row in range(8):
-                for col in range(8):
-                    ch = board_lines[row][col]
-                    if ch == 'o':
-                        self._board[row][col] = 1  # Black piece
-                    elif ch == 'O':
-                        self._board[row][col] = 2  # Black king
-                    elif ch == 'x':
-                        self._board[row][col] = 3  # White piece
-                    elif ch == 'X':
-                        self._board[row][col] = 4  # White king
-                    else:
-                        self._board[row][col] = 0  # Empty
+        for line in lines:
+            if not line or not line[0].isdigit():
+                continue  # Skip column labels and empty lines
+
+            rank = int(line[0])
+            row = 8 - rank  # rank 8 = row 0, rank 1 = row 7
+            pieces = line[1:]
+
+            for col, char in enumerate(pieces):
+                if col >= 8:
+                    break
+                if char == 'o':
+                    self._board[row][col] = 1  # Black piece
+                elif char == '8':
+                    self._board[row][col] = 2  # Black king
+                elif char == '+':
+                    self._board[row][col] = 3  # White piece
+                elif char == '*':
+                    self._board[row][col] = 4  # White king
+                # '.' = empty (already 0)
 
     def _determine_winner(self) -> Optional[str]:
         """Determine winner based on game state.

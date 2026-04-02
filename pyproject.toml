@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "mosaic-platform"
 version = "1.0.1"
-description = "MOSAIC: A Unified Platform for Cross-Paradigm Comparison and Evaluation of Homogeneous and Heterogeneous Multi-Agent RL, LLM, VLM, and Human Decision-Makers"
+description = "MOSAIC: A Unified Platform for Cross-Paradigm Agent-Mixing and Human-AI Collaboration"
 readme = "README.md"
 requires-python = ">=3.10,<3.13"
 license = {text = "MIT"}
@@ -60,7 +60,7 @@ dependencies = [
     # gRPC for trainer communication
     "grpcio>=1.60.0",
     "grpcio-tools>=1.60.0",
-    "protobuf>=4.25.0",
+    "protobuf>=6.31.1,<7.0.0",
 
     # Run ID generation
     "python-ulid>=2.0.0",
@@ -178,18 +178,16 @@ mosaic_multigrid = [
     "mosaic-multigrid==6.3.0",
 ]
 
-# mosaic_malmo - Go-based Minecraft RL environment (alternative to Java-based Malmo)
-# Local: 3rd_party/environments/mosaic_malmo/
-# Includes: Basic Minecraft navigation, mission-based API (mosaic_marLo)
-# Features: Gymnasium 1.0+ API, gRPC communication, Tnze/go-mc v1.20.2 protocol
-# Action space: 10 discrete actions (move, turn, jump, attack, use, etc.)
-# Observation: 84x84x3 RGB frames
-# Installation: pip install -e 3rd_party/environments/mosaic_malmo/python_wrapper/
-mosaic_malmo = [
-    "gymnasium>=1.1.0",
+# malmoenv - Microsoft Malmo Minecraft RL environments (13 missions)
+# Upstream: 3rd_party/environments/malmo/ (submodule)
+# Modified: 3rd_party/environments/malmo_updated/ (NativeInputHandler for human play)
+# Requires: Java 8 JDK + running Minecraft instance (see docs/environments/malmo/installation.rst)
+# Setup: bash 3rd_party/environments/mosaic_malmo/setup_malmo.sh
+# Install MalmoEnv: pip install -e 3rd_party/environments/malmo/MalmoEnv/
+malmoenv = [
+    "gymnasium>=0.28.1",
     "numpy>=1.24.0",
-    "grpcio>=1.60.0",
-    "protobuf>=4.25.0",
+    "Pillow>=9.0",
 ]
 
 # multigrid_ini - INI cooperative exploration multi-agent environments
@@ -296,6 +294,8 @@ jumanji = [
     "jaxlib>=0.4.20",
     "chex>=0.1.82",
     "flax>=0.7.0",
+    "optax>=0.2.0",
+    "gymnax>=0.0.6",
 ]
 
 # PyBullet Drones quadcopter environments (University of Toronto)
@@ -417,6 +417,63 @@ xuance = [
     "mpi4py>=3.1.0",
 ]
 
+# Tianshou worker for RL training
+# NOTE: The tianshou library (v1.0.0+) must be installed separately from
+# the git submodule: pip install -e "3rd_party/workers/tianshou_worker/tianshou"
+tianshou = [
+    "torch>=2.0.0",
+    "gymnasium>=0.28.0",
+    "numpy>=1.24.0",
+    "tqdm>=4.66.0",
+    "pettingzoo>=1.22.0",
+    "h5py>=3.9.0",
+    "tensorboard>=2.5.0",
+]
+
+# Stable-Baselines3 worker
+sb3 = [
+    "stable-baselines3>=2.0.0",
+    "torch>=2.0.0",
+    "tensorboard>=2.11.0",
+]
+
+# SBX (Stable-Baselines Jax) worker
+sbx = [
+    "sbx-rl>=0.20.0",
+    "stable-baselines3>=2.0.0",
+    "jax>=0.4.20",
+    "jaxlib>=0.4.20",
+]
+
+# MushroomRL worker
+mushroomrl = [
+    "mushroom-rl>=1.10.0",
+    "torch>=2.0.0",
+    "tensorboard>=2.11.0",
+]
+
+# Pearl worker (Meta's production RL library)
+# NOTE: Pearl must be installed separately from the cloned repo:
+# pip install -e "3rd_party/workers/pearl_worker/Pearl"
+pearl = [
+    "torch>=2.0.0",
+]
+
+# TorchRL worker (PyTorch official RL library)
+torchrl-worker = [
+    "torchrl>=0.11.0",
+    "tensordict>=0.7.0",
+    "torch>=2.0.0",
+    "tensorboard>=2.11.0",
+]
+
+# OmniSafe worker (safe RL)
+# NOTE: OmniSafe must be installed separately from the cloned repo:
+# pip install -e "3rd_party/workers/omnisafe_worker/omnisafe"
+omnisafe = [
+    "torch>=2.0.0",
+]
+
 # BALROG worker for LLM-based agents on BALROG benchmarks
 # Supports BabyAI, MiniHack, Crafter environments with OpenAI/Claude/Gemini
 # NOTE: For BabyAI tasks, also install minigrid-balrog extra:
@@ -492,10 +549,19 @@ where = [
     "3rd_party/workers/balrog_worker",
     "3rd_party/workers/cleanrl_worker",
     "3rd_party/workers/ray_worker",
+    "3rd_party/workers/tianshou_worker",
     "3rd_party/workers/xuance_worker",
     "3rd_party/workers/chess_worker",
     "3rd_party/workers/mctx_worker",
     "3rd_party/workers/marllib_worker",
+    # Benchmark workers (libraries with MOSAIC shims)
+    "3rd_party/workers/stable_baselines3_worker",
+    "3rd_party/workers/sbx_worker",
+    "3rd_party/workers/mushroom_rl_worker",
+    "3rd_party/workers/pearl_worker",
+    "3rd_party/workers/torchrl_worker",
+    "3rd_party/workers/omnisafe_worker",
+    "3rd_party/workers/rl_tools_worker",
     # MOSAIC native workers
     "3rd_party/workers/mosaic/human_worker",
     "3rd_party/workers/mosaic/llm_worker",
@@ -509,10 +575,19 @@ include = [
     "balrog_worker*",
     "cleanrl_worker*",
     "ray_worker*",
+    "tianshou_worker*",
     "xuance_worker*",
     "chess_worker*",
     "mctx_worker*",
     "marllib_worker*",
+    # Benchmark workers
+    "sb3_worker*",
+    "sbx_worker*",
+    "mushroomrl_worker*",
+    "pearl_worker*",
+    "torchrl_worker*",
+    "omnisafe_worker*",
+    "rl_tools_worker*",
     # MOSAIC native workers (under 3rd_party/workers/mosaic/)
     "human_worker*",
     "llm_worker*",
@@ -525,10 +600,19 @@ include = [
 jumanji = "jumanji_worker:get_worker_metadata"
 balrog = "balrog_worker:get_worker_metadata"
 cleanrl = "cleanrl_worker:get_worker_metadata"
+tianshou = "tianshou_worker:get_worker_metadata"
 ray = "ray_worker:get_worker_metadata"
 xuance = "xuance_worker:get_worker_metadata"
 chess = "chess_worker:get_worker_metadata"
 mctx = "mctx_worker:get_worker_metadata"
+# Benchmark workers
+sb3 = "sb3_worker:get_worker_metadata"
+sbx = "sbx_worker:get_worker_metadata"
+mushroomrl = "mushroomrl_worker:get_worker_metadata"
+pearl = "pearl_worker:get_worker_metadata"
+torchrl = "torchrl_worker:get_worker_metadata"
+omnisafe = "omnisafe_worker:get_worker_metadata"
+rltools = "rl_tools_worker:get_worker_metadata"
 # MOSAIC native workers (under 3rd_party/workers/mosaic/)
 human = "human_worker:get_worker_metadata"
 llm = "llm_worker:get_worker_metadata"

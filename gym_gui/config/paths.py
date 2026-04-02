@@ -29,6 +29,9 @@ VAR_MODELS_GO_AI_DIR = VAR_MODELS_DIR / "go_ai"  # Go AI engines config/models
 VAR_OPERATORS_DIR = VAR_ROOT / "operators"  # Operator subprocess data
 VAR_OPERATORS_LOGS_DIR = VAR_OPERATORS_DIR / "logs"  # Operator subprocess logs
 VAR_OPERATORS_TELEMETRY_DIR = VAR_OPERATORS_DIR / "telemetry"  # Operator telemetry (steps, episodes)
+VAR_HUMAN_CONTROL_DIR = VAR_ROOT / "human_control"  # Human Control subprocess data
+VAR_HUMAN_CONTROL_LOGS_DIR = VAR_HUMAN_CONTROL_DIR / "logs"  # Keyboard worker subprocess logs
+VAR_HUMAN_CONTROL_TELEMETRY_DIR = VAR_HUMAN_CONTROL_DIR / "telemetry"  # Human play telemetry
 VAR_EVALUATOR_DIR = VAR_ROOT / "evaluator"  # LLM evaluator episode logs (CSV, JSON, images)
 VAR_VLLM_DIR = VAR_ROOT / "vllm"  # vLLM server logs and state
 VAR_BIN_DIR = VAR_ROOT / "bin"  # Project-local binaries (KataGo, etc.)
@@ -47,6 +50,11 @@ VAR_NMMO_MAPS_DIR = VAR_DATA_DIR / "nmmo"
 # Custom training scripts directories
 CLEANRL_SCRIPTS_DIR = _3RD_PARTY_ROOT / "cleanrl_worker" / "cleanrl_worker" / "scripts"
 XUANCE_SCRIPTS_DIR = _3RD_PARTY_ROOT / "xuance_worker" / "xuance_worker" / "scripts"
+TIANSHOU_SCRIPTS_DIR = _3RD_PARTY_ROOT / "tianshou_worker" / "tianshou_worker" / "scripts"
+
+# Human worker package root (for evdev_input, runtime, etc.)
+_MOSAIC_WORKERS_ROOT = _REPO_ROOT / "3rd_party" / "workers" / "mosaic"
+HUMAN_WORKER_PKG_DIR = _MOSAIC_WORKERS_ROOT / "human_worker"
 
 
 def ensure_var_directories() -> None:
@@ -69,6 +77,9 @@ def ensure_var_directories() -> None:
         VAR_MODELS_GO_AI_DIR,
         VAR_OPERATORS_DIR,
         VAR_OPERATORS_LOGS_DIR,
+        VAR_HUMAN_CONTROL_DIR,
+        VAR_HUMAN_CONTROL_LOGS_DIR,
+        VAR_HUMAN_CONTROL_TELEMETRY_DIR,
         VAR_OPERATORS_TELEMETRY_DIR,
         VAR_EVALUATOR_DIR,
         VAR_VLLM_DIR,
@@ -101,6 +112,9 @@ __all__ = [
     "VAR_OPERATORS_DIR",
     "VAR_OPERATORS_LOGS_DIR",
     "VAR_OPERATORS_TELEMETRY_DIR",
+    "VAR_HUMAN_CONTROL_DIR",
+    "VAR_HUMAN_CONTROL_LOGS_DIR",
+    "VAR_HUMAN_CONTROL_TELEMETRY_DIR",
     "VAR_EVALUATOR_DIR",
     "VAR_VLLM_DIR",
     "VAR_BIN_DIR",
@@ -114,5 +128,6 @@ __all__ = [
     "VAR_NMMO_MAPS_DIR",
     "CLEANRL_SCRIPTS_DIR",
     "XUANCE_SCRIPTS_DIR",
+    "TIANSHOU_SCRIPTS_DIR",
     "ensure_var_directories",
 ]

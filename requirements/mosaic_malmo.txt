@@ -1,0 +1,8 @@
+# MalmoEnv - Microsoft Malmo Minecraft RL environments (13 missions)
+# Requires: Java 8 JDK + running Minecraft instance
+# Setup: bash 3rd_party/environments/mosaic_malmo/setup_malmo.sh
+# Install MalmoEnv: pip install -e 3rd_party/environments/malmo/MalmoEnv/
+
+gymnasium>=0.28.1
+numpy>=1.24.0
+Pillow>=9.0

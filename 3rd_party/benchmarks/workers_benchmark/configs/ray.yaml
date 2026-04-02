@@ -1,0 +1,75 @@
+# Ray Worker PPO Benchmark Configuration
+# Based on: ray_worker/ray_worker/config.py + runtime.py
+# Environment: CartPole-v1 (discrete action control baseline)
+# Task: Measure overhead of worker wrapper vs native execution
+
+environment:
+  family: "gym"             # "gym", "sisl", "classic", etc.
+  env_id: "CartPole-v1"     # Specific environment ID
+  api_type: "gym"           # Environment API type: "aec", "parallel", "gym"
+
+training:
+  algorithm: "PPO"          # PPO, IMPALA, APPO, DQN, SAC
+  total_timesteps: 100000   # Total training steps
+  num_iterations: 3
+  seed: 42
+
+# Ray resources configuration
+resources:
+  num_workers: 1            # Number of remote workers (0 = local only)
+  num_cpus: 1               # Total CPUs for training
+  num_gpus: 0               # Total GPUs for training
+  num_cpus_per_worker: 1    # CPUs per worker
+  num_gpus_per_worker: 0.0  # GPUs per worker
+
+# Checkpoint configuration
+checkpoint:
+  checkpoint_freq: 10       # Checkpoint every N iterations
+  checkpoint_at_end: true
+  keep_checkpoints_num: 5
+  export_policy: true       # Export best policy
+
+# PPO hyperparameters (RLlib style)
+# Note: Ray uses OLD API stack (enable_rl_module_and_learner=False)
+ppo_config:
+  # Core algorithm
+  lr: 5.0e-5                # Learning rate (RLlib default: 5e-5)
+  gamma: 0.99               # Discount factor
+  lambda: 0.95              # GAE lambda
+  clip_param: 0.2           # PPO clip parameter
+  entropy_coeff: 0.0        # Entropy regularization
+  vf_clip_param: 10.0       # Value function clip
+  
+  # SGD
+  sgd_minibatch_size: 64    # Mini-batch size
+  num_sgd_iter: 20          # SGD iterations per iteration
+  
+  # Gradients
+  grad_clip: null           # Gradient clipping (null = no clipping)
+  value_function_loss_coeff: 1.0
+  
+  # Training behavior
+  train_batch_size: 2048    # Total batch size per iteration
+  rollout_fragment_length: "auto"
+  preprocessor_pref: "rllib"
+
+# Policy configuration
+policy_configuration: "PARAMETER_SHARING"  # PARAMETER_SHARING, INDEPENDENT, SELF_PLAY, SHARED_VALUE_FUNCTION
+
+# FastLane live visualization
+fastlane_enabled: true
+fastlane_throttle_ms: 33    # ~30 FPS
+
+# Logging
+tensorboard: true           # TensorBoard logging
+wandb: false                # Weights & Biases
+
+# Benchmark modes to test
+scenarios:
+  - native                  # Direct RLlib execution
+  - worker                  # Via MOSAIC worker wrapper
+  - fastlane                # Worker + FastLane enabled
+
+# Benchmark settings
+warmup_runs: 0
+timeout_seconds: 3600       # 1 hour max per scenario

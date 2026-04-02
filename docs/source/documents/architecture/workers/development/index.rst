@@ -50,8 +50,35 @@ A complete worker has two sides:
   the training form dialog, worker catalog entry, presenter, and how
   user configuration reaches the backend via gRPC.
 
+Telemetry Paths
+---------------
+
+MOSAIC workers support two telemetry paths for different use cases:
+
+.. list-table::
+   :header-rows: 1
+   :widths: 20 40 40
+
+   * - Path
+     - Use Case
+     - Data Flow
+   * - **Slow Lane**
+     - Persistent storage, replays, analytics
+     - Worker → gRPC → SQLite → GUI
+   * - **FastLane**
+     - Real-time rendering, low latency
+     - Worker → Shared Memory → GUI (~60 Hz)
+
+.. note::
+
+   When ``fastlane_only=True``, the worker skips the slow lane entirely
+   and only streams frames via shared memory. This is ideal for training
+   runs where you want real-time visualization without disk I/O overhead.
+
+   See :doc:`backend` for FastLane implementation details and the critical
+   cleanup requirements for shared memory segments.
+
 .. toctree::
-   :hidden:
    :maxdepth: 2
 
    backend

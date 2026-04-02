@@ -140,9 +140,11 @@ class JumanjiWorkerRuntime:
         """Extract environment name from ID (e.g., 'Game2048-v1' -> 'game_2048')."""
         import re
         name = env_id.split("-v")[0]
-        # Convert CamelCase to snake_case
+        # Insert underscore before uppercase letters and before digit sequences
         s1 = re.sub('(.)([A-Z][a-z]+)', r'\1_\2', name)
-        return re.sub('([a-z0-9])([A-Z])', r'\1_\2', s1).lower()
+        s2 = re.sub('([a-z])([A-Z0-9])', r'\1_\2', s1)
+        s3 = re.sub('([A-Z]+)([A-Z][a-z])', r'\1_\2', s2)
+        return s3.lower()
 
     def run(self) -> Dict[str, Any]:
         """Execute the configured Jumanji training.
@@ -438,13 +440,32 @@ class JumanjiWorkerRuntime:
         from jumanji.training import networks
 
         # Map environment names to their network factories
+        # Each factory uses defaults from jumanji/training/configs/env/*.yaml
         network_factories = {
-            "game_2048": lambda: networks.make_actor_critic_networks_game_2048(env),
-            "graph_coloring": lambda: networks.make_actor_critic_networks_graph_coloring(env),
-            "minesweeper": lambda: networks.make_actor_critic_networks_minesweeper(env),
-            "rubiks_cube": lambda: networks.make_actor_critic_networks_rubiks_cube(env),
-            "sliding_tile_puzzle": lambda: networks.make_actor_critic_networks_sliding_tile_puzzle(env),
-            "sudoku": lambda: networks.make_actor_critic_networks_sudoku(env),
+            "game_2048": lambda: networks.make_actor_critic_networks_game_2048(
+                game_2048=env, num_channels=32,
+                policy_layers=[128, 128], value_layers=[256, 256],
+            ),
+            "graph_coloring": lambda: networks.make_actor_critic_networks_graph_coloring(
+                graph_coloring=env, num_channels=32,
+                policy_layers=[128, 128], value_layers=[256, 256],
+            ),
+            "minesweeper": lambda: networks.make_actor_critic_networks_minesweeper(
+                minesweeper=env, num_channels=32,
+                policy_layers=[128, 128], value_layers=[256, 256],
+            ),
+            "rubiks_cube": lambda: networks.make_actor_critic_networks_rubiks_cube(
+                rubiks_cube=env, num_channels=32,
+                policy_layers=[128, 128], value_layers=[256, 256],
+            ),
+            "sliding_tile_puzzle": lambda: networks.make_actor_critic_networks_sliding_tile_puzzle(
+                sliding_tile_puzzle=env, num_channels=32,
+                policy_layers=[128, 128], value_layers=[256, 256],
+            ),
+            "sudoku": lambda: networks.make_actor_critic_networks_sudoku(
+                sudoku=env, num_channels=32,
+                policy_layers=[128, 128], value_layers=[256, 256],
+            ),
         }
 
         factory = network_factories.get(env_name)
@@ -484,6 +505,9 @@ class JumanjiWorkerRuntime:
     def _init_training_state(self, env, agent, key: jax.Array):
         """Initialize training state.
 
+        Inlines logic from jumanji.training.setup_train.setup_training_state
+        to avoid importing setup_train (which pulls in neptune).
+
         Args:
             env: Wrapped environment
             agent: A2C or Random agent
@@ -492,26 +516,40 @@ class JumanjiWorkerRuntime:
         Returns:
             Initial training state
         """
-        num_devices = jax.local_device_count()
-        batch_size_per_device = self._config.total_batch_size // num_devices
+        from jumanji.training.types import ActingState, TrainingState
+
+        total_batch_size = self._config.total_batch_size
+        params_key, reset_key, acting_key = jax.random.split(key, 3)
 
         # Initialize parameters
-        key, params_key = jax.random.split(key)
         params_state = agent.init_params(params_key)
 
+        # Initialize environment states
+        num_local_devices = jax.local_device_count()
+        local_batch_size = total_batch_size // num_local_devices
+        reset_keys = jax.random.split(reset_key, total_batch_size).reshape(
+            (1, num_local_devices, local_batch_size, -1)
+        )
+        reset_keys_local = reset_keys[0]
+        env_state, timestep = jax.pmap(env.reset, axis_name="devices")(reset_keys_local)
+
         # Initialize acting state
-        key, *env_keys = jax.random.split(key, 1 + num_devices * batch_size_per_device)
-        env_keys = jnp.stack(env_keys).reshape((num_devices, batch_size_per_device, -1))
+        acting_key_per_device = jax.random.split(acting_key, num_local_devices).reshape(
+            1, num_local_devices, -1
+        )
+        acting_state = ActingState(
+            state=env_state,
+            timestep=timestep,
+            key=acting_key_per_device[0],
+            episode_count=jnp.zeros(num_local_devices, float),
+            env_step_count=jnp.zeros(num_local_devices, float),
+        )
 
-        # Replicate across devices
-        params_state = jax.device_put_replicated(params_state, jax.local_devices())
-
-        from jumanji.training.types import TrainingState
-
-        # The actual initialization depends on Jumanji's API
-        # This is a simplified version - the real implementation would
-        # properly initialize the acting state using the agent's init method
-        return agent.init(params_key)
+        training_state = TrainingState(
+            params_state=jax.device_put_replicated(params_state, jax.local_devices()),
+            acting_state=acting_state,
+        )
+        return training_state
 
     def _run_epoch(self, agent, training_state) -> Tuple[Any, Dict]:
         """Run one training epoch.

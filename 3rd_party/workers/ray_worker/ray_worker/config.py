@@ -91,6 +91,7 @@ class PettingZooAPIType(str, Enum):
 
     AEC = "aec"        # Agent Environment Cycle (turn-based)
     PARALLEL = "parallel"  # Simultaneous actions
+    GYM = "gym"        # Standard Gymnasium/Gym API (single agent)
 
 
 @dataclass(frozen=True)

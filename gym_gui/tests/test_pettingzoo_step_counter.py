@@ -25,18 +25,6 @@ from unittest.mock import MagicMock
 
 import pytest
 
-# ---------------------------------------------------------------------------
-# Helpers
-# ---------------------------------------------------------------------------
-
-def _make_qapp():
-    pytest.importorskip("qtpy")
-    from qtpy import QtWidgets
-    app = QtWidgets.QApplication.instance()
-    if app is None:
-        app = QtWidgets.QApplication([])
-    return app
-
 
 # ---------------------------------------------------------------------------
 # OperatorsTab – step counter behaviour
@@ -46,10 +34,11 @@ class TestOperatorsTabStepCounter:
     """OperatorsTab step counter is driven only by external set_step_count."""
 
     @pytest.fixture
-    def tab(self):
-        _make_qapp()
+    def tab(self, qtbot):
         from gym_gui.ui.widgets.operators_tab import OperatorsTab
-        return OperatorsTab()
+        t = OperatorsTab()
+        qtbot.addWidget(t)
+        return t
 
     def test_initial_step_count_is_zero(self, tab):
         """Step counter starts at 0."""
@@ -118,14 +107,15 @@ class TestOperatorsTabPettingZooButtons:
     """Step White / Step Black buttons follow set_current_player correctly."""
 
     @pytest.fixture
-    def tab(self):
-        _make_qapp()
+    def tab(self, qtbot):
         from gym_gui.ui.widgets.operators_tab import OperatorsTab
         t = OperatorsTab()
+        qtbot.addWidget(t)
         t.set_pettingzoo_mode(True)
         return t
 
     def test_buttons_visible_in_pettingzoo_mode(self, tab):
+        tab.show()
         assert tab._step_player_0_btn.isVisible()
         assert tab._step_player_1_btn.isVisible()
 
@@ -189,13 +179,36 @@ class TestControlPanelSetStepCount:
     """ControlPanelWidget.set_step_count delegates to the embedded OperatorsTab."""
 
     @pytest.fixture
-    def panel(self):
-        _make_qapp()
-        from gym_gui.services.operator import MultiOperatorService
-        from gym_gui.ui.widgets.control_panel import ControlPanelWidget
-        service = MagicMock(spec=MultiOperatorService)
-        service.get_active_operators.return_value = {}
-        return ControlPanelWidget(multi_operator_service=service)
+    def panel(self, qtbot):
+        from gym_gui.ui.widgets.control_panel import ControlPanelWidget, ControlPanelConfig
+        from gym_gui.core.enums import ControlMode, GameId
+        from gym_gui.config.game_configs import (
+            FrozenLakeConfig, TaxiConfig, CliffWalkingConfig,
+            LunarLanderConfig, CarRacingConfig, BipedalWalkerConfig,
+            MiniGridConfig,
+        )
+        config = ControlPanelConfig(
+            available_modes={GameId.FROZEN_LAKE: [ControlMode.HUMAN_ONLY]},
+            default_mode=ControlMode.HUMAN_ONLY,
+            frozen_lake_config=FrozenLakeConfig(),
+            taxi_config=TaxiConfig(),
+            cliff_walking_config=CliffWalkingConfig(),
+            lunar_lander_config=LunarLanderConfig(),
+            car_racing_config=CarRacingConfig(),
+            bipedal_walker_config=BipedalWalkerConfig(),
+            minigrid_empty_config=MiniGridConfig(),
+            minigrid_doorkey_5x5_config=MiniGridConfig(),
+            minigrid_doorkey_6x6_config=MiniGridConfig(),
+            minigrid_doorkey_8x8_config=MiniGridConfig(),
+            minigrid_doorkey_16x16_config=MiniGridConfig(),
+            minigrid_lavagap_config=MiniGridConfig(),
+            default_seed=42,
+            allow_seed_reuse=False,
+            operators=(),
+        )
+        p = ControlPanelWidget(config=config)
+        qtbot.addWidget(p)
+        return p
 
     def test_set_step_count_updates_operators_tab(self, panel):
         """ControlPanelWidget.set_step_count forwards the value to OperatorsTab."""

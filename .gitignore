@@ -284,6 +284,8 @@ _vizdoom.ini
 .github/copilot-instructions.md
 .claude/
 .claudelogs/
+CLAUDE.md
+.harness/
 
 # XuanCe default log_dir creates logs/{algo} in CWD — keep it out of repo
 logs/
@@ -292,20 +294,10 @@ results/
 
 
 # 
-gym_gui/game_docs/hemac/
-
-gym_gui/game_docs/MosaicMalmo/
-
-gym_gui/rendering/strategies/mosaic_malmo.py
-
 3rd_party/environments/mosaic_malmo.backup
 
 3rd_party/environments/mosaic_marLo.backup
 
-
-requirements/mosaic_malmo.txt
-
-3rd_party/workers/workers_benchmark
 
 # Patch and diff files (prevent accidental commits)
 *.diff

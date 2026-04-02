@@ -1,7 +1,7 @@
 Integrated Workers
 ==================
 
-MOSAIC ships with ten production-ready workers that wrap major RL
+MOSAIC ships with twelve production-ready workers that wrap major RL
 frameworks, LLM evaluation suites, VLM multimodal agents, multi-agent LLM
 coordination, LLM chess play, human-in-the-loop control, and baseline agents.  Each worker follows the
 :doc:`shim pattern <../concept>`: upstream libraries are **never
@@ -20,43 +20,18 @@ the library.
    * - :doc:`MOSAIC LLM <MOSAIC_LLM_Worker/index>`
      - Multi-Agent LLM
      - OpenRouter, GPT-4o, Claude 3, Gemini, vLLM
-     - MultiGrid Soccer/Collect, BabyAI, PettingZoo
-     - Subprocess (interactive)
+     - MultiGrid Soccer/Collect, Melting Pot, Google Research Football, Minecraft
+     - Subprocess
    * - :doc:`MOSAIC VLM <MOSAIC_VLM_Worker/index>`
      - Multi-Agent VLM
      - OpenRouter, GPT-4o, Claude 3, Gemini, vLLM (multimodal)
-     - MultiGrid, BabyAI, Crafter, MiniHack, PettingZoo
-     - Subprocess (interactive)
-   * - :doc:`CleanRL <CleanRL_Worker/index>`
-     - Single-Agent
-     - PPO, DQN, SAC, TD3, DDPG, C51
-     - Gymnasium, Atari, MiniGrid, BabyAI, Procgen
-     - Subprocess
-   * - :doc:`XuanCe <XuanCe_Worker/index>`
-     - Multi-Agent
-     - MAPPO, QMIX, MADDPG, VDN, COMA + 40 more
-     - PettingZoo, SMAC, MultiGrid, MPE
-     - In-process
-   * - :doc:`Ray RLlib <RLlib_Worker/index>`
-     - Both
-     - PPO, IMPALA, APPO, DQN, A2C
-     - PettingZoo (SISL, Classic, Butterfly, MPE)
-     - Ray cluster
-   * - :doc:`BALROG <BALROG_Worker/index>`
-     - LLM/VLM Evaluation
-     - GPT-4o, Claude 3, Gemini, vLLM (local)
-     - NetHack, MiniHack, BabyAI, Crafter, TextWorld
-     - Subprocess (parallel)
-   * - :doc:`Chess LLM <Chess_LLM_Worker/index>`
-     - LLM Chess
-     - GPT-4o, Claude 3, Gemini, vLLM (local)
-     - PettingZoo Chess (chess_v6)
-     - Subprocess (interactive)
+     - MultiGrid, Melting Pot, Google Research Football, Minecraft
+     - Subprocess 
    * - :doc:`MOSAIC Human <MOSAIC_Human_Worker/index>`
      - Human-in-the-Loop
      - Human action selection via GUI
      - MiniGrid, Crafter, PettingZoo, Classic Control
-     - Subprocess (interactive)
+     - Subprocess
    * - :doc:`MOSAIC Random <MOSAIC_Random_Worker/index>`
      - Baseline Agent
      - random (uniform sampling, no training)
@@ -66,6 +41,41 @@ the library.
      - Passive Baseline
      - noop / still (env-aware, no training)
      - All Gymnasium-compatible environments
+     - Subprocess
+   * - :doc:`CleanRL <CleanRL_Worker/index>`
+     - Single-Agent
+     - PPO, DQN, SAC, TD3, DDPG, C51
+     - Gymnasium, Atari, MiniGrid, BabyAI, Procgen
+     - Subprocess
+   * - :doc:`XuanCe <XuanCe_Worker/index>`
+     - Multi-Agent
+     - MAPPO, QMIX, MADDPG, VDN, COMA + 40 more
+     - PettingZoo, SMAC, MultiGrid, MPE, Google Research Football
+     - Subprocess
+   * - :doc:`Ray RLlib <RLlib_Worker/index>`
+     - Both
+     - PPO, IMPALA, APPO, DQN, A2C
+     - PettingZoo (SISL, Classic, Butterfly, MPE)
+     - Subprocess
+   * - :doc:`BALROG <BALROG_Worker/index>`
+     - Single-Agent, LLM/VLM  
+     - GPT-4o, Claude 3, Gemini, vLLM (local)
+     - NetHack, MiniHack, BabyAI, Crafter, TextWorld
+     - Subprocess 
+   * - :doc:`Chess LLM <Chess_LLM_Worker/index>`
+     - LLM Chess
+     - GPT-4o, Claude 3, Gemini, vLLM (local)
+     - PettingZoo Chess (chess_v6)
+     - Subprocess 
+   * - :doc:`Tianshou <Tianshou_Worker/index>`
+     - Sing-Agent, Multi-Agent, MARL, Model-based RL
+     - DQN, C51, Rainbow, IQN, PG, A2C, TRPO, PPO, DDPG, TD3, SAC, REDQ, BCQ, CQL, GAIL + more
+     - Gymnasium, Atari, MuJoCo, Classic Control, Box2D
+     - Subprocess
+   * - :doc:`Jumanji <Jumanji_Worker/index>`
+     - A suite of scalable reinforcement learning environments written in JAX
+     - A2C, PPO (hardware-accelerated via JAX)
+     - BinPack, TSP, CVRP, Knapsack, Game2048, Routing, Cleaner
      - Subprocess
 
 Each worker provides:
@@ -137,6 +147,13 @@ Each worker has dedicated GUI form widgets for experiment configuration:
        ``xuance_script_form.py``
      - Standard training (with backend selection),
        custom scripts
+   * - **Tianshou**
+     - ``tianshou_train_form.py``
+       ``tianshou_script_form.py``
+       ``tianshou_resume_form.py``
+       ``tianshou_policy_form.py``
+     - Standard training, custom scripts,
+       checkpoint resume, policy evaluation
    * - **Ray RLlib**
      - (Configured via Advanced Config)
      - Distributed training setup
@@ -152,5 +169,7 @@ Each worker has dedicated GUI form widgets for experiment configuration:
    MOSAIC_Passive_Worker/index
    CleanRL_Worker/index
    XuanCe_Worker/index
+   Tianshou_Worker/index
+   Jumanji_Worker/index
    RLlib_Worker/index
    BALROG_Worker/index

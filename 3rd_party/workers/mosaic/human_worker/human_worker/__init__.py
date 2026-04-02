@@ -2,7 +2,7 @@
 
 __version__ = "0.1.0"
 
-from .runtime import HumanWorkerRuntime
+from .runtime import HumanKeyboardRuntime, HumanWorkerRuntime
 from .config import HumanWorkerConfig
 
 
@@ -45,4 +45,10 @@ def get_worker_metadata() -> tuple:
     return metadata, capabilities
 
 
-__all__ = ["HumanWorkerRuntime", "HumanWorkerConfig", "__version__", "get_worker_metadata"]
+__all__ = [
+    "HumanKeyboardRuntime",
+    "HumanWorkerRuntime",
+    "HumanWorkerConfig",
+    "__version__",
+    "get_worker_metadata",
+]

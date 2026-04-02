@@ -1,0 +1,10 @@
+# Stable-Baselines3 Worker Dependencies
+# Install this when launching SB3-based training runs.
+
+# Include base requirements
+-r base.txt
+
+# SB3 core
+stable-baselines3>=2.0.0
+torch>=2.0.0
+tensorboard>=2.11.0

@@ -255,3 +255,59 @@ class PublishTelemetryResponse(_message.Message):
     accepted: int
     dropped: int
     def __init__(self, accepted: _Optional[int] = ..., dropped: _Optional[int] = ...) -> None: ...
+
+class VideoFrame(_message.Message):
+    __slots__ = ("run_id", "width", "height", "rgb_data", "frame_number", "timestamp_ms", "agent_x", "agent_y", "agent_z", "agent_yaw", "agent_pitch", "life", "food", "xp", "reward", "is_alive")
+    RUN_ID_FIELD_NUMBER: _ClassVar[int]
+    WIDTH_FIELD_NUMBER: _ClassVar[int]
+    HEIGHT_FIELD_NUMBER: _ClassVar[int]
+    RGB_DATA_FIELD_NUMBER: _ClassVar[int]
+    FRAME_NUMBER_FIELD_NUMBER: _ClassVar[int]
+    TIMESTAMP_MS_FIELD_NUMBER: _ClassVar[int]
+    AGENT_X_FIELD_NUMBER: _ClassVar[int]
+    AGENT_Y_FIELD_NUMBER: _ClassVar[int]
+    AGENT_Z_FIELD_NUMBER: _ClassVar[int]
+    AGENT_YAW_FIELD_NUMBER: _ClassVar[int]
+    AGENT_PITCH_FIELD_NUMBER: _ClassVar[int]
+    LIFE_FIELD_NUMBER: _ClassVar[int]
+    FOOD_FIELD_NUMBER: _ClassVar[int]
+    XP_FIELD_NUMBER: _ClassVar[int]
+    REWARD_FIELD_NUMBER: _ClassVar[int]
+    IS_ALIVE_FIELD_NUMBER: _ClassVar[int]
+    run_id: str
+    width: int
+    height: int
+    rgb_data: bytes
+    frame_number: int
+    timestamp_ms: int
+    agent_x: float
+    agent_y: float
+    agent_z: float
+    agent_yaw: float
+    agent_pitch: float
+    life: float
+    food: float
+    xp: int
+    reward: float
+    is_alive: bool
+    def __init__(self, run_id: _Optional[str] = ..., width: _Optional[int] = ..., height: _Optional[int] = ..., rgb_data: _Optional[bytes] = ..., frame_number: _Optional[int] = ..., timestamp_ms: _Optional[int] = ..., agent_x: _Optional[float] = ..., agent_y: _Optional[float] = ..., agent_z: _Optional[float] = ..., agent_yaw: _Optional[float] = ..., agent_pitch: _Optional[float] = ..., life: _Optional[float] = ..., food: _Optional[float] = ..., xp: _Optional[int] = ..., reward: _Optional[float] = ..., is_alive: bool = ...) -> None: ...
+
+class VideoFrameAck(_message.Message):
+    __slots__ = ("received", "frame_number")
+    RECEIVED_FIELD_NUMBER: _ClassVar[int]
+    FRAME_NUMBER_FIELD_NUMBER: _ClassVar[int]
+    received: bool
+    frame_number: int
+    def __init__(self, received: bool = ..., frame_number: _Optional[int] = ...) -> None: ...
+
+class VideoFrameControl(_message.Message):
+    __slots__ = ("pause", "resume", "target_fps", "close")
+    PAUSE_FIELD_NUMBER: _ClassVar[int]
+    RESUME_FIELD_NUMBER: _ClassVar[int]
+    TARGET_FPS_FIELD_NUMBER: _ClassVar[int]
+    CLOSE_FIELD_NUMBER: _ClassVar[int]
+    pause: bool
+    resume: bool
+    target_fps: int
+    close: bool
+    def __init__(self, pause: bool = ..., resume: bool = ..., target_fps: _Optional[int] = ..., close: bool = ...) -> None: ...

@@ -172,7 +172,6 @@ Available Operators
 
 
 .. toctree::
-   :hidden:
    :maxdepth: 2
 
    concept

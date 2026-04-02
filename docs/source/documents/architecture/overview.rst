@@ -1,5 +1,5 @@
-Architecture Overview
-=====================
+Overview
+========
 
 MOSAIC is built on a layered architecture that separates concerns
 and enables extensibility.

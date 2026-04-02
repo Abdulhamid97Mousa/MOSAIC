@@ -42,6 +42,14 @@ from gym_gui.logging_config.log_constants import (
     LOG_WORKER_CLEANRL_SUBPROCESS_FAILED,
     LOG_WORKER_CLEANRL_ANALYTICS_MANIFEST_CREATED,
     LOG_WORKER_CLEANRL_EPISODE_AUTO_RESET,
+    LOG_WORKER_CLEANRL_SUBPROCESS_OOM_KILLED,
+    LOG_WORKER_CLEANRL_SUBPROCESS_SIGNALED,
+    LOG_WORKER_CLEANRL_SUBPROCESS_NO_OUTPUT,
+    LOG_WORKER_CLEANRL_SUBPROCESS_MEMORY_SNAPSHOT,
+    LOG_WORKER_CLEANRL_SUBPROCESS_EXIT_SUMMARY,
+    LOG_WORKER_CLEANRL_TENSORBOARD_PATH_RESOLVED,
+    LOG_WORKER_CLEANRL_SUBPROCESS_SLOW_START,
+    LOG_WORKER_CLEANRL_SUBPROCESS_STDERR_ONLY,
 )
 
 from .analytics import build_manifest
@@ -52,6 +60,49 @@ from contextlib import contextmanager, redirect_stdout, redirect_stderr
 REPO_ROOT = Path(__file__).resolve().parents[4]
 _MODULE_NAME_PATTERN = re.compile(r"^[A-Za-z0-9_.]+$")
 _CMD_COMPONENT_PATTERN = re.compile(r"^[^\n\r\x00]*$")
+_SHM_DIR = Path("/dev/shm")
+
+
+def _cleanup_orphaned_shm(*, run_id: Optional[str] = None) -> int:
+    """Remove orphaned shared-memory segments left by killed subprocesses.
+
+    Python's multiprocessing.shared_memory creates ``psm_*`` tracker files
+    in /dev/shm.  When a subprocess is SIGKILL'd these are never cleaned up
+    and accumulate over time.
+
+    Also cleans up any FastLane segments (``mosaic.fastlane.*``) whose
+    owning process no longer exists.
+
+    Returns the number of segments removed.
+    """
+    if not _SHM_DIR.is_dir():
+        return 0
+    removed = 0
+    uid = os.getuid()
+    for entry in _SHM_DIR.iterdir():
+        try:
+            # Only touch files owned by us
+            if entry.stat().st_uid != uid:
+                continue
+            name = entry.name
+            # Orphaned Python shared-memory tracker semaphores
+            if name.startswith("psm_"):
+                entry.unlink()
+                removed += 1
+            # Stale FastLane segments from previous runs
+            elif name.startswith("mosaic.fastlane."):
+                if run_id and run_id in name:
+                    # Current run's segment — leave it
+                    continue
+                entry.unlink()
+                removed += 1
+        except (PermissionError, FileNotFoundError, OSError):
+            continue
+    if removed:
+        LOGGER.info(
+            "Cleaned up %d orphaned /dev/shm segments", removed,
+        )
+    return removed
 
 
 LOGGER = logging.getLogger(__name__)
@@ -117,10 +168,21 @@ AlgoRegistry = Mapping[str, str]
 
 
 DEFAULT_ALGO_REGISTRY: AlgoRegistry = {
-    # PPO family
+    # --------------------------------------------------------------------------
+    # MOSAIC custom algorithms (cleanrl_worker.algorithms.*)
+    # These have MiniGrid/BabyAI support, custom agents, curriculum learning
+    # --------------------------------------------------------------------------
     "ppo": "cleanrl_worker.algorithms.ppo",
     "ppo_gru": "cleanrl_worker.algorithms.ppo_gru",
-    "ppo_continuous_action": "cleanrl.ppo_continuous_action",
+    # --------------------------------------------------------------------------
+    # Upstream CleanRL algorithms (cleanrl.*)
+    # These use the original gym/gymnasium API that CleanRL was built with.
+    # We do NOT use our cleanrl_worker.algorithms.* copies for these because
+    # the upstream code was written for the old gym API and works correctly
+    # with the vendored cleanrl package.
+    # --------------------------------------------------------------------------
+    # PPO family
+    "ppo_continuous_action": "cleanrl_worker.algorithms.ppo_continuous_action",
     "ppo_atari": "cleanrl.ppo_atari",
     "ppo_atari_multigpu": "cleanrl.ppo_atari_multigpu",
     "ppo_atari_lstm": "cleanrl.ppo_atari_lstm",
@@ -148,7 +210,7 @@ DEFAULT_ALGO_REGISTRY: AlgoRegistry = {
     "c51_jax": "cleanrl.c51_jax",
     "c51_atari": "cleanrl.c51_atari",
     "c51_atari_jax": "cleanrl.c51_atari_jax",
-    # Continuous control
+    # Continuous control (MuJoCo, etc.)
     "ddpg_continuous_action": "cleanrl.ddpg_continuous_action",
     "ddpg_continuous_action_jax": "cleanrl.ddpg_continuous_action_jax",
     "td3_continuous_action": "cleanrl.td3_continuous_action",
@@ -253,8 +315,11 @@ class CleanRLWorkerRuntime:
             raise ValueError(f"Algorithm '{self._config.algo}' is not registered")
 
         candidates = [canonical_module]
-        if canonical_module.startswith("cleanrl."):
-            candidates.append(f"cleanrl_worker.{canonical_module}")
+        # Fallback: try the other namespace if primary is missing
+        if canonical_module.startswith("cleanrl_worker.algorithms."):
+            candidates.append(canonical_module.replace("cleanrl_worker.algorithms.", "cleanrl."))
+        elif canonical_module.startswith("cleanrl."):
+            candidates.append(canonical_module.replace("cleanrl.", "cleanrl_worker.algorithms."))
 
         resolved_name: Optional[str] = None
         for candidate in candidates:
@@ -471,7 +536,7 @@ class CleanRLWorkerRuntime:
         try:
             self._import_entrypoint(module_name)
         except ModuleNotFoundError:
-            if module_name.startswith("cleanrl."):
+            if module_name.startswith(("cleanrl_worker.algorithms.", "cleanrl.")):
                 LOGGER.debug(
                     "Deferring import of %s to launcher bootstrap (vendored CleanRL expected)",
                     module_name,
@@ -501,8 +566,11 @@ class CleanRLWorkerRuntime:
         env.setdefault("PYTHONUNBUFFERED", "1")
 
         pythonpath_entries = []
-        site_dir = Path(__file__).resolve().parent
-        pythonpath_entries.append(str(site_dir))
+        # Use the parent of the cleanrl_worker package (not the package dir itself)
+        # to avoid Python auto-importing sitecustomize.py in every forked process
+        # (SyncVectorEnv workers). The launcher explicitly imports sitecustomize.
+        package_parent = Path(__file__).resolve().parent.parent
+        pythonpath_entries.append(str(package_parent))
         repo_path = str(REPO_ROOT)
         pythonpath_entries.append(repo_path)
         existing_pythonpath = env.get("PYTHONPATH")
@@ -638,6 +706,9 @@ class CleanRLWorkerRuntime:
         else:
             env.setdefault("WANDB_MODE", "offline")
 
+        # Clean up orphaned /dev/shm segments from previous crashed runs
+        _cleanup_orphaned_shm(run_id=self._config.run_id)
+
         with stdout_path.open("w", encoding="utf-8", buffering=1) as out, stderr_path.open(
             "w", encoding="utf-8", buffering=1
         ) as err:
@@ -647,6 +718,18 @@ class CleanRLWorkerRuntime:
                 stdout=out,
                 stderr=err,
                 env=env,
+            )
+
+            # Memory snapshot at launch time for OOM diagnosis
+            _mem_snapshot = _get_memory_snapshot()
+            log_constant(
+                LOGGER,
+                LOG_WORKER_CLEANRL_SUBPROCESS_MEMORY_SNAPSHOT,
+                extra={
+                    "run_id": self._config.run_id,
+                    "pid": getattr(proc, "pid", None),
+                    **_mem_snapshot,
+                },
             )
 
             log_constant(
@@ -660,13 +743,29 @@ class CleanRLWorkerRuntime:
             )
 
             last_heartbeat = time.monotonic()
+            start_time = time.monotonic()
             heartbeat_interval = 30.0
+            slow_start_warned = False
             while True:
                 rc = proc.poll()
                 if rc is not None:
                     return_code = rc
                     break
                 now = time.monotonic()
+                # Warn if subprocess hasn't produced output after 30s
+                if not slow_start_warned and (now - start_time) >= 30.0:
+                    if stdout_path.stat().st_size == 0:
+                        log_constant(
+                            LOGGER,
+                            LOG_WORKER_CLEANRL_SUBPROCESS_SLOW_START,
+                            extra={
+                                "run_id": self._config.run_id,
+                                "elapsed_seconds": int(now - start_time),
+                                "algo": self._config.algo,
+                                "env_id": self._config.env_id,
+                            },
+                        )
+                        slow_start_warned = True
                 if now - last_heartbeat >= heartbeat_interval:
                     self._emitter.heartbeat(
                         {
@@ -678,6 +777,84 @@ class CleanRLWorkerRuntime:
                     )
                     last_heartbeat = now
                 time.sleep(1.0)
+
+        # --- Subprocess exit diagnostics ---
+        elapsed = time.monotonic() - start_time
+        stdout_size = stdout_path.stat().st_size if stdout_path.exists() else 0
+        stderr_size = stderr_path.stat().st_size if stderr_path.exists() else 0
+        _exit_mem = _get_memory_snapshot()
+
+        log_constant(
+            LOGGER,
+            LOG_WORKER_CLEANRL_SUBPROCESS_EXIT_SUMMARY,
+            extra={
+                "run_id": self._config.run_id,
+                "return_code": return_code,
+                "elapsed_seconds": round(elapsed, 1),
+                "stdout_bytes": stdout_size,
+                "stderr_bytes": stderr_size,
+                "signal": -return_code if return_code < 0 else None,
+                **_exit_mem,
+            },
+        )
+
+        # Clean up orphaned shm after any abnormal exit
+        if return_code != 0:
+            _cleanup_orphaned_shm(run_id=self._config.run_id)
+
+        # Detect OOM kill (SIGKILL = signal 9, exit code = -9 or 137)
+        if return_code in (-9, 137):
+            log_constant(
+                LOGGER,
+                LOG_WORKER_CLEANRL_SUBPROCESS_OOM_KILLED,
+                extra={
+                    "run_id": self._config.run_id,
+                    "return_code": return_code,
+                    "elapsed_seconds": round(elapsed, 1),
+                    **_exit_mem,
+                },
+            )
+        elif return_code < 0:
+            import signal as _signal
+            sig_name = "unknown"
+            try:
+                sig_name = _signal.Signals(-return_code).name
+            except (ValueError, AttributeError):
+                sig_name = f"signal({-return_code})"
+            log_constant(
+                LOGGER,
+                LOG_WORKER_CLEANRL_SUBPROCESS_SIGNALED,
+                extra={
+                    "run_id": self._config.run_id,
+                    "return_code": return_code,
+                    "signal_name": sig_name,
+                    "elapsed_seconds": round(elapsed, 1),
+                },
+            )
+
+        # Detect empty stdout (training never produced output)
+        if stdout_size == 0 and return_code != 0:
+            log_constant(
+                LOGGER,
+                LOG_WORKER_CLEANRL_SUBPROCESS_NO_OUTPUT,
+                extra={
+                    "run_id": self._config.run_id,
+                    "return_code": return_code,
+                    "stderr_bytes": stderr_size,
+                    "elapsed_seconds": round(elapsed, 1),
+                },
+            )
+
+        # Detect stderr-only output (resource_tracker warnings, etc.)
+        if stdout_size == 0 and stderr_size > 0 and return_code == 0:
+            log_constant(
+                LOGGER,
+                LOG_WORKER_CLEANRL_SUBPROCESS_STDERR_ONLY,
+                extra={
+                    "run_id": self._config.run_id,
+                    "stderr_bytes": stderr_size,
+                },
+            )
 
         if return_code != 0:
             # Read the last 30 lines of stderr to surface the actual error
@@ -736,6 +913,9 @@ class CleanRLWorkerRuntime:
                 "manifest_path": str(manifest_path),
             },
         )
+
+        # Clean up any shm segments leaked by the subprocess
+        _cleanup_orphaned_shm(run_id=self._config.run_id)
 
         # Emit run_completed lifecycle event
         self._emitter.run_completed(
@@ -980,7 +1160,7 @@ class CleanRLWorkerRuntime:
                         # base_factory(...)() -> calls factory to create actual env
                         env = base_factory(env_id, idx, capture_video, run_name, target_gamma)()
                         if max_seconds_override is not None:
-                            from gym_gui.core.wrappers.time_limits import TimeLimitSeconds
+                            from gym_gui.core.wrappers.time_limits import EpisodeTimeLimitSeconds as TimeLimitSeconds
 
                             try:
                                 env = TimeLimitSeconds(env, float(max_seconds_override))
@@ -998,7 +1178,7 @@ class CleanRLWorkerRuntime:
                     return env_factory
 
                 result: Optional[EvalRunResult] = run_batched_evaluation(
-                    evaluate_fn,
+                    evaluate_fn,  # type: ignore[arg-type]
                     policy_path=str(policy_file),
                     make_env=adapted_make_env,
                     env_id=self._config.env_id,
@@ -1263,6 +1443,33 @@ def _temporary_env(overrides: Mapping[str, str]) -> Iterator[None]:
                 os.environ[key] = value
 
 
+def _get_memory_snapshot() -> dict[str, Any]:
+    """Capture system memory state for OOM diagnostics."""
+    try:
+        import shutil
+        total, used, free = shutil.disk_usage("/")
+        with open("/proc/meminfo") as f:
+            meminfo = {}
+            for line in f:
+                parts = line.split()
+                if len(parts) >= 2:
+                    meminfo[parts[0].rstrip(":")] = int(parts[1])
+        ram_total_mb = meminfo.get("MemTotal", 0) // 1024
+        ram_available_mb = meminfo.get("MemAvailable", 0) // 1024
+        swap_total_mb = meminfo.get("SwapTotal", 0) // 1024
+        swap_free_mb = meminfo.get("SwapFree", 0) // 1024
+        return {
+            "ram_total_mb": ram_total_mb,
+            "ram_available_mb": ram_available_mb,
+            "ram_used_pct": round(100 * (1 - ram_available_mb / max(ram_total_mb, 1)), 1),
+            "swap_total_mb": swap_total_mb,
+            "swap_free_mb": swap_free_mb,
+            "swap_used_pct": round(100 * (1 - swap_free_mb / max(swap_total_mb, 1)), 1),
+        }
+    except Exception:
+        return {"memory_snapshot": "unavailable"}
+
+
 def _sanitize_launch_command(cmd: Sequence[Any]) -> list[str]:
     """Ensure CLI components are strings without control characters."""
 
@@ -1352,12 +1559,8 @@ class InteractiveRuntime:
         # Auto-import environment packages to register their environments
         if self._env_id.startswith("MiniGrid") or self._env_id.startswith("BabyAI"):
             try:
-                import minigrid
-                import gymnasium
-                # Only register if not already registered (avoid duplicate registration warnings)
-                if "MiniGrid-Empty-5x5-v0" not in gymnasium.registry:
-                    minigrid.register_minigrid_envs()  # Required in minigrid 2.3.1+
-                LOGGER.debug("Registered minigrid environments")
+                import minigrid  # noqa: F401 - registers MiniGrid/BabyAI envs
+                LOGGER.debug("Imported minigrid to register environments")
             except ImportError:
                 LOGGER.warning("minigrid package not installed")
 
@@ -1444,6 +1647,7 @@ class InteractiveRuntime:
                 self._load_policy()
 
             # Reset environment
+            assert self._envs is not None, "Environment not initialized"
             self._obs, info = self._envs.reset(seed=seed)
             self._reset_seed = seed  # Store for deterministic auto-reset
             self._step_idx = 0
@@ -1507,6 +1711,7 @@ class InteractiveRuntime:
                 action_scalar = int(action)
 
             # Step environment
+            assert self._envs is not None, "Environment not initialized"
             obs_new, reward, terminated, truncated, info = self._envs.step(action)
 
             # Handle reward (may be array from vector env)

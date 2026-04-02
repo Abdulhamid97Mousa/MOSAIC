@@ -32,7 +32,7 @@ class TestRandomWorkerCrafterBasics:
 
         env = runtime._create_env()
         assert env is not None
-        assert env.action_space.n == 17  # Crafter has 17 actions
+        assert env.action_space.n == 17  # type: ignore[attr-defined]  # Crafter has 17 actions
         env.close()
 
     def test_crafter_reset(self):

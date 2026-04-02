@@ -420,6 +420,7 @@ try:  # Optional dependency - MalmoEnv (Microsoft Malmo, Java-based Minecraft)
     from .mosaic_malmo import (
         MALMOENV_ACTIONS,
         MALMOENV_ADAPTERS,
+        MALMOENV_MULTI_AGENT_ADAPTERS,
         MOSAIC_MALMO_ACTIONS,  # legacy alias
         MOSAIC_MALMO_ADAPTERS,  # legacy alias
         MalmoEnvAdapter,
@@ -432,14 +433,17 @@ try:  # Optional dependency - MalmoEnv (Microsoft Malmo, Java-based Minecraft)
         MalmoEnvFindTheGoalAdapter,
         MalmoEnvMazeRunnerAdapter,
         MalmoEnvMobChaseAdapter,
+        MalmoEnvMultiAgentAdapter,
         MalmoEnvObstaclesAdapter,
         MalmoEnvTreasureHuntAdapter,
+        MalmoEnvTreasureHuntMultiAgentAdapter,
         MalmoEnvTrickyArenaAdapter,
         MalmoEnvVerticalAdapter,
     )
     _MOSAIC_MALMO_AVAILABLE = True
 except Exception:  # pragma: no cover - malmoenv optional
     MalmoEnvAdapter = None  # type: ignore[misc, assignment]
+    MalmoEnvMultiAgentAdapter = None  # type: ignore[misc, assignment]
     MalmoEnvMobChaseAdapter = None  # type: ignore[misc, assignment]
     MalmoEnvMazeRunnerAdapter = None  # type: ignore[misc, assignment]
     MalmoEnvVerticalAdapter = None  # type: ignore[misc, assignment]
@@ -453,7 +457,9 @@ except Exception:  # pragma: no cover - malmoenv optional
     MalmoEnvObstaclesAdapter = None  # type: ignore[misc, assignment]
     MalmoEnvTrickyArenaAdapter = None  # type: ignore[misc, assignment]
     MalmoEnvTreasureHuntAdapter = None  # type: ignore[misc, assignment]
+    MalmoEnvTreasureHuntMultiAgentAdapter = None  # type: ignore[misc, assignment]
     MALMOENV_ADAPTERS = {}  # type: ignore[misc]
+    MALMOENV_MULTI_AGENT_ADAPTERS = {}  # type: ignore[misc]
     MALMOENV_ACTIONS = []  # type: ignore[misc]
     MOSAIC_MALMO_ADAPTERS = {}  # type: ignore[misc]
     MOSAIC_MALMO_ACTIONS = []  # type: ignore[misc]
@@ -929,7 +935,10 @@ if _MOSAIC_MALMO_AVAILABLE:
         "MalmoEnvObstaclesAdapter",
         "MalmoEnvTrickyArenaAdapter",
         "MalmoEnvTreasureHuntAdapter",
+        "MalmoEnvMultiAgentAdapter",
+        "MalmoEnvTreasureHuntMultiAgentAdapter",
         "MALMOENV_ADAPTERS",
+        "MALMOENV_MULTI_AGENT_ADAPTERS",
         "MALMOENV_ACTIONS",
         "MOSAIC_MALMO_ADAPTERS",
         "MOSAIC_MALMO_ACTIONS",

@@ -81,6 +81,11 @@ from gym_gui.ui.config_panels.single_agent.gym import (
     build_lunarlander_controls,
     build_taxi_controls,
 )
+from gym_gui.ui.config_panels.single_agent.malmo import (
+    DEFAULT_MALMO_CONFIG,
+    MALMOENV_FAMILY,
+    build_malmo_controls,
+)
 from gym_gui.ui.config_panels.single_agent.minigrid.config_panel import (
     MINIGRID_GAME_IDS,
     build_minigrid_controls,
@@ -1700,6 +1705,7 @@ class ControlPanelWidget(QtWidgets.QWidget):
             EnvironmentFamily.MELTINGPOT,
             EnvironmentFamily.OVERCOOKED,
         )
+        is_malmo = env_family == EnvironmentFamily.MALMOENV
 
         # Create combo box
         input_mode_combo = QtWidgets.QComboBox(self._config_group)
@@ -1712,6 +1718,13 @@ class ControlPanelWidget(QtWidgets.QWidget):
             input_mode_combo.addItem(label, mode.value)
             # Force the override to state-based to prevent accidental misconfiguration
             overrides["input_mode"] = InputMode.STATE_BASED.value
+        elif is_malmo:
+            # RESTRICTION: MalmoEnv requires state-based mode for real-time control
+            mode = InputMode.STATE_BASED
+            label, _ = INPUT_MODE_INFO[mode]
+            input_mode_combo.addItem(label, mode.value)
+            # Ensure state-based is selected
+            overrides["input_mode"] = InputMode.STATE_BASED.value
         else:
             # Other games: Allow both modes
             for mode in InputMode:
@@ -1719,7 +1732,7 @@ class ControlPanelWidget(QtWidgets.QWidget):
                 input_mode_combo.addItem(label, mode.value)
 
         # Set current input mode (state-based for multi-agent, shortcut-based for others)
-        default_mode = InputMode.STATE_BASED.value if is_multi_agent else InputMode.SHORTCUT_BASED.value
+        default_mode = InputMode.STATE_BASED.value if (is_multi_agent or is_malmo) else InputMode.SHORTCUT_BASED.value
         current_input_mode = overrides.get("input_mode", default_mode)
         for i in range(input_mode_combo.count()):
             if input_mode_combo.itemData(i) == current_input_mode:
@@ -1740,6 +1753,8 @@ class ControlPanelWidget(QtWidgets.QWidget):
                 # Add multi-agent environment note
                 if is_multi_agent:
                     description += "\n\n✓ Required for multi-keyboard support. Shortcut-based mode is disabled to prevent conflicts with evdev monitoring."
+                elif is_malmo:
+                    description += "\n\n✓ Required for MalmoEnv real-time control."
 
                 input_mode_desc.setText(description)
             except (ValueError, KeyError):
@@ -1948,6 +1963,18 @@ class ControlPanelWidget(QtWidgets.QWidget):
                 overrides=overrides,
                 on_change=self._on_rware_config_changed,
             )
+        elif self._current_game is not None and self._current_game in MALMOENV_FAMILY:
+            current_game = self._current_game
+            overrides = self._game_overrides.setdefault(current_game, {})
+            # Set default values
+            for key, value in DEFAULT_MALMO_CONFIG.items():
+                overrides.setdefault(key, value)
+            build_malmo_controls(
+                layout=self._config_layout,
+                group=self._config_group,
+                overrides=overrides,
+                on_change=self._on_malmo_config_changed,
+            )
         else:
             label = QtWidgets.QLabel(
                 "No additional configuration options for this environment.",
@@ -2002,6 +2029,14 @@ class ControlPanelWidget(QtWidgets.QWidget):
     def _on_rware_config_changed(self, overrides: Dict[str, Any]) -> None:
         """Handle RWARE config changes (overrides dict already mutated in-place)."""
         pass  # overrides dict is shared; mutation already applied by build_rware_controls
+
+    def _on_malmo_config_changed(self, param_name: str, value: object) -> None:
+        """Handle MalmoEnv config changes."""
+        current_game = self._current_game
+        if current_game is None:
+            return
+        overrides = self._game_overrides.setdefault(current_game, {})
+        overrides[param_name] = value
 
     # ------------------------------------------------------------------
     # Multi-Agent Tab Handlers

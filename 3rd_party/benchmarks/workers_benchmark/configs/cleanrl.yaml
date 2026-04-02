@@ -1,0 +1,49 @@
+# CleanRL PPO Benchmark Configuration
+# Based on: cleanrl_worker/cleanrl/cleanrl/ppo.py
+# Environment: CartPole-v1 (control baseline)
+# Task: Measure overhead of worker wrapper vs native execution
+
+environment:
+  env_id: "CartPole-v1"
+  max_steps: null  # Let environment use defaults
+
+training:
+  algo: "ppo"
+  total_timesteps: 100000
+  num_envs: 1
+  num_iterations: 3
+  seed: 42
+
+# Core PPO hyperparameters (from cleanrl ppo.py argparse)
+ppo_config:
+  learning_rate: 0.0003
+  num_steps: 2048          # Steps per env per policy rollout
+  num_minibatches: 4       # Number of mini-batches per policy update
+  update_epochs: 4         # Number of epochs per policy update
+  gamma: 0.99              # Discount factor
+  gae_lambda: 0.95         # GAE advantage discount
+  norm_adv: true           # Normalize advantage
+  clip_coef: 0.2           # Clipping parameter
+  clip_vloss: true         # Clip value loss
+  ent_coef: 0.0            # Entropy coefficient
+  vf_coef: 0.5             # Value function coefficient
+  max_grad_norm: 0.5       # Max gradient norm
+  target_kl: null          # Target KL divergence (for early stopping)
+  anneal_lr: true          # Learning rate annealing
+
+# CartPole runs very fast, so batching:
+batch_size: 64              # Will be computed as num_envs * num_steps
+
+# Environment detection: CartPole is Classic Control
+# No MiniGrid-specific params like reward_scale, max_episode_steps
+is_minigrid: false
+
+# Benchmark modes to test
+scenarios:
+  - native                  # Direct: python -m cleanrl.ppo --args
+  - worker                  # Via: cleanrl_worker wrapper (dry_run=True)
+  - fastlane                # Worker + GYM_GUI_FASTLANE_ONLY=1
+
+# Benchmark settings
+warmup_runs: 0              # No warmup for overhead test
+timeout_seconds: 3600       # 1 hour max per scenario

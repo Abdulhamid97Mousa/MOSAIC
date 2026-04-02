@@ -57,3 +57,10 @@
 [submodule "LLM-Game-Benchmark"]
   path = 3rd_party/workers/llm_game_worker/LLM-Game-Benchmark
   url = https://github.com/research-outcome/LLM-Game-Benchmark.git
+
+[submodule "tianshou"]
+	path = 3rd_party/workers/tianshou_worker/tianshou
+	url = https://github.com/thu-ml/tianshou.git
+[submodule "3rd_party/workers/sample_factory_worker/sample-factory"]
+	path = 3rd_party/workers/sample_factory_worker/sample-factory
+	url = https://github.com/alex-petrenko/sample-factory.git

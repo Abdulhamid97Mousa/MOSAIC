@@ -10,7 +10,7 @@ Tests cover:
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import Any, TYPE_CHECKING
 
 import pytest
 
@@ -21,6 +21,13 @@ if TYPE_CHECKING:
 
 from gym_gui.core.enums import EnvironmentFamily, GameId
 from gym_gui.ui.handlers import GoHandler
+
+
+def _payload(step: Any) -> dict:
+    """Extract render_payload from a step, asserting it exists."""
+    p = step.render_payload
+    assert p is not None, "render_payload should not be None"
+    return p
 
 
 class TestGoAdapterLoads:
@@ -68,7 +75,7 @@ class TestGoRenderPayload:
     def test_render_payload_has_board(self, go_adapter: "GoEnvironmentAdapter") -> None:
         """Render payload includes board state."""
         step = go_adapter.reset()
-        payload = step.render_payload
+        payload = _payload(step)
         assert "board" in payload
         board = payload["board"]
         # Default board is 19x19
@@ -78,7 +85,7 @@ class TestGoRenderPayload:
     def test_render_payload_has_legal_moves(self, go_adapter: "GoEnvironmentAdapter") -> None:
         """Render payload includes legal moves list."""
         step = go_adapter.reset()
-        payload = step.render_payload
+        payload = _payload(step)
         assert "legal_moves" in payload
         assert isinstance(payload["legal_moves"], list)
         # Should have legal moves at start (board positions + pass)
@@ -87,7 +94,7 @@ class TestGoRenderPayload:
     def test_render_payload_has_current_player(self, go_adapter: "GoEnvironmentAdapter") -> None:
         """Render payload includes current player."""
         step = go_adapter.reset()
-        payload = step.render_payload
+        payload = _payload(step)
         assert "current_player" in payload
         # Black plays first
         assert payload["current_player"] in ("black_0", "white_0")
@@ -95,7 +102,7 @@ class TestGoRenderPayload:
     def test_render_payload_has_game_state(self, go_adapter: "GoEnvironmentAdapter") -> None:
         """Render payload includes game state info."""
         step = go_adapter.reset()
-        payload = step.render_payload
+        payload = _payload(step)
         assert "is_game_over" in payload
         assert "move_count" in payload
         assert payload["is_game_over"] is False
@@ -104,7 +111,7 @@ class TestGoRenderPayload:
     def test_render_payload_has_game_type(self, go_adapter: "GoEnvironmentAdapter") -> None:
         """Render payload includes game_type for routing."""
         step = go_adapter.reset()
-        payload = step.render_payload
+        payload = _payload(step)
         assert payload.get("game_type") == "go"
 
 
@@ -129,7 +136,7 @@ class TestGoMoves:
         assert step is not None
         # Board should show a stone at center (non-zero value)
         # After step, observation is from white's perspective, so black=2
-        board = step.render_payload["board"]
+        board = _payload(step)["board"]
         assert board[9][9] != 0  # Stone placed
 
     def test_illegal_move_raises(self, go_adapter: "GoEnvironmentAdapter") -> None:
@@ -161,7 +168,7 @@ class TestGoMoves:
         step = go_adapter.step(pass_action)
         assert step is not None
         # After pass, it's white's turn
-        assert step.render_payload["current_player"] == "white_0"
+        assert _payload(step)["current_player"] == "white_0"
 
 
 class TestGoGameState:
@@ -180,24 +187,24 @@ class TestGoGameState:
     def test_move_count_increments(self, go_adapter: "GoEnvironmentAdapter") -> None:
         """Move count increments after each move."""
         step = go_adapter.reset()
-        assert step.render_payload["move_count"] == 0
+        assert _payload(step)["move_count"] == 0
 
         action = go_adapter.coords_to_action(0, 0)
         step = go_adapter.step(action)
-        assert step.render_payload["move_count"] == 1
+        assert _payload(step)["move_count"] == 1
 
     def test_current_agent_alternates(self, go_adapter: "GoEnvironmentAdapter") -> None:
         """Current agent alternates between black and white."""
         step = go_adapter.reset()
-        assert step.render_payload["current_player"] == "black_0"
+        assert _payload(step)["current_player"] == "black_0"
 
         action = go_adapter.coords_to_action(0, 0)
         step = go_adapter.step(action)
-        assert step.render_payload["current_player"] == "white_0"
+        assert _payload(step)["current_player"] == "white_0"
 
         action = go_adapter.coords_to_action(1, 0)
         step = go_adapter.step(action)
-        assert step.render_payload["current_player"] == "black_0"
+        assert _payload(step)["current_player"] == "black_0"
 
     def test_get_legal_moves(self, go_adapter: "GoEnvironmentAdapter") -> None:
         """get_legal_moves returns valid move indices."""
@@ -285,7 +292,7 @@ class TestGoBoardSizes:
         adapter = GoEnvironmentAdapter(board_size=9)
         adapter.load()
         step = adapter.reset()
-        board = step.render_payload["board"]
+        board = _payload(step)["board"]
         assert len(board) == 9
         assert all(len(row) == 9 for row in board)
         adapter.close()
@@ -297,7 +304,7 @@ class TestGoBoardSizes:
         adapter = GoEnvironmentAdapter(board_size=13)
         adapter.load()
         step = adapter.reset()
-        board = step.render_payload["board"]
+        board = _payload(step)["board"]
         assert len(board) == 13
         assert all(len(row) == 13 for row in board)
         adapter.close()
@@ -309,7 +316,7 @@ class TestGoBoardSizes:
         adapter = GoEnvironmentAdapter()
         adapter.load()
         step = adapter.reset()
-        board = step.render_payload["board"]
+        board = _payload(step)["board"]
         assert len(board) == 19
         assert all(len(row) == 19 for row in board)
         adapter.close()
@@ -334,5 +341,5 @@ class TestGoTwoConsecutivePasses:
         step = adapter.step(pass_action)
 
         # Game should be over after two consecutive passes
-        assert step.render_payload["is_game_over"] is True
+        assert _payload(step)["is_game_over"] is True
         adapter.close()

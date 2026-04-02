@@ -192,3 +192,53 @@ message PublishTelemetryResponse {
   uint64 accepted = 1;
   uint64 dropped = 2;
 }
+
+// ---------------------------------------------------------------------------
+// Video Frame Streaming Service (for MalmoEnv direct integration)
+// ---------------------------------------------------------------------------
+
+service VideoFrameService {
+  // Bidirectional stream for video frames from Minecraft to MOSAIC.
+  // Java side sends frames, Python side can send control messages back.
+  rpc StreamFrames(stream VideoFrame) returns (stream VideoFrameControl);
+
+  // Simple unary RPC for single frame (for testing/simpler integration).
+  rpc SendFrame(VideoFrame) returns (VideoFrameAck);
+}
+
+message VideoFrame {
+  string run_id = 1;
+  uint32 width = 2;
+  uint32 height = 3;
+  bytes rgb_data = 4;           // Raw RGB bytes (width * height * 3)
+  uint64 frame_number = 5;
+  uint64 timestamp_ms = 6;
+
+  // Agent metadata from Minecraft
+  optional float agent_x = 10;
+  optional float agent_y = 11;
+  optional float agent_z = 12;
+  optional float agent_yaw = 13;
+  optional float agent_pitch = 14;
+
+  // Game state
+  optional float life = 20;
+  optional float food = 21;
+  optional int32 xp = 22;
+  optional float reward = 23;
+  optional bool is_alive = 24;
+}
+
+message VideoFrameAck {
+  bool received = 1;
+  uint64 frame_number = 2;
+}
+
+message VideoFrameControl {
+  oneof command {
+    bool pause = 1;           // Pause frame streaming
+    bool resume = 2;          // Resume frame streaming
+    uint32 target_fps = 3;    // Target frame rate (0 = unlimited)
+    bool close = 4;           // Close the stream
+  }
+}

@@ -13,6 +13,7 @@ Available loaders:
 - GoEnvLoader: Human vs Agent Go game loading
 - TicTacToeEnvLoader: Human vs Agent Tic-Tac-Toe game loading
 - VizdoomEnvLoader: ViZDoom environment loading with mouse capture
+- MalmoEnvLoader: Malmo/Minecraft FPS-style mouse look capture
 - JumanjiGridClickLoader: Grid-click mouse input for Jumanji games (Tetris, Minesweeper)
 - SmacCameraLoader: Mouse-driven 3D camera panning for SMAC/SMACv2 environments
 """

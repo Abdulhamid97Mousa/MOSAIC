@@ -291,6 +291,20 @@ class MultiGridAdapter(EnvironmentAdapter[List[np.ndarray], List[int]]):
             return "MosaicMultiGrid-Basketball-3vs3-IndAgObs-v0"
         elif self._env_id == "basketball_teamobs":
             return "MosaicMultiGrid-Basketball-3vs3-TeamObs-v0"
+        elif self._env_id == "american_football_1v1":
+            return "MosaicMultiGrid-AmericanFootball-1v1-v0"
+        elif self._env_id == "american_football_2v2":
+            return "MosaicMultiGrid-AmericanFootball-2v2-v0"
+        elif self._env_id == "american_football_3v3":
+            return "MosaicMultiGrid-AmericanFootball-3v3-v0"
+        elif self._env_id == "american_football_2v2_teamobs":
+            return "MosaicMultiGrid-AmericanFootball-2v2-TeamObs-v0"
+        elif self._env_id == "american_football_3v3_teamobs":
+            return "MosaicMultiGrid-AmericanFootball-3v3-TeamObs-v0"
+        elif self._env_id == "american_football_solo_green":
+            return "MosaicMultiGrid-AmericanFootball-Solo-Green-v0"
+        elif self._env_id == "american_football_solo_blue":
+            return "MosaicMultiGrid-AmericanFootball-Solo-Blue-v0"
         else:
             return self._env_id
 
@@ -408,6 +422,56 @@ class MultiGridAdapter(EnvironmentAdapter[List[np.ndarray], List[int]]):
                         "Install with: pip install mosaic-multigrid==6.0.0"
                     )
                 env = Basketball3vs3TeamObsEnv(render_mode='rgb_array', **extra_kwargs)
+            # American Football environments (v6.3.0)
+            elif self._env_id == "american_football_1v1" or self._env_id == "MosaicMultiGrid-AmericanFootball-1v1-v0":
+                if AmericanFootball1v1Env16x11 is None:
+                    raise RuntimeError(
+                        "mosaic_multigrid v6.3.0 not installed. "
+                        "Install with: pip install mosaic-multigrid==6.3.0"
+                    )
+                env = AmericanFootball1v1Env16x11(render_mode='rgb_array', **extra_kwargs)
+            elif self._env_id == "american_football_2v2" or self._env_id == "MosaicMultiGrid-AmericanFootball-2v2-v0":
+                if AmericanFootball2v2Env16x11 is None:
+                    raise RuntimeError(
+                        "mosaic_multigrid v6.3.0 not installed. "
+                        "Install with: pip install mosaic-multigrid==6.3.0"
+                    )
+                env = AmericanFootball2v2Env16x11(render_mode='rgb_array', **extra_kwargs)
+            elif self._env_id == "american_football_3v3" or self._env_id == "MosaicMultiGrid-AmericanFootball-3v3-v0":
+                if AmericanFootball3v3Env16x11 is None:
+                    raise RuntimeError(
+                        "mosaic_multigrid v6.3.0 not installed. "
+                        "Install with: pip install mosaic-multigrid==6.3.0"
+                    )
+                env = AmericanFootball3v3Env16x11(render_mode='rgb_array', **extra_kwargs)
+            elif self._env_id == "american_football_2v2_teamobs" or self._env_id == "MosaicMultiGrid-AmericanFootball-2v2-TeamObs-v0":
+                if AmericanFootball2v2TeamObsEnv is None:
+                    raise RuntimeError(
+                        "mosaic_multigrid v6.3.0 not installed. "
+                        "Install with: pip install mosaic-multigrid==6.3.0"
+                    )
+                env = AmericanFootball2v2TeamObsEnv(render_mode='rgb_array', **extra_kwargs)
+            elif self._env_id == "american_football_3v3_teamobs" or self._env_id == "MosaicMultiGrid-AmericanFootball-3v3-TeamObs-v0":
+                if AmericanFootball3v3TeamObsEnv is None:
+                    raise RuntimeError(
+                        "mosaic_multigrid v6.3.0 not installed. "
+                        "Install with: pip install mosaic-multigrid==6.3.0"
+                    )
+                env = AmericanFootball3v3TeamObsEnv(render_mode='rgb_array', **extra_kwargs)
+            elif self._env_id == "american_football_solo_green" or self._env_id == "MosaicMultiGrid-AmericanFootball-Solo-Green-v0":
+                if AmericanFootballSoloGreenEnv16x11 is None:
+                    raise RuntimeError(
+                        "mosaic_multigrid v6.3.0 not installed. "
+                        "Install with: pip install mosaic-multigrid==6.3.0"
+                    )
+                env = AmericanFootballSoloGreenEnv16x11(render_mode='rgb_array', **extra_kwargs)
+            elif self._env_id == "american_football_solo_blue" or self._env_id == "MosaicMultiGrid-AmericanFootball-Solo-Blue-v0":
+                if AmericanFootballSoloBlueEnv16x11 is None:
+                    raise RuntimeError(
+                        "mosaic_multigrid v6.3.0 not installed. "
+                        "Install with: pip install mosaic-multigrid==6.3.0"
+                    )
+                env = AmericanFootballSoloBlueEnv16x11(render_mode='rgb_array', **extra_kwargs)
             else:
                 # Try to make via gymnasium.make if registered (e.g., Solo variants)
                 try:
@@ -415,7 +479,7 @@ class MultiGridAdapter(EnvironmentAdapter[List[np.ndarray], List[int]]):
                 except Exception as e:
                     raise RuntimeError(
                         f"Unknown MOSAIC MultiGrid environment: {self._env_id}. "
-                        f"Available: Soccer/Collect/Basketball IndAgObs, TeamObs, and Solo variants. Error: {e}"
+                        f"Available: Soccer/Collect/Basketball/AmericanFootball IndAgObs, TeamObs, and Solo variants. Error: {e}"
                     )
 
             self._env = env

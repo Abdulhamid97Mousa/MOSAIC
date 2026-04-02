@@ -630,12 +630,20 @@ class MultiAgentFastLaneWrapper:
             return None
 
     def _close_writer(self) -> None:
-        """Close FastLane writer and release resources."""
+        """Close FastLane writer and unlink shared memory."""
         if self._writer is not None:
             try:
                 self._writer.close()
             except Exception:
                 pass
+            
+            try:
+                self._writer.unlink()
+                _LOGGER.debug("FastLane writer closed and unlinked for stream_id=%s", self._config.stream_id)
+            except FileNotFoundError:
+                pass  # Already unlinked
+            except Exception as exc:
+                _LOGGER.debug("Error closing FastLane writer: %s", exc)
             finally:
                 self._writer = None
 
@@ -1085,12 +1093,20 @@ class ParallelFastLaneWrapper:
             return None
 
     def _close_writer(self) -> None:
-        """Close FastLane writer and release resources."""
+        """Close FastLane writer and unlink shared memory."""
         if self._writer is not None:
             try:
                 self._writer.close()
             except Exception:
                 pass
+            
+            try:
+                self._writer.unlink()
+                _LOGGER.debug("FastLane writer closed and unlinked for stream_id=%s", self._config.stream_id)
+            except FileNotFoundError:
+                pass  # Already unlinked
+            except Exception as exc:
+                _LOGGER.debug("Error closing FastLane writer: %s", exc)
             finally:
                 self._writer = None
 

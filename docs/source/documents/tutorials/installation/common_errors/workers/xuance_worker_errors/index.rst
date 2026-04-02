@@ -309,10 +309,10 @@ buffer size is **256**.  Setting Grid Limit (and therefore parallel envs) to
 
    The following values are safe with the default buffer size of 256:
 
-   - **1** — single environment (slowest, useful for debugging)
-   - **2** — two parallel environments
-   - **4** — four parallel environments (default)
-   - **8** — eight parallel environments (recommended for grid view)
+   - **1:** single environment (slowest, useful for debugging)
+   - **2:** two parallel environments
+   - **4:** four parallel environments (default)
+   - **8:** eight parallel environments (recommended for grid view)
 
    Values like **3**, **5**, **6**, **7** will crash because 256 is not
    divisible by them.

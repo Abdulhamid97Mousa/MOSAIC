@@ -30,6 +30,13 @@ from .gym import (
     build_taxi_controls,
 )
 
+# Re-export MalmoEnv helpers
+from .malmo import (
+    DEFAULT_MALMO_CONFIG,
+    MALMOENV_FAMILY,
+    build_malmo_controls,
+)
+
 # Re-export minigrid helpers
 from .minigrid import (
     MINIGRID_GAME_IDS,
@@ -72,4 +79,8 @@ __all__ = [
     "CRAFTER_GAME_IDS",
     "CrafterControlCallbacks",
     "build_crafter_controls",
+    # MalmoEnv family
+    "MALMOENV_FAMILY",
+    "DEFAULT_MALMO_CONFIG",
+    "build_malmo_controls",
 ]

@@ -36,7 +36,7 @@ class XInput2EventFilter(QtCore.QAbstractNativeEventFilter):
         if HAS_XCFFIB:
             try:
                 # Connect to X11
-                self.conn = xcffib.connect()
+                self.conn = xcffib.connect()  # type: ignore[possibly-undefined]
                 self.widget.append_event("DEBUG: Connected to X11")
 
                 # Query for XInput extension
@@ -135,7 +135,7 @@ class XInput2EventFilter(QtCore.QAbstractNativeEventFilter):
             # Convert Qt's message pointer to bytes
             # XCB events are 32 bytes (standard) or larger (with extension data)
             # message is a PyQt6.sip.voidptr - need ctypes to read from it
-            addr = int(message)
+            addr = int(message)  # type: ignore[arg-type]
             event_ptr = ctypes.cast(addr, ctypes.POINTER(ctypes.c_char * 32))
             event_bytes = bytes(event_ptr.contents)
 
@@ -263,7 +263,9 @@ class XInput2TestWindow(QtWidgets.QWidget):
         # Install native event filter
         if HAS_XCFFIB:
             self.event_filter = XInput2EventFilter(self)
-            QtCore.QCoreApplication.instance().installNativeEventFilter(self.event_filter)
+            app_instance = QtCore.QCoreApplication.instance()
+            assert app_instance is not None
+            app_instance.installNativeEventFilter(self.event_filter)
             self.log.append("✓ Native event filter installed")
             self.log.append("✓ Waiting for keyboard events...\n")
 
@@ -274,7 +276,7 @@ class XInput2TestWindow(QtWidgets.QWidget):
             self.log.append("\nInstall xcffib:")
             self.log.append("  pip install xcffib")
 
-    def showEvent(self, event):
+    def showEvent(self, event):  # type: ignore[override]
         """Called when window is shown - register for XInput2 events."""
         super().showEvent(event)
 

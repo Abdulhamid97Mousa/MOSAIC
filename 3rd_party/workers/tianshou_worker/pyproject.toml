@@ -1,0 +1,38 @@
+[build-system]
+requires = ["setuptools>=65", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "mosaic-tianshou"
+version = "0.1.0"
+description = "Tianshou integration for MOSAIC framework"
+requires-python = ">=3.10"
+license = {text = "MIT"}
+# Dependencies are managed via the main project's requirements.txt
+dependencies = []
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0.0",
+]
+
+[project.scripts]
+tianshou-worker = "tianshou_worker.cli:main"
+
+[project.entry-points."mosaic.workers"]
+tianshou = "tianshou_worker:get_worker_metadata"
+
+[tool.setuptools]
+packages = [
+    # Original Tianshou packages (from tianshou/ subdirectory)
+    "tianshou",
+    # Our integration harness
+    "tianshou_worker",
+]
+
+[tool.setuptools.package-dir]
+# Map original Tianshou packages to tianshou/ subdirectory
+# Assuming tianshou repo structure is tianshou/tianshou
+"tianshou" = "tianshou/tianshou"
+# Our harness is directly in tianshou_worker/
+"tianshou_worker" = "tianshou_worker"

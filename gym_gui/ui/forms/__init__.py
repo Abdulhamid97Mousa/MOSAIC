@@ -41,6 +41,11 @@ def ensure_all_forms_registered() -> None:
     from gym_gui.ui.widgets.ray_train_form import RayRLlibTrainForm  # noqa: F401
     from gym_gui.ui.widgets.xuance_script_form import XuanCeScriptForm  # noqa: F401
     from gym_gui.ui.widgets.xuance_train_form import XuanCeTrainForm  # noqa: F401
+    from gym_gui.ui.widgets.tianshou_train_form import TianshouTrainForm  # noqa: F401
+    from gym_gui.ui.widgets.tianshou_script_form import TianshouScriptForm  # noqa: F401
+    from gym_gui.ui.widgets.tianshou_resume_form import TianshouResumeForm  # noqa: F401
+    from gym_gui.ui.widgets.tianshou_policy_form import TianshouPolicyForm  # noqa: F401
+    from gym_gui.ui.widgets.jumanji_train_form import JumanjiTrainForm  # noqa: F401
 
 
 __all__ = [

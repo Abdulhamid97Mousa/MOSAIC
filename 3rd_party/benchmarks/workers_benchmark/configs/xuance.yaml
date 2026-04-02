@@ -1,0 +1,68 @@
+# Xuance Worker PPO Benchmark Configuration
+# Based on: xuance_worker/xuance_worker/config.py + runtime.py
+# Environment: CartPole-v1 (control baseline)
+# Task: Measure overhead of worker wrapper vs native execution
+
+environment:
+  env: "classic_control"    # Environment family (Xuance-native naming)
+  env_id: "CartPole-v1"     # Specific environment
+  
+training:
+  method: "ppo"             # Algorithm name (normalized to lowercase config folder)
+  running_steps: 100000     # Total training steps (note: not timesteps)
+  num_iterations: 3
+  seed: 42
+
+# Xuance runtime configuration
+runtime_config:
+  dl_toolbox: "torch"       # "torch", "tensorflow", or "mindspore"
+  device: "cpu"             # CPU or CUDA
+  parallels: 1              # Number of parallel environments
+  test_mode: false          # If true, load and evaluate
+
+# PPO hyperparameters (passed via Xuance config YAML)
+# Note: Xuance uses its own config system. These are defaults that can be overridden.
+# Location: xuance_worker uses xuance/benchmarks/ppo/classic_control/cartpole.yaml
+ppo_config:
+  # Architecture
+  representation_type: "mlp"
+  representation_hidden_units: [64, 64]
+  actor_hidden_units: [64, 64]
+  critic_hidden_units: [64, 64]
+  
+  # Training
+  learning_rate: 0.0003
+  weight_decay: 0.0
+  gamma: 0.99               # Discount factor
+  gae_lambda: 0.95          # GAE lambda
+  num_steps: 2048           # Rollout length
+  num_mini_batches: 4       # Mini-batches per update
+  num_epochs: 4             # Epochs per update
+  normalize_advantages: true
+  use_linear_lr_decay: true
+  use_orthogonal_init: false
+  
+  # Clipping and regularization
+  clip_range: 0.2           # PPO clip parameter
+  clip_range_vf: 0.2        # Value function clip
+  entropy_coef: 0.0         # Entropy regularization
+  value_loss_coef: 1.0      # Value loss weight
+  max_grad_norm: 0.5        # Gradient clipping
+  
+# Benchmark modes to test
+scenarios:
+  - native                  # Direct Xuance execution
+  - worker                  # Via MOSAIC worker wrapper
+  - fastlane                # Worker + FastLane enabled
+
+# FastLane configuration (if fastlane mode)
+fastlane_config:
+  enabled: true
+  slot: 0                   # Which parallel env slot to record
+  video_mode: "single"      # "single", "grid", or "off"
+  grid_limit: 4             # Max envs in grid (unused for parallels=1)
+  interval_ms: 33           # ~30 FPS throttling
+
+# Benchmark settings
+warmup_runs: 0
+timeout_seconds: 3600       # 1 hour max per scenario

@@ -2338,6 +2338,13 @@ class _CheckersBoardRenderer(QtWidgets.QWidget):
                         painter.setPen(QtGui.QColor(255, 255, 255))
                     else:  # White king
                         painter.setPen(QtGui.QColor(0, 0, 0))
+                    text_rect = QtCore.QRect(
+                        center_x - crown_radius,
+                        center_y - crown_radius,
+                        crown_radius * 2,
+                        crown_radius * 2,
+                    )
+                    painter.drawText(text_rect, QtCore.Qt.AlignmentFlag.AlignCenter, "K")
 
     def _draw_coordinates(self, painter: QtGui.QPainter) -> None:
         """Draw board coordinates (1-8 and a-h)."""

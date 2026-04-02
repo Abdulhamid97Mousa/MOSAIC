@@ -132,6 +132,8 @@ class TestTwoOperatorSeedIsolation:
         """
         w1 = _make_worker("long_run_1", seed=3333)
         w2 = _make_worker("long_run_2", seed=4444)
+        assert w1._action_space is not None
+        assert w2._action_space is not None
 
         for _ in range(5):
             # Reseed only the action space as init_agent would (correct behaviour)

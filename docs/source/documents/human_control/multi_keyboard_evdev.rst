@@ -514,6 +514,65 @@ Qt shortcuts which fire globally.
    # Verify assignments were applied
    grep "Apply Assignments" var/logs/gym_gui.log
 
+Worker-Based Keyboard Input (Subprocess)
+-----------------------------------------
+
+For multi-agent environments where ``adapter.step()`` and
+``env.render()`` block the Qt main thread (causing agents to appear
+frozen and then "teleport"), MOSAIC provides a subprocess-based
+keyboard input mode.
+
+Each physical keyboard is assigned to a **human_worker subprocess**
+that reads evdev events in its own process.  The GUI never blocks
+on keyboard I/O because the worker communicates via JSON pipes.
+
+.. mermaid::
+
+   graph TD
+       KB1[USB Keyboard 1] --> P1[human_worker subprocess<br/>agent_0]
+       KB2[USB Keyboard 2] --> P2[human_worker subprocess<br/>agent_1]
+       P1 --> |action_selected JSON| GUI[GUI Main Process]
+       P2 --> |action_selected JSON| GUI
+       GUI --> |select_action JSON| P1
+       GUI --> |select_action JSON| P2
+       GUI --> ENV["env.step({0: action_0, 1: action_1})"]
+       ENV --> RENDER[Render Frame]
+
+       style KB1 fill:#4a90d9,stroke:#2e5a87,color:#fff
+       style KB2 fill:#4a90d9,stroke:#2e5a87,color:#fff
+       style P1 fill:#ff7f50,stroke:#cc5500,color:#fff
+       style P2 fill:#ff7f50,stroke:#cc5500,color:#fff
+       style GUI fill:#50c878,stroke:#2e8b57,color:#fff
+       style ENV fill:#9370db,stroke:#6a0dad,color:#fff
+
+How It Works
+^^^^^^^^^^^^
+
+1. The GUI launches one ``human_worker`` subprocess per agent in
+   ``--mode keyboard`` with the evdev device path.
+2. Each subprocess opens its ``/dev/input/eventX`` device and creates
+   a pure-Python keycode resolver (no Qt dependency).
+3. When the GUI sends ``{"cmd": "select_action"}``, the subprocess
+   blocks reading the keyboard until a recognized key is pressed.
+4. The subprocess returns ``{"type": "action_selected", "action": 3}``.
+5. The GUI collects all agents' actions via ``MultiAgentStepState``
+   and calls ``env.step(all_actions)`` through the standard pipeline.
+6. Rewards, observations, and replay recording are fully preserved.
+
+CLI Usage
+^^^^^^^^^
+
+.. code-block:: bash
+
+   human-worker --mode keyboard \
+       --device-path /dev/input/by-path/pci-0000:00:14.0-usb-0:5.1:1.0-event-kbd \
+       --env-name multigrid \
+       --player-name "Player 1"
+
+The subprocess uses pure Python (``select()``, ``os.read()``,
+``struct.unpack()``) to read raw evdev events and maps Linux
+keycodes directly to action indices without requiring Qt.
+
 Known Limitations
 -----------------
 
@@ -522,4 +581,3 @@ Known Limitations
   paths.
 - **Same key layout:** all keyboards share the same key bindings
   (WASD, etc.).  Per-keyboard remapping is not yet supported.
-- **GUI required:** headless/CLI mode does not support multi-keyboard.

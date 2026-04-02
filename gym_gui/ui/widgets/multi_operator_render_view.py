@@ -43,6 +43,7 @@ class MultiOperatorRenderView(QtWidgets.QWidget):
     human_action_submitted = pyqtSignal(str, int)  # operator_id, action_index
     board_game_move_made = pyqtSignal(str, str, str)  # operator_id, from_square, to_square
     chess_move_button_clicked = pyqtSignal(str, str)  # operator_id, uci_move (e.g., "e2e4")
+    mouse_delta_input = pyqtSignal(str, int, int)  # operator_id, dx, dy
     # Container resize signal (relayed from individual containers)
     container_resized = pyqtSignal(str, int, int)  # operator_id, width, height
 
@@ -130,6 +131,7 @@ class MultiOperatorRenderView(QtWidgets.QWidget):
         container.human_action_submitted.connect(self.human_action_submitted.emit)
         container.board_game_move_made.connect(self.board_game_move_made.emit)
         container.chess_move_button_clicked.connect(self.chess_move_button_clicked.emit)
+        container.mouse_delta_input.connect(self.mouse_delta_input.emit)
         container.container_resized.connect(self.container_resized.emit)
 
         self._containers[config.operator_id] = container

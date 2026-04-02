@@ -13,7 +13,7 @@ from __future__ import annotations
 
 import asyncio
 import json
-from typing import Any, Awaitable, Callable, List, Optional
+from typing import Any, Awaitable, Callable, Iterator, List, Optional
 
 import grpc
 import pytest
@@ -30,7 +30,7 @@ class _AsyncByteStream:
     def __init__(self, lines: List[bytes], on_complete: Optional[Callable[[], None]] = None) -> None:
         self._lines = list(lines)
         self._on_complete = on_complete
-        self._iter: Optional[iter[bytes]] = None
+        self._iter: Optional[Iterator[bytes]] = None
 
     def __aiter__(self) -> "_AsyncByteStream":
         self._iter = iter(self._lines)
@@ -59,11 +59,11 @@ class _FakeProcess:
         stdout_bytes = [line.encode("utf-8") if not isinstance(line, bytes) else line for line in stdout_lines]
         stderr_bytes = [line.encode("utf-8") if not isinstance(line, bytes) else line for line in (stderr_lines or [])]
         self.stdout = _AsyncByteStream(
-            [line if line.endswith(b"\n") else line + b"\n" for line in stdout_bytes],
+            [line if line.endswith(b"\n") else line + b"\n" for line in stdout_bytes],  # type: ignore[arg-type, operator]
             on_complete=self._mark_done,
         )
         self.stderr = _AsyncByteStream(
-            [line if line.endswith(b"\n") else line + b"\n" for line in stderr_bytes],
+            [line if line.endswith(b"\n") else line + b"\n" for line in stderr_bytes],  # type: ignore[arg-type, operator]
             on_complete=None,
         )
 
@@ -106,12 +106,12 @@ class _FakeTrainerStub:
         )
 
     async def PublishRunSteps(self, iterator: Awaitable[Any] | Any) -> trainer_pb2.PublishTelemetryResponse:
-        async for item in iterator:
+        async for item in iterator:  # type: ignore[union-attr]
             self.steps.append(item)
         return trainer_pb2.PublishTelemetryResponse(accepted=len(self.steps), dropped=0)
 
     async def PublishRunEpisodes(self, iterator: Awaitable[Any] | Any) -> trainer_pb2.PublishTelemetryResponse:
-        async for item in iterator:
+        async for item in iterator:  # type: ignore[union-attr]
             self.episodes.append(item)
         return trainer_pb2.PublishTelemetryResponse(accepted=len(self.episodes), dropped=0)
 
@@ -125,7 +125,7 @@ def qt_app() -> QtWidgets.QApplication:
     app = QtWidgets.QApplication.instance()
     if app is None:
         app = QtWidgets.QApplication([])
-    return app
+    return app  # type: ignore[return-value]
 
 
 @pytest.mark.asyncio

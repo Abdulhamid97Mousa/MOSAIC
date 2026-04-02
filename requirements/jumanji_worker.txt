@@ -1,0 +1,24 @@
+# Jumanji Worker Dependencies
+# This bundle contains dependencies required by the jumanji_worker.
+# Jumanji provides JAX-based RL environments (Google DeepMind, ICLR 2024).
+# Install this when launching Jumanji-based training runs.
+
+# Include base requirements
+-r base.txt
+
+# JAX ecosystem (core compute backend)
+jax>=0.4.20
+jaxlib>=0.4.20
+
+# JAX utilities
+chex>=0.1.82
+flax>=0.7.0
+optax>=0.2.0
+
+# gymnax: JAX-native Gymnasium environments (CartPole, Pendulum, etc.)
+# Enables fully JIT-compiled training loops (env + agent on-device)
+# Repository: https://github.com/RobertTLange/gymnax
+gymnax>=0.0.6
+
+# For CUDA GPU acceleration, install jax[cuda12] separately:
+#   pip install jax[cuda12]

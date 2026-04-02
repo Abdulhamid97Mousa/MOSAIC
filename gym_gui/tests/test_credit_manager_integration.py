@@ -66,7 +66,7 @@ class TestCreditManagerIntegration:
         agent_id = "agent-A"
 
         mgr = hub._credit_mgr
-        mgr.consume_credit(run_id, agent_id) and mgr.get_credits(run_id, agent_id)
+        mgr.consume_credit(run_id, agent_id) and mgr.get_credits(run_id, agent_id)  # pyright: ignore[reportUnusedExpression]
 
         # Consume more credits
         mgr.consume_credit(run_id, agent_id)
