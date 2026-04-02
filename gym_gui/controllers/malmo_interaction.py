@@ -64,7 +64,7 @@ def _build_qt_to_lwjgl() -> dict[int, int]:
         "Key_Insert": 210, "Key_Delete": 211, "Key_Home": 199, "Key_End": 207,
         "Key_PageUp": 201, "Key_PageDown": 209,
     }
-    
+
     # Keypad keys - handle potential missing attributes safely
     kp_mapping = {
         "Key_KP_7": 71, "Key_KP_8": 72, "Key_KP_9": 73, "Key_KP_Subtract": 74,
@@ -72,7 +72,7 @@ def _build_qt_to_lwjgl() -> dict[int, int]:
         "Key_KP_1": 79, "Key_KP_2": 80, "Key_KP_3": 81, "Key_KP_0": 82,
         "Key_KP_Decimal": 83,
     }
-    
+
     result = {}
     for name, code in mapping.items():
         qt_key = _get_qt_key(name)
@@ -83,7 +83,7 @@ def _build_qt_to_lwjgl() -> dict[int, int]:
         qt_key = _get_qt_key(name)
         if qt_key != 0:
             result[qt_key] = code
-            
+
     return result
 
 QT_TO_LWJGL = _build_qt_to_lwjgl()
@@ -91,7 +91,7 @@ QT_TO_LWJGL = _build_qt_to_lwjgl()
 
 class MalmoInteractionController(InteractionController):
     """Idle controller for MalmoEnv.
-    
+
     For MOSAIC Malmo, we want 'native' interaction:
     - No idle ticking (let Minecraft run at its own speed).
     - No passive actions (we don't want to force NO-OPs or repeated keys).

@@ -9,6 +9,12 @@ import sys
 from pathlib import Path
 from typing import Any, Callable, Dict
 
+# Load MOSAIC site customizations (FastLane gym.make patch) before gym import
+try:
+    import torchrl_worker.sitecustomize  # noqa: F401
+except Exception:
+    pass
+
 import gymnasium as gym
 import numpy as np
 import torch

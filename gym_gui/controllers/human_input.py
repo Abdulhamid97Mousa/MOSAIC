@@ -1819,8 +1819,9 @@ def build_key_action_map_for_game(
         A list of ``{"keycodes": [int, ...], "action": int}`` entries,
         or None if no mappings found.
     """
-    from gym_gui.config.paths import HUMAN_WORKER_PKG_DIR
     import sys
+
+    from gym_gui.config.paths import HUMAN_WORKER_PKG_DIR
     _hw = str(HUMAN_WORKER_PKG_DIR)
     if _hw not in sys.path:
         sys.path.insert(0, _hw)

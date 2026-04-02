@@ -10,6 +10,12 @@ os.environ.setdefault("WANDB_MODE", "disabled")
 from pathlib import Path
 from typing import Any, Callable, Dict
 
+# Load MOSAIC site customizations (FastLane gym.make patch) before gym import
+try:
+    import sb3_worker.sitecustomize  # noqa: F401
+except Exception:
+    pass
+
 import gymnasium as gym
 from stable_baselines3 import PPO, A2C, DQN, SAC
 from stable_baselines3.common.env_util import make_vec_env

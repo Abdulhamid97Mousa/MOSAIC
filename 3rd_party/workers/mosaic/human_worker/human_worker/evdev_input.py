@@ -364,7 +364,7 @@ def setup_multi_cursor(
 
     # Get xinput device IDs for each mouse
     try:
-        result = sp.run(
+        sp.run(
             ["xinput", "list", "--id-only"],
             capture_output=True, text=True, timeout=5,
         )

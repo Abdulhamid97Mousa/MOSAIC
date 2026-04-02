@@ -8,6 +8,12 @@ import sys
 from pathlib import Path
 from typing import Any, Callable, Dict
 
+# Load MOSAIC site customizations (FastLane gym.make patch) before gym import
+try:
+    import sbx_worker.sitecustomize  # noqa: F401
+except Exception:
+    pass
+
 import gymnasium as gym
 from sbx import PPO, DQN, SAC
 from stable_baselines3.common.env_util import make_vec_env

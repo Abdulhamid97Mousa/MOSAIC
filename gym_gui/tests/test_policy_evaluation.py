@@ -407,13 +407,13 @@ class TestSignalConnections:
         assert hasattr(ControlPanelWidget, "policy_evaluate_requested")
 
     def test_multi_agent_tab_has_policy_evaluate_signal(self):
-        """Test that MultiAgentTab has policy_evaluate_requested signal."""
+        """Test that MultiAgentTab has evaluate_requested signal."""
         pytest.importorskip("qtpy")
 
         from gym_gui.ui.widgets.multi_agent_tab import MultiAgentTab
 
         # Check the signal is defined
-        assert hasattr(MultiAgentTab, "policy_evaluate_requested")
+        assert hasattr(MultiAgentTab, "evaluate_requested")
 
 
 class TestIntegrationWithActualCheckpoints:

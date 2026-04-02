@@ -5071,6 +5071,7 @@ class MainWindow(QtWidgets.QMainWindow, LogConstantMixin):
 
         # Discover devices
         import sys
+
         from gym_gui.config.paths import HUMAN_WORKER_PKG_DIR
         _hw_path = str(HUMAN_WORKER_PKG_DIR)
         if _hw_path not in sys.path:
@@ -6187,6 +6188,7 @@ class MainWindow(QtWidgets.QMainWindow, LogConstantMixin):
         if hasattr(self, "_multi_cursor_state") and self._multi_cursor_state is not None:
             try:
                 import sys
+
                 from gym_gui.config.paths import HUMAN_WORKER_PKG_DIR
                 _hw_path = str(HUMAN_WORKER_PKG_DIR)
                 if _hw_path not in sys.path:

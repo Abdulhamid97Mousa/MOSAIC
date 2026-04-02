@@ -99,7 +99,7 @@ class HumanInteractiveRuntime:
         if env_name == "multigrid":
             try:
                 import gym as old_gym
-                from mosaic_multigrid.envs import SoccerGame4HEnv10x15N2, CollectGame4HEnv10x10N2
+                from mosaic_multigrid.envs import CollectGame4HEnv10x10N2, SoccerGame4HEnv10x15N2
 
                 logger.info(f"Creating MultiGrid environment: {task}")
 
@@ -131,8 +131,9 @@ class HumanInteractiveRuntime:
                 env = crafter.Env(reward=reward == "dense", size=size)
 
                 # Wrap with gymnasium compatibility
+                from gymnasium import Env as GymEnv
+                from gymnasium import spaces
                 from gymnasium.wrappers import TransformReward
-                from gymnasium import Env as GymEnv, spaces
 
                 class CrafterGymnasiumWrapper(GymEnv):
                     """Wrap crafter.Env for gymnasium compatibility."""
@@ -231,9 +232,7 @@ class HumanInteractiveRuntime:
 
         try:
             # Import MiniGrid object types
-            from minigrid.core.world_object import (
-                Wall, Goal, Key, Door, Ball, Box, Lava
-            )
+            from minigrid.core.world_object import Ball, Box, Door, Goal, Key, Lava, Wall
 
             # Map our object types to MiniGrid classes
             obj_type_map = {
@@ -474,8 +473,8 @@ class HumanInteractiveRuntime:
     def run(self) -> None:
         """Main loop - read commands from stdin, execute, respond."""
         logger.info(
-            f"Human Interactive Runtime started. "
-            f"Waiting for commands on stdin..."
+            "Human Interactive Runtime started. "
+            "Waiting for commands on stdin..."
         )
 
         # Emit init message
