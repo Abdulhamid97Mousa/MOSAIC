@@ -12,6 +12,10 @@
 ray[rllib]>=2.9.0
 ray[tune]>=2.9.0
 
+# OpenTelemetry API compatibility fix for Ray 2.54+
+# Ray 2.54 uses explicit_bucket_boundaries_advisory kwarg which requires >= 1.28
+opentelemetry-api>=1.28.0
+
 # Deep learning backends (RLlib supports multiple)
 torch>=2.0.0
 

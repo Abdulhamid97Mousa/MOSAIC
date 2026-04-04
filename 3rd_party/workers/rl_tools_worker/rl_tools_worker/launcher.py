@@ -18,6 +18,12 @@ import rltools
 
 from .config import RLToolsWorkerConfig
 
+# Patch gym.make with FastLane wrapper (must happen before any gym.make calls)
+try:
+    from . import sitecustomize as _  # noqa: F401
+except Exception:
+    pass
+
 LOGGER = logging.getLogger(__name__)
 
 

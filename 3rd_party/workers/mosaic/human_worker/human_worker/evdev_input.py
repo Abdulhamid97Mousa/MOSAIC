@@ -555,6 +555,10 @@ class EvdevDeviceReader:
 
     Pure Python implementation using ``select()`` + ``os.read()`` +
     ``struct.unpack()``.  No Qt, no threads.
+
+    Tracks held-key state: ``drain_key_events()`` updates ``_held_keys``
+    as a side effect, so callers can query ``held_keys`` at any time to
+    know which physical keys are currently down.
     """
 
     EVENT_SIZE = 24  # sizeof(struct input_event) on x86_64
@@ -562,6 +566,12 @@ class EvdevDeviceReader:
     def __init__(self, event_path: str) -> None:
         self._event_path = event_path
         self._fd: Optional[int] = None
+        self._held_keys: Set[int] = set()
+
+    @property
+    def held_keys(self) -> frozenset:
+        """Currently held keycodes (updated by drain_key_events)."""
+        return frozenset(self._held_keys)
 
     @property
     def is_open(self) -> bool:
@@ -672,9 +682,12 @@ class EvdevDeviceReader:
         """Drain all pending key events (press AND release).
 
         Returns a list of ``(keycode, pressed)`` tuples where *pressed*
-        is ``True`` for key-down and ``False`` for key-up.  This is used
-        to forward raw key state to native input handlers (e.g. Malmo
-        TCP side-channel) alongside the resolved action integer.
+        is ``True`` for key-down and ``False`` for key-up.
+
+        **Side effect:** updates ``_held_keys`` so ``held_keys`` always
+        reflects the current physical key state.  EV_REPEAT (ev_value=2)
+        is silently skipped since the key is already in ``_held_keys``
+        from the initial press.
         """
         events: List[tuple] = []
         if self._fd is None:
@@ -689,9 +702,12 @@ class EvdevDeviceReader:
                 )
                 if ev_type == EV_KEY:
                     if ev_value == EV_VALUE_PRESS:
+                        self._held_keys.add(ev_code)
                         events.append((ev_code, True))
                     elif ev_value == EV_VALUE_RELEASE:
+                        self._held_keys.discard(ev_code)
                         events.append((ev_code, False))
+                    # ev_value == 2 (EV_REPEAT) is ignored: key already in _held_keys
         except BlockingIOError:
             pass
         except OSError as exc:

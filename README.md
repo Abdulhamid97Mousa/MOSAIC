@@ -126,30 +126,75 @@ Existing frameworks are paradigm-siloed. No prior framework allowed fair, reprod
 
 ## Policy Mappings for Heterogeneous Multi-Agent Systems
 
-When mixing different decision-making paradigms (RL, LLM, Human, Random) in the same environment, each agent must be configured **independently** while maintaining the ability to share resources where appropriate. MOSAIC solves this with **flexible policy mappings** that enable both independent configuration (one-to-one) and resource sharing (one-to-many).
+Heterogeneous multi-agent systems require each agent to be configured **independently** while sharing resources where appropriate. MOSAIC enables this through **flexible policy mappings**: one-to-one (independent policies) and one-to-many (shared policies via link groups).
 
-```mermaid
-graph TB
-    subgraph one[One-to-One Mapping]
-        A0[agent_0] --> P0[ppo.pth]
-        A1[agent_1] --> P1[dqn.pth]
-    end
+<div align="center">
+  <img src="docs/source/_static/figures/policy_mapping_modes.png" alt="Policy Mapping Modes" width="100%">
+  <p><em>One-to-One (independent policies) and One-to-Many (shared policies via link groups).</em></p>
+</div>
 
-    subgraph many[One-to-Many Mapping via Link Groups]
-        CHECKPOINT[mappo_team.pth] --> B0[agent_0 Primary]
-        CHECKPOINT --> B1[agent_1 Linked]
-        CHECKPOINT --> B2[agent_2 Linked]
-        CHECKPOINT --> B3[agent_3 Linked]
-    end
+**Why this matters:**
+
+Without flexible policy mappings, you're forced to choose between:
+
+- **Manual configuration:** Copy-paste errors, update fragility, no visual indication of sharing
+- **Forced homogeneity:** All agents must use the same worker type, no heterogeneity possible
+
+With flexible policy mappings, you can:
+
+- **Mix paradigms freely**: RL, LLM, Human, Random agents in the same environment
+- **Share resources intelligently**: Link groups for RL agents trained together (MAPPO/IPPO)
+- **Configure independently**: Each agent slot has its own settings and worker type
+- **Update automatically**: Change primary agent's policy, all linked agents update
+
+**Example: Heterogeneous 2v2 Soccer**
+
+```python
+# Green team: RL + LLM | Blue team: RL + Random
+config = OperatorConfig.multi_agent(
+    player_workers={
+        "agent_0": WorkerAssignment(worker_id="xuance_worker", ...),  # RL  green agent mosaic_multigrid
+        "agent_1": WorkerAssignment(worker_id="llm_worker", ...),     # LLM
+        "agent_2": WorkerAssignment(worker_id="xuance_worker", ...),  # RL  blue agent mosaic_multigrid
+        "agent_3": WorkerAssignment(worker_id="random_worker", ...),  # Random
+    },
+    link_groups={
+        "operator_0_link_0": LinkGroup(
+            primary_agent="agent_0",
+            linked_agents=["agent_2"],  # Agents 0 and 2 share MAPPO policy
+            policy_path="/path/to/mappo_1v1.pth",
+        ),
+    },
+)
 ```
 
-**One-to-one mapping (default):** Each agent has its own independent policy checkpoint. Agents are configured individually with separate policy paths.
+See the [Policy Mappings documentation](docs/source/documents/architecture/operators/policy_mappings.rst) for complete documentation, including a complex 3vs3 heterogeneous scenario with MAPPO + PPO + Random agents.
 
-**One-to-many mapping (via link groups):** Multiple agents share a single policy checkpoint. The primary agent's policy path is automatically synced to all linked agents.
+## FastLane: Zero-Overhead Live Visualization
 
-This combination is what makes heterogeneous multi-agent systems **practical and configurable**. Without flexible policy mappings, you would be forced to choose between manual copy-paste errors (configuring each agent independently) or no heterogeneity (forcing all agents to use the same worker type). With flexible policy mappings, you can configure each agent slot independently (RL, LLM, Human, Random) while sharing resources where appropriate (link groups for RL agents).
+Existing RL frameworks either render in-process (blocking training) or stream via network sockets (serialization overhead). MOSAIC's **FastLane** is the first shared-memory frame streaming system in RL: it streams rendered RGB frames from training worker subprocesses directly into POSIX shared memory via a lock-free SPSC ring buffer, achieving ~60 Hz live visualization with **zero measurable training overhead**.
 
-See the [Policy Mappings documentation](https://mosaic-platform.readthedocs.io/en/latest/documents/architecture/operators/policy_mappings.html) for complete details on link groups and policy mappings.
+- **Zero serialization**: raw `memcpy` into shared memory, no encoding, no pipes, no sockets
+- **Fully decoupled**: the writer never waits for the reader (2.5% throughput variance across no-reader, 1 Hz, and 60 Hz reader conditions)
+- **Correct**: zero torn reads across 155K frames and zero memory ordering errors across 700K frames
+- **Fast**: 2.9 μs publish latency at 84x84, 46 μs at HD (640x480), 362x faster than the 60 Hz budget
+
+| Metric | Value | Condition |
+|--------|-------|-----------|
+| Publish latency (p50) | 2.9 μs | 84x84 RGB |
+| Throughput at HD | 21,689 fps | 640x480 (921 KB/frame) |
+| Writer decoupling | 2.5% variance | No reader / 1 Hz / 60 Hz |
+| Torn reads | 0 / 155,000 | Concurrent writer + reader |
+
+![FastLane Writer Decoupling](docs/source/_static/figures/benchmarks/fastlane_fig_b_decoupling.png)
+
+*Writer throughput is independent of reader speed: 337K fps with no reader, 329K fps with a 1 Hz reader, 328K fps with a 60 Hz reader (2.5% variance).*
+
+**Limitation:** FastLane requires the training worker and the GUI to run on the same machine (POSIX shared memory cannot cross network boundaries).
+
+See the [FastLane documentation](docs/source/documents/rendering_tabs/fastlane.rst) for the full architecture, empirical benchmarks, prior art comparison, and limitations.
+
+> **Note:** The complementary Slow Lane is not used during training. It records high-quality human gameplay replays via gRPC and SQLite WAL storage, producing structured datasets suitable for world model training or imitation learning.
 
 ## Experimental Configurations
 

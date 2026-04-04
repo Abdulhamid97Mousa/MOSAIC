@@ -27,11 +27,9 @@ from gym_gui.config.game_configs import (
 from gym_gui.core.adapters.vizdoom import ViZDoomConfig
 from gym_gui.core.enums import (
     ENVIRONMENT_FAMILY_BY_GAME,
-    INPUT_MODE_INFO,
     ControlMode,
     EnvironmentFamily,
     GameId,
-    InputMode,
     get_game_display_name,
 )
 from gym_gui.services.operator import OperatorConfig, OperatorDescriptor
@@ -1676,100 +1674,14 @@ class ControlPanelWidget(QtWidgets.QWidget):
                 layout.deleteLater()
 
     def _build_input_mode_controls(self) -> None:
-        """Build the Input Mode controls (common to all games).
+        """No-op. Input mode selection removed.
 
-        This adds a combo box to select between state-based (real-time) and
-        shortcut-based (immediate) keyboard input modes.
-
-        CRITICAL RESTRICTION FOR MULTI-AGENT ENVIRONMENTS:
-        Multi-agent environments (MultiGrid, Overcooked, MeltingPot) can ONLY use
-        state-based mode. Shortcut-based mode is fundamentally incompatible with
-        evdev multi-keyboard monitoring because:
-        - Shortcut-based uses Qt's global event system (all keyboards merged)
-        - evdev reads per-device input (/dev/input/eventX)
-        - Mixing both causes one keyboard to control all agents
-
-        For multi-agent environments, the combo box only shows state-based mode.
+        All keyboard input now goes through HumanKeyboardRuntime worker
+        subprocesses. The subprocess automatically handles both continuous
+        (tick mode with held-key state) and turn-based (blocking mode)
+        based on the environment's InteractionController.
         """
-        if self._current_game is None:
-            return
-
-        current_game = self._current_game
-        overrides = self._game_overrides.setdefault(current_game, {})
-
-        # Check if current game is multi-agent (requires state-based for multi-keyboard)
-        env_family = ENVIRONMENT_FAMILY_BY_GAME.get(current_game)
-        is_multi_agent = env_family in (
-            EnvironmentFamily.MOSAIC_MULTIGRID,
-            EnvironmentFamily.INI_MULTIGRID,
-            EnvironmentFamily.MELTINGPOT,
-            EnvironmentFamily.OVERCOOKED,
-        )
-        is_malmo = env_family == EnvironmentFamily.MALMOENV
-
-        # Create combo box
-        input_mode_combo = QtWidgets.QComboBox(self._config_group)
-
-        if is_multi_agent:
-            # RESTRICTION: Multi-agent environments can ONLY use state-based mode
-            # Shortcut-based mode is disabled to prevent conflicts with evdev monitoring
-            mode = InputMode.STATE_BASED
-            label, _ = INPUT_MODE_INFO[mode]
-            input_mode_combo.addItem(label, mode.value)
-            # Force the override to state-based to prevent accidental misconfiguration
-            overrides["input_mode"] = InputMode.STATE_BASED.value
-        elif is_malmo:
-            # RESTRICTION: MalmoEnv requires state-based mode for real-time control
-            mode = InputMode.STATE_BASED
-            label, _ = INPUT_MODE_INFO[mode]
-            input_mode_combo.addItem(label, mode.value)
-            # Ensure state-based is selected
-            overrides["input_mode"] = InputMode.STATE_BASED.value
-        else:
-            # Other games: Allow both modes
-            for mode in InputMode:
-                label, _ = INPUT_MODE_INFO[mode]
-                input_mode_combo.addItem(label, mode.value)
-
-        # Set current input mode (state-based for multi-agent, shortcut-based for others)
-        default_mode = InputMode.STATE_BASED.value if (is_multi_agent or is_malmo) else InputMode.SHORTCUT_BASED.value
-        current_input_mode = overrides.get("input_mode", default_mode)
-        for i in range(input_mode_combo.count()):
-            if input_mode_combo.itemData(i) == current_input_mode:
-                input_mode_combo.setCurrentIndex(i)
-                break
-
-        # Description label that updates based on selection
-        input_mode_desc = QtWidgets.QLabel(self._config_group)
-        input_mode_desc.setWordWrap(True)
-        input_mode_desc.setStyleSheet("color: #666; font-size: 11px; padding: 4px;")
-
-        def update_description(index: int) -> None:
-            mode_value = input_mode_combo.itemData(index)
-            try:
-                mode = InputMode(mode_value)
-                _, description = INPUT_MODE_INFO[mode]
-
-                # Add multi-agent environment note
-                if is_multi_agent:
-                    description += "\n\n✓ Required for multi-keyboard support. Shortcut-based mode is disabled to prevent conflicts with evdev monitoring."
-                elif is_malmo:
-                    description += "\n\n✓ Required for MalmoEnv real-time control."
-
-                input_mode_desc.setText(description)
-            except (ValueError, KeyError):
-                input_mode_desc.setText("")
-
-        def on_input_mode_changed(index: int) -> None:
-            mode_value = input_mode_combo.itemData(index)
-            overrides["input_mode"] = mode_value
-            update_description(index)
-
-        input_mode_combo.currentIndexChanged.connect(on_input_mode_changed)
-        update_description(input_mode_combo.currentIndex())
-
-        self._config_layout.addRow("Input Mode", input_mode_combo)
-        self._config_layout.addRow("", input_mode_desc)
+        pass
 
     def _refresh_game_config_ui(self) -> None:
         self._clear_config_layout()

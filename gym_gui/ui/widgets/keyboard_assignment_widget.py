@@ -2,6 +2,9 @@
 
 Allows multiple humans to play multi-agent games together (e.g., MultiGrid)
 by assigning separate USB keyboards to each agent using evdev on Linux.
+
+Device discovery uses human_worker.evdev_input (pure Python, no Qt dependency)
+which is the same discovery the subprocess workers use at runtime.
 """
 
 from __future__ import annotations
@@ -21,16 +24,18 @@ from gym_gui.logging_config.log_constants import (
     LOG_KEYBOARD_DETECTION_ERROR,
 )
 
-# Import evdev support (Linux only)
+# Import human_worker discovery (Linux only, pure Python, no Qt)
 _HAS_EVDEV = False
-EvdevKeyboardMonitor: type | None = None
-KeyboardDevice: type | None = None
+_discover_keyboards = None
 
 if sys.platform.startswith('linux'):
     try:
-        from gym_gui.controllers.evdev_keyboard_monitor import (
-            EvdevKeyboardMonitor,  # type: ignore[misc]
-            KeyboardDevice,  # type: ignore[misc]
+        from gym_gui.config.paths import HUMAN_WORKER_PKG_DIR
+        _hw_path = str(HUMAN_WORKER_PKG_DIR)
+        if _hw_path not in sys.path:
+            sys.path.insert(0, _hw_path)
+        from human_worker.evdev_input import (
+            discover_keyboards as _discover_keyboards,
         )
         _HAS_EVDEV = True
     except ImportError:
@@ -67,33 +72,15 @@ class KeyboardAssignmentWidget(LogConstantMixin, QtWidgets.QGroupBox):
 
         self._logger = logging.getLogger(__name__)
         self._available_agents = available_agents or ["agent_0", "agent_1"]
-        self._keyboards: Dict[str, Any] = {}  # {device_path: KeyboardDevice}
+        self._keyboards: Dict[str, Any] = {}  # {device_path: device_info}
         self._assignments: Dict[str, Optional[str]] = {}  # {device_path: agent_id}
         self._row_widgets: Dict[str, RowWidgets] = {}
-        self._evdev_monitor: Any = None  # EvdevKeyboardMonitor when available
 
         self._build_ui()
 
-        if _HAS_EVDEV:
-            self._init_evdev()
-        else:
-            self._show_evdev_unavailable()
-
-    def _init_evdev(self) -> None:
-        """Initialize evdev keyboard monitoring."""
-        try:
-            assert EvdevKeyboardMonitor is not None, "EvdevKeyboardMonitor not available"
-            self._evdev_monitor = EvdevKeyboardMonitor(self)
-            self._detect_keyboards()
-        except Exception as e:
-            self._logger.error(f"Failed to initialize evdev: {e}", exc_info=True)
-            self._status.setText(f"Error initializing evdev: {e}")
-            self.error_occurred.emit(str(e))
-
-    def _show_evdev_unavailable(self) -> None:
-        """Show message when evdev is not available."""
-        self._status.setText("Evdev not available (requires Linux with evdev support)")
-        self.error_occurred.emit("Evdev support not available")
+        if not _HAS_EVDEV:
+            self._status.setText("Evdev not available (requires Linux with evdev support)")
+            self.error_occurred.emit("Evdev support not available")
 
     def _build_ui(self) -> None:
         layout = QtWidgets.QVBoxLayout(self)
@@ -141,7 +128,7 @@ class KeyboardAssignmentWidget(LogConstantMixin, QtWidgets.QGroupBox):
         btn_layout.addStretch(1)
         layout.addLayout(btn_layout)
 
-        # Agent info label - shows how many agents are in the current environment
+        # Agent info label
         self._agent_info = QtWidgets.QLabel("Agents: Waiting for environment...", self)
         self._agent_info.setStyleSheet("color: #666; font-style: italic;")
         layout.addWidget(self._agent_info)
@@ -151,27 +138,21 @@ class KeyboardAssignmentWidget(LogConstantMixin, QtWidgets.QGroupBox):
         layout.addWidget(self._status)
 
     def _detect_keyboards(self) -> None:
-        """Scan for keyboard devices using evdev."""
-        if not _HAS_EVDEV or not self._evdev_monitor:
+        """Scan for keyboard devices using human_worker.evdev_input."""
+        if not _HAS_EVDEV or _discover_keyboards is None:
             self._status.setText("Evdev not available")
             return
 
         try:
             self._status.setText("Scanning for keyboards...")
-            discovered = self._evdev_monitor.discover_keyboards()
+            discovered = _discover_keyboards()
 
             # Update keyboards dict, preserving existing assignments
-            new_keyboards: Dict[str, Any] = {}  # KeyboardDevice values
+            new_keyboards: Dict[str, Any] = {}
             for device in discovered:
                 device_path = device.device_path
-                # Preserve existing assignment if device was already known
-                if device_path in self._assignments:
-                    # Keep existing assignment
-                    pass
-                else:
-                    # New device, no assignment yet
+                if device_path not in self._assignments:
                     self._assignments[device_path] = None
-
                 new_keyboards[device_path] = device
 
             self._keyboards = new_keyboards
@@ -182,7 +163,6 @@ class KeyboardAssignmentWidget(LogConstantMixin, QtWidgets.QGroupBox):
             self._status.setText(f"Found {count} keyboard(s). {assigned} assigned.")
             self.keyboards_detected.emit(count)
 
-            # Update agent info label with current keyboard count
             num_agents = len(self._available_agents)
             unassigned = max(0, num_agents - count)
             self._agent_info.setText(
@@ -209,7 +189,6 @@ class KeyboardAssignmentWidget(LogConstantMixin, QtWidgets.QGroupBox):
 
     def _refresh_rows(self) -> None:
         """Refresh all keyboard rows in the UI."""
-        # Clear all existing rows
         for device_path in list(self._row_widgets.keys()):
             widgets = self._row_widgets[device_path]
             self._grid.removeWidget(widgets["name"])
@@ -224,43 +203,32 @@ class KeyboardAssignmentWidget(LogConstantMixin, QtWidgets.QGroupBox):
             widgets["status"].deleteLater()
         self._row_widgets.clear()
 
-        # Rebuild all rows
         for row_idx, (device_path, device) in enumerate(sorted(self._keyboards.items())):
             grid_row = 1 + row_idx
             self._create_row(device_path, device, grid_row)
 
-    def _create_row(self, device_path: str, device: Any, row: int) -> None:  # device: KeyboardDevice
+    def _create_row(self, device_path: str, device: Any, row: int) -> None:
         """Create a row in the keyboard grid for a device."""
-        # Device name
         name_display = device.name if len(device.name) <= 40 else device.name[:37] + "..."
         name_lbl = QtWidgets.QLabel(name_display, self)
         name_lbl.setToolTip(device.name)
         self._grid.addWidget(name_lbl, row, 0)
 
-        # Device path (shortened)
         path_display = device_path.split("/")[-1] if "/" in device_path else device_path
         path_lbl = QtWidgets.QLabel(path_display, self)
         path_lbl.setToolTip(device_path)
         self._grid.addWidget(path_lbl, row, 1)
 
-        # USB port
         usb_port_display = device.usb_port or "N/A"
         usb_lbl = QtWidgets.QLabel(usb_port_display, self)
         self._grid.addWidget(usb_lbl, row, 2)
 
-        # Assignment combo - populated with ALL available agents
         combo = QtWidgets.QComboBox(self)
         combo.addItem("(Unassigned)", None)
         for agent_id in self._available_agents:
             display = f"Agent {agent_id.split('_')[-1]}" if "_" in agent_id else agent_id
             combo.addItem(display, agent_id)
 
-        self._logger.debug(
-            f"Created combo for {device_path}: {combo.count()} items "
-            f"(1 + {len(self._available_agents)} agents)"
-        )
-
-        # Set current assignment
         assigned_agent = self._assignments.get(device_path)
         if assigned_agent:
             idx = combo.findData(assigned_agent)
@@ -272,7 +240,6 @@ class KeyboardAssignmentWidget(LogConstantMixin, QtWidgets.QGroupBox):
         )
         self._grid.addWidget(combo, row, 3)
 
-        # Status
         status_text = "Assigned" if assigned_agent else "Idle"
         status_lbl = QtWidgets.QLabel(status_text, self)
         self._grid.addWidget(status_lbl, row, 4)
@@ -292,19 +259,14 @@ class KeyboardAssignmentWidget(LogConstantMixin, QtWidgets.QGroupBox):
 
         combo = self._row_widgets[device_path]["combo"]
         agent_id = combo.itemData(combo_idx)
-
-        # Update assignment
         self._assignments[device_path] = agent_id
 
-        # Update status
         status = self._row_widgets[device_path]["status"]
         status.setText("Assigned" if agent_id else "Idle")
 
-        # Update summary
         assigned_count = sum(1 for aid in self._assignments.values() if aid)
         self._status.setText(f"Found {len(self._keyboards)} keyboard(s). {assigned_count} assigned.")
 
-        # Log
         device = self._keyboards[device_path]
         self.log_constant(
             LOG_KEYBOARD_ASSIGNED,
@@ -327,20 +289,16 @@ class KeyboardAssignmentWidget(LogConstantMixin, QtWidgets.QGroupBox):
             self._status.setText("No agents available.")
             return
 
-        # Sort keyboards by device path for consistent ordering
         sorted_devices = sorted(self._keyboards.items(), key=lambda x: x[0])
 
-        # Assign keyboards to agents in order
         for i, (device_path, device) in enumerate(sorted_devices):
             if i < len(self._available_agents):
                 agent_id = self._available_agents[i]
                 self._assignments[device_path] = agent_id
-                self._logger.info(f"Auto-assigned: {device.name} → {agent_id}")
+                self._logger.info(f"Auto-assigned: {device.name} -> {agent_id}")
             else:
-                # More keyboards than agents - leave unassigned
                 self._assignments[device_path] = None
 
-        # Refresh UI
         self._refresh_rows()
 
         assigned_count = sum(1 for aid in self._assignments.values() if aid)
@@ -348,39 +306,29 @@ class KeyboardAssignmentWidget(LogConstantMixin, QtWidgets.QGroupBox):
 
     def _apply_assignments(self) -> None:
         """Apply current keyboard assignments (emit signal for integration)."""
-        self._logger.warning("=== _apply_assignments() CALLED ===")
-
-        # Get only the assigned keyboards
         assignments = {
             device_path: agent_id
             for device_path, agent_id in self._assignments.items()
             if agent_id is not None
         }
 
-        self._logger.warning(f"Assignments dict: {assignments}")
-
         if not assignments:
-            self._logger.warning("No assignments to apply!")
             self._status.setText("No keyboards assigned. Use Auto-Assign or assign manually.")
             return
 
         self._logger.info(f"Applying {len(assignments)} keyboard assignments")
 
-        # Emit per-keyboard signals (backward compat for single-agent path)
         for device_path, agent_id in assignments.items():
             self.assignment_changed.emit(device_path, agent_id)
 
-        # Emit single signal with ALL assignments (for multi-agent bridge)
         self.all_assignments_applied.emit(assignments)
-
         self._status.setText(f"Applied {len(assignments)} keyboard assignment(s)")
 
     def _clear_assignments(self) -> None:
         """Clear all keyboard assignments."""
-        for device_path in self._assignments.keys():
+        for device_path in self._assignments:
             self._assignments[device_path] = None
 
-        # Refresh UI
         self._refresh_rows()
         self._status.setText(f"Cleared all assignments. {len(self._keyboards)} keyboard(s) detected.")
         self._logger.info("Cleared all keyboard assignments")
@@ -388,11 +336,7 @@ class KeyboardAssignmentWidget(LogConstantMixin, QtWidgets.QGroupBox):
     # Public API
 
     def auto_assign_and_apply(self) -> Dict[str, str]:
-        """Auto-assign keyboards to agents and apply immediately.
-
-        Called automatically when a multi-agent environment is loaded.
-        Returns the assignments dict.
-        """
+        """Auto-assign keyboards to agents and apply immediately."""
         self._detect_keyboards()
         self._auto_assign()
         self._apply_assignments()
@@ -414,19 +358,13 @@ class KeyboardAssignmentWidget(LogConstantMixin, QtWidgets.QGroupBox):
         return None
 
     def set_available_agents(self, agents: List[str]) -> None:
-        """Update available agents list and refresh all combo boxes.
-
-        This should be called when a multi-agent environment is loaded to
-        populate the dropdown with ALL environment agents, regardless of
-        how many keyboards are available.
-        """
+        """Update available agents list and refresh all combo boxes."""
         self._logger.info(
             f"set_available_agents called with {len(agents)} agents: {agents}"
         )
         self._available_agents = agents
         self._refresh_rows()
 
-        # Update the agent info label to show environment agent count
         num_agents = len(agents)
         keyboards = len(self._keyboards)
         unassigned = num_agents - min(num_agents, keyboards)
@@ -437,16 +375,10 @@ class KeyboardAssignmentWidget(LogConstantMixin, QtWidgets.QGroupBox):
         )
         self._agent_info.setStyleSheet("color: #333; font-style: normal;")
 
-        self._logger.info(
-            f"After refresh: {len(self._available_agents)} agents in dropdown"
-        )
-
-    def get_detected_keyboards(self) -> List[Any]:  # List[KeyboardDevice]
+    def get_detected_keyboards(self) -> List[Any]:
         """Get list of all detected keyboards."""
         return list(self._keyboards.values())
 
     def cleanup(self) -> None:
         """Cleanup resources when widget is destroyed."""
-        if self._evdev_monitor:
-            self._evdev_monitor.stop_monitoring()
-            self._evdev_monitor = None
+        pass

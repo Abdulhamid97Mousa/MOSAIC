@@ -5,8 +5,6 @@ import socket
 import struct
 from typing import Any, Optional
 
-from qtpy.QtCore import Qt
-
 from gym_gui.controllers.interaction import InteractionController
 from gym_gui.logging_config.helpers import log_constant
 from gym_gui.logging_config.log_constants import (
@@ -14,7 +12,6 @@ from gym_gui.logging_config.log_constants import (
     LOG_MALMO_NATIVE_INPUT_CONNECTED,
     LOG_MALMO_NATIVE_INPUT_ERROR,
     LOG_MALMO_NATIVE_KEY_SENT,
-    LOG_MALMO_NATIVE_KEY_UNMAPPED,
     LOG_MALMO_NATIVE_MOUSE_SENT,
     LOG_MALMO_PASSIVE_ACTION_FALLBACK,
     LOG_MALMO_PASSIVE_ACTION_RESOLVED,
@@ -22,81 +19,13 @@ from gym_gui.logging_config.log_constants import (
 
 _LOGGER = logging.getLogger(__name__)
 
-def _get_qt_key(name: str) -> int:
-    """Get Qt key constant by name, handling Qt5/Qt6 differences."""
-    key_enum = getattr(Qt, "Key", None)
-    if key_enum is not None and hasattr(key_enum, name):
-        return int(getattr(key_enum, name))
-    legacy = getattr(Qt, name, None)
-    if legacy is not None:
-        return int(legacy)
-    # Return 0 or specific marker if not found, to avoid crashing.
-    # But usually we want to know if it's missing.
-    # For this mapping table, we can skip missing keys.
-    return 0
-
-def _build_qt_to_lwjgl() -> dict[int, int]:
-    mapping = {
-        "Key_Escape": 1,
-        "Key_1": 2, "Key_2": 3, "Key_3": 4, "Key_4": 5, "Key_5": 6,
-        "Key_6": 7, "Key_7": 8, "Key_8": 9, "Key_9": 10, "Key_0": 11,
-        "Key_Minus": 12, "Key_Equal": 13, "Key_Backspace": 14,
-        "Key_Tab": 15,
-        "Key_Q": 16, "Key_W": 17, "Key_E": 18, "Key_R": 19, "Key_T": 20,
-        "Key_Y": 21, "Key_U": 22, "Key_I": 23, "Key_O": 24, "Key_P": 25,
-        "Key_BracketLeft": 26, "Key_BracketRight": 27, "Key_Return": 28,
-        "Key_Control": 29,
-        "Key_A": 30, "Key_S": 31, "Key_D": 32, "Key_F": 33, "Key_G": 34,
-        "Key_H": 35, "Key_J": 36, "Key_K": 37, "Key_L": 38, "Key_Semicolon": 39,
-        "Key_Apostrophe": 40, "Key_QuoteLeft": 41,
-        "Key_Shift": 42,
-        "Key_Backslash": 43,
-        "Key_Z": 44, "Key_X": 45, "Key_C": 46, "Key_V": 47, "Key_B": 48,
-        "Key_N": 49, "Key_M": 50, "Key_Comma": 51, "Key_Period": 52, "Key_Slash": 53,
-        "Key_Alt": 56,
-        "Key_Space": 57,
-        "Key_F1": 59, "Key_F2": 60, "Key_F3": 61, "Key_F4": 62, "Key_F5": 63,
-        "Key_F6": 64, "Key_F7": 65, "Key_F8": 66, "Key_F9": 67, "Key_F10": 68,
-        "Key_NumLock": 69,
-        "Key_ScrollLock": 70,
-        "Key_F11": 87, "Key_F12": 88,
-        "Key_Up": 200, "Key_Left": 203, "Key_Right": 205, "Key_Down": 208,
-        "Key_Insert": 210, "Key_Delete": 211, "Key_Home": 199, "Key_End": 207,
-        "Key_PageUp": 201, "Key_PageDown": 209,
-    }
-
-    # Keypad keys - handle potential missing attributes safely
-    kp_mapping = {
-        "Key_KP_7": 71, "Key_KP_8": 72, "Key_KP_9": 73, "Key_KP_Subtract": 74,
-        "Key_KP_4": 75, "Key_KP_5": 76, "Key_KP_6": 77, "Key_KP_Add": 78,
-        "Key_KP_1": 79, "Key_KP_2": 80, "Key_KP_3": 81, "Key_KP_0": 82,
-        "Key_KP_Decimal": 83,
-    }
-
-    result = {}
-    for name, code in mapping.items():
-        qt_key = _get_qt_key(name)
-        if qt_key != 0:
-            result[qt_key] = code
-
-    for name, code in kp_mapping.items():
-        qt_key = _get_qt_key(name)
-        if qt_key != 0:
-            result[qt_key] = code
-
-    return result
-
-QT_TO_LWJGL = _build_qt_to_lwjgl()
-
 
 class MalmoInteractionController(InteractionController):
-    """Idle controller for MalmoEnv.
+    """Interaction controller for MalmoEnv (Minecraft).
 
-    For MOSAIC Malmo, we want 'native' interaction:
-    - No idle ticking (let Minecraft run at its own speed).
-    - No passive actions (we don't want to force NO-OPs or repeated keys).
-    - The actual input handling is done via the direct TCP service to the native mod,
-      bypassing the MalmoEnv step loop for minimal latency.
+    Sends raw keyboard and mouse events to Minecraft via a TCP side-channel
+    socket. Input comes from HumanKeyboardRuntime worker subprocesses via
+    evdev. Linux evdev keycodes == LWJGL scan codes, so no translation needed.
     """
 
     # NativeInputHandler port = MalmoEnv port + 1000 (avoids conflict with
@@ -144,48 +73,11 @@ class MalmoInteractionController(InteractionController):
                 "error": str(exc),
             })
 
-    def handle_native_key(self, key_code: int, pressed: bool) -> bool:
-        """Send raw key event to Minecraft via side-channel socket."""
-        lwjgl_code = QT_TO_LWJGL.get(key_code)
-        if lwjgl_code is None:
-            log_constant(_LOGGER, LOG_MALMO_NATIVE_KEY_UNMAPPED, extra={
-                "qt_key_code": key_code,
-            })
-            return False
-
-        if not self._connected or self._socket is None:
-            self._try_connect()
-
-        sock = self._socket
-        if sock is None:
-            return False
-
-        try:
-            data = struct.pack('>IIB', 0, lwjgl_code, 1 if pressed else 0)
-            sock.sendall(data)
-            log_constant(_LOGGER, LOG_MALMO_NATIVE_KEY_SENT, extra={
-                "qt_key_code": key_code,
-                "lwjgl_code": lwjgl_code,
-                "pressed": pressed,
-            })
-            return True
-        except (socket.error, BrokenPipeError) as exc:
-            log_constant(_LOGGER, LOG_MALMO_NATIVE_INPUT_ERROR, extra={
-                "error": str(exc),
-                "context": "key_send",
-            })
-            self._connected = False
-            if self._socket:
-                self._socket.close()
-            self._socket = None
-            return False
-
     def handle_native_key_evdev(self, evdev_keycode: int, pressed: bool) -> bool:
-        """Send raw key event from evdev to Minecraft via side-channel socket.
+        """Send raw key event from evdev to Minecraft via TCP side-channel.
 
-        Linux evdev keycodes use the same scan code numbering as LWJGL,
-        so no Qt-to-LWJGL translation is needed. This is the primary path
-        when input comes from HumanKeyboardRuntime worker subprocesses.
+        Linux evdev keycodes == LWJGL scan codes (same numbering), so the
+        keycode from the worker subprocess goes straight to Minecraft.
         """
         if not self._connected or self._socket is None:
             self._try_connect()

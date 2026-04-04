@@ -41,6 +41,7 @@ runtime.run()
         "GYM_GUI_FASTLANE_SLOT": "0",
         "GYM_GUI_FASTLANE_VIDEO_MODE": "single",
         "XUANCE_RUN_ID": f"bench_xuance_fl_{config.seed}",
+        "XUANCE_FASTLANE_INTERVAL_MS": "0",
     }
 
     elapsed, peak_mb, stdout, _ = run_subprocess_timed(cmd, env=env_overrides)

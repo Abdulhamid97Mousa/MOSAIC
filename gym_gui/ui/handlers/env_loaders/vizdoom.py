@@ -15,7 +15,7 @@ if TYPE_CHECKING:
     from gym_gui.controllers.session import SessionController
     from gym_gui.ui.widgets.render_tabs import RenderTabs
 
-from gym_gui.controllers.vizdoom_input import get_vizdoom_mouse_turn_actions
+from gym_gui.controllers.human_input import get_vizdoom_mouse_turn_actions
 
 _LOG = logging.getLogger(__name__)
 

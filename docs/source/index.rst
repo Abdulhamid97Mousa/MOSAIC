@@ -211,54 +211,12 @@ Heterogeneous multi-agent systems require each agent to be configured
 through **flexible policy mappings**: one-to-one (independent policies) and
 one-to-many (shared policies via link groups).
 
-.. mermaid::
+.. figure:: _static/figures/policy_mapping_modes.png
+   :alt: Policy Mapping Modes
+   :align: center
+   :width: 100%
 
-   %%{init: {"flowchart": {"curve": "linear"}} }%%
-   graph TB
-       subgraph SCENARIO["Policy Mapping Modes"]
-           direction LR
-
-           subgraph ONE["One-to-One (Independent)"]
-               direction TB
-               ONE_TITLE["Each agent has its own policy"]
-               PPO["ppo.pth"]
-               DQN["dqn.pth"]
-               A0["agent_0"]
-               A1["agent_1"]
-
-               PPO -->|"Independent"| A0
-               DQN -->|"Independent"| A1
-
-               style ONE_TITLE fill:#f5f5f5,stroke:none,color:#666
-               style PPO fill:#50c878,stroke:#2e8b57,color:#fff
-               style DQN fill:#4a90d9,stroke:#2e5a87,color:#fff
-               style A0 fill:#a5d6a7,stroke:#2e8b57,color:#333
-               style A1 fill:#90caf9,stroke:#1976d2,color:#333
-           end
-
-           subgraph MANY["One-to-Many (Shared via Link Group)"]
-               direction TB
-               MANY_TITLE["Multiple agents share one policy"]
-               CHECKPOINT["mappo_team.pth<br/>(Shared Checkpoint)"]
-               B0["agent_0<br/>(Primary)"]
-               B1["agent_1<br/>(Linked)"]
-               B2["agent_2<br/>(Linked)"]
-
-               CHECKPOINT -->|"Shared"| B0
-               CHECKPOINT -->|"Shared"| B1
-               CHECKPOINT -->|"Shared"| B2
-
-               style MANY_TITLE fill:#f5f5f5,stroke:none,color:#666
-               style CHECKPOINT fill:#ff7f50,stroke:#cc5500,color:#fff
-               style B0 fill:#9370db,stroke:#6a0dad,color:#fff
-               style B1 fill:#ba68c8,stroke:#8e24aa,color:#fff
-               style B2 fill:#ba68c8,stroke:#8e24aa,color:#fff
-           end
-       end
-
-       style SCENARIO fill:#fafafa,stroke:#ddd,color:#333
-       style ONE fill:#e8f5e9,stroke:#2e8b57,color:#333
-       style MANY fill:#f3e5f5,stroke:#9c27b0,color:#333
+   One-to-One (independent policies) and One-to-Many (shared policies via link groups).
 
 **Why this matters:**
 
@@ -297,6 +255,74 @@ With flexible policy mappings, you can:
 
 See :doc:`documents/architecture/operators/policy_mappings` for complete
 documentation, including a complex 3vs3 heterogeneous scenario with MAPPO + PPO + Random agents.
+
+FastLane: Zero-Overhead Live Visualization
+-------------------------------------------
+
+Existing RL frameworks either render in-process (blocking training) or stream
+via network sockets (serialization overhead).  MOSAIC's
+:doc:`FastLane <documents/rendering_tabs/fastlane>` is the first shared-memory
+frame streaming system in RL: it streams rendered RGB frames from training
+worker subprocesses directly into POSIX shared memory via a lock-free SPSC
+ring buffer, achieving ~60 Hz live visualization with **zero measurable
+training overhead**.
+
+- **Zero serialization**: raw ``memcpy`` into shared memory, no encoding, no
+  pipes, no sockets.
+- **Fully decoupled**: the writer never waits for the reader.  Empirically
+  confirmed with 2.5% throughput variance across no-reader, 1 Hz, and 60 Hz
+  reader conditions.
+- **Correct**: zero torn reads across 155K frames and zero memory ordering
+  errors across 700K frames, validated by a seqlock-inspired sequence-number
+  protocol.
+- **Fast**: 2.9 μs publish latency at CartPole resolution (84x84), 46 μs at
+  HD (640x480), 362x faster than the 60 Hz budget.
+
+.. important::
+
+   **Novel Contribution.** MOSAIC's FastLane is the first system to apply shared-memory IPC to rendered visualization frames in reinforcement learning. All prior shared-memory mechanisms (OpenAI Baselines, Sample Factory, EnvPool, TorchRL) transfer training data exclusively. No prior RL framework provides zero-overhead live visualization during training.
+
+.. list-table::
+   :widths: 35 35 30
+   :header-rows: 1
+
+   * - Metric
+     - Value
+     - Condition
+   * - Publish latency (p50)
+     - 2.9 μs
+     - 84x84 RGB
+   * - Throughput at HD
+     - 21,689 fps
+     - 640x480 (921 KB/frame)
+   * - Writer decoupling
+     - 2.5% variance
+     - No reader / 1 Hz / 60 Hz
+   * - Torn reads
+     - 0 / 155,000
+     - Concurrent writer + reader
+
+.. figure:: _static/figures/benchmarks/fastlane_fig_b_decoupling.png
+   :width: 100%
+   :alt: FastLane writer decoupling proof
+
+   Writer throughput is independent of reader speed: 337K fps with no reader,
+   329K fps with a 1 Hz reader, 328K fps with a 60 Hz reader (2.5% variance).
+
+.. attention::
+
+   FastLane requires the training worker and the GUI to run on the same machine
+   (POSIX shared memory cannot cross network boundaries).
+
+See :doc:`documents/rendering_tabs/fastlane` for the full architecture,
+empirical benchmarks, prior art comparison, and limitations.
+
+.. note::
+
+   The complementary :doc:`Slow Lane <documents/rendering_tabs/slow_lane>`
+   is not used during training.  It records high-quality human gameplay
+   replays via gRPC and SQLite WAL storage, producing structured datasets
+   suitable for world model training or imitation learning.
 
 Comparison with Existing Frameworks
 ------------------------------------
@@ -1109,6 +1135,9 @@ References
 .. raw:: html
 
    <br><hr>
+
+Contents
+------------------------------------------
 
 .. toctree::
    :maxdepth: 2

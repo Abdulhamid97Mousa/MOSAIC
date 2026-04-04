@@ -299,6 +299,10 @@ overhead even on localhost.  Isaac Lab's Rerun-based visualizer (2024) renders
 within the training process, consuming training-loop cycles -- a limitation
 acknowledged in NVIDIA's own documentation.
 
+.. important::
+
+   **Novel Contribution.** MOSAIC's FastLane is the first system to apply shared-memory IPC to rendered visualization frames in reinforcement learning. All prior shared-memory mechanisms (OpenAI Baselines, Sample Factory, EnvPool, TorchRL) transfer training data exclusively. No prior RL framework provides zero-overhead live visualization during training.
+
 Empirical Validation
 ^^^^^^^^^^^^^^^^^^^^
 
@@ -311,7 +315,7 @@ target at every resolution.  The blue line shows actual throughput; the dashed
 coral line shows what would happen with linear (serialization-based) scaling.
 Sub-linear degradation proves the protocol overhead is O(1).
 
-.. image:: /_static/images/benchmarks/fastlane_fig_a_throughput.png
+.. image:: /_static/figures/benchmarks/fastlane_fig_a_throughput.png
    :width: 100%
    :alt: FastLane throughput vs frame resolution
 
@@ -320,7 +324,7 @@ no reader, 329K fps with a 1 Hz reader, and 328K fps with a 60 Hz reader
 (2.5% variance, within OS scheduling noise).  This proves the writer never
 waits for the reader -- the mathematical definition of lock-free streaming.
 
-.. image:: /_static/images/benchmarks/fastlane_fig_b_decoupling.png
+.. image:: /_static/figures/benchmarks/fastlane_fig_b_decoupling.png
    :width: 100%
    :alt: FastLane writer decoupling proof
 
@@ -329,7 +333,7 @@ waits for the reader -- the mathematical definition of lock-free streaming.
 publish latency is 46 μs -- 362x faster than needed.  The log scale reveals
 the massive headroom at every resolution.
 
-.. image:: /_static/images/benchmarks/fastlane_fig_c_latency.png
+.. image:: /_static/figures/benchmarks/fastlane_fig_c_latency.png
    :width: 100%
    :alt: FastLane publish latency vs frame size
 
