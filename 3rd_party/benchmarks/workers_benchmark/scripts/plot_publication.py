@@ -37,6 +37,7 @@ DISPLAY = {
 
 # Publication colors (colorblind-safe, print-friendly)
 C_NATIVE   = '#9E9E9E'    # neutral gray
+C_NATIVE_NEW = '#C5C5C5'  # lighter gray (new API native)
 C_WORKER   = '#4A90D9'    # steel blue (hatched)
 C_FASTLANE = '#1B5E9E'    # deep blue
 C_FASTLANE_GYM = '#D4763A'  # warm orange (gymnasium FastLane, distinct)
@@ -67,7 +68,8 @@ def compute_stats(grouped):
     stats = {}
     for w in grouped:
         s = {}
-        for scenario in ['native', 'worker', 'fastlane', 'fastlane_gymnax', 'fastlane_gym']:
+        for scenario in ['native', 'native_new_api', 'worker', 'fastlane',
+                         'fastlane_gymnax', 'fastlane_gym']:
             rlist = grouped[w].get(scenario, [])
             if rlist:
                 times = [r['wall_time_seconds'] for r in rlist]
@@ -85,6 +87,12 @@ def _has_extra_bars(stats, worker):
     return s['fastlane_gymnax']['mean'] > 0 and s['fastlane_gym']['mean'] > 0
 
 
+def _has_new_api(stats, worker):
+    """Check if a worker has native_new_api data (RLlib dual-stack)."""
+    s = stats[worker]
+    return s['native_new_api']['mean'] > 0
+
+
 def plot_combined(stats, output_path, env_id='CartPole-v1', total_timesteps=100000):
     """Combined bar chart: native / worker / fastlane for all workers.
 
@@ -92,13 +100,13 @@ def plot_combined(stats, output_path, env_id='CartPole-v1', total_timesteps=1000
     """
     sorted_workers = sorted(stats.keys(), key=lambda w: stats[w]['native']['mean'])
 
-    # Compute x positions: wider group for Jumanji (4 bars)
+    # Compute x positions: wider group for workers with 4 bars
     bw = 0.20
     x_positions = []
     pos = 0.0
     for w in sorted_workers:
         x_positions.append(pos)
-        if _has_extra_bars(stats, w):
+        if _has_extra_bars(stats, w) or _has_new_api(stats, w):
             pos += 1.4  # wider gap for 4-bar group
         else:
             pos += 1.0
@@ -106,43 +114,72 @@ def plot_combined(stats, output_path, env_id='CartPole-v1', total_timesteps=1000
 
     fig, ax = plt.subplots(figsize=(max(11, len(sorted_workers) * 1.8), 5.5))
 
+    # Track which legend labels we've already added
+    _seen_labels = set()
+
+    def _label(text):
+        if text in _seen_labels:
+            return ''
+        _seen_labels.add(text)
+        return text
+
     # Draw bars per worker
     for i, w in enumerate(sorted_workers):
         nm = stats[w]['native']['mean']
         wm = stats[w]['worker']['mean']
 
         if _has_extra_bars(stats, w):
-            # 4 bars: native, worker, fastlane_gymnax, fastlane_gym
+            # 4 bars: native, worker, fastlane_gymnax, fastlane_gym (Jumanji)
             fgx_m = stats[w]['fastlane_gymnax']['mean']
             fgy_m = stats[w]['fastlane_gym']['mean']
 
             offsets = [-1.5*bw, -0.5*bw, 0.5*bw, 1.5*bw]
             ax.bar(x[i] + offsets[0], nm, bw, color=C_NATIVE,
                    edgecolor='#333', linewidth=0.6,
-                   label='Native' if i == 0 else '')
+                   label=_label('Native'))
             ax.bar(x[i] + offsets[1], wm, bw, color=C_WORKER,
                    edgecolor='#333', linewidth=0.6, hatch='//',
-                   label='MOSAIC Worker' if i == 0 else '')
+                   label=_label('MOSAIC Worker'))
             ax.bar(x[i] + offsets[2], fgx_m, bw, color=C_FASTLANE_GYM,
                    edgecolor='#333', linewidth=0.6, hatch='\\\\',
-                   label='FastLane (gymnax)' if i == 0 else '')
+                   label=_label('FastLane (gymnax)'))
             ax.bar(x[i] + offsets[3], fgy_m, bw, color=C_FASTLANE,
                    edgecolor='#333', linewidth=0.6,
-                   label='FastLane (Gymnasium)' if i == 0 else '')
+                   label=_label('FastLane (Gymnasium)'))
+
+        elif _has_new_api(stats, w):
+            # 4 bars: native_new_api, native (old), worker, fastlane (RLlib)
+            nn_m = stats[w]['native_new_api']['mean']
+            fm = stats[w]['fastlane']['mean']
+
+            offsets = [-1.5*bw, -0.5*bw, 0.5*bw, 1.5*bw]
+            ax.bar(x[i] + offsets[0], nn_m, bw, color=C_NATIVE_NEW,
+                   edgecolor='#333', linewidth=0.6, hatch='..',
+                   label=_label('Native (New API)'))
+            ax.bar(x[i] + offsets[1], nm, bw, color=C_NATIVE,
+                   edgecolor='#333', linewidth=0.6,
+                   label=_label('Native'))
+            ax.bar(x[i] + offsets[2], wm, bw, color=C_WORKER,
+                   edgecolor='#333', linewidth=0.6, hatch='//',
+                   label=_label('MOSAIC Worker'))
+            ax.bar(x[i] + offsets[3], fm, bw, color=C_FASTLANE,
+                   edgecolor='#333', linewidth=0.6,
+                   label=_label('FastLane'))
+
         else:
             # Standard 3 bars
             fm = stats[w]['fastlane']['mean']
             offsets = [-bw, 0, bw]
 
-            b_n = ax.bar(x[i] + offsets[0], nm, bw, color=C_NATIVE,
-                         edgecolor='#333', linewidth=0.6,
-                         label='Native' if i == 0 else '')
-            b_w = ax.bar(x[i] + offsets[1], wm, bw, color=C_WORKER,
-                         edgecolor='#333', linewidth=0.6, hatch='//',
-                         label='MOSAIC Worker' if i == 0 else '')
-            b_f = ax.bar(x[i] + offsets[2], fm, bw, color=C_FASTLANE,
-                         edgecolor='#333', linewidth=0.6,
-                         label='MOSAIC Worker + FastLane' if i == 0 else '')
+            ax.bar(x[i] + offsets[0], nm, bw, color=C_NATIVE,
+                   edgecolor='#333', linewidth=0.6,
+                   label=_label('Native'))
+            ax.bar(x[i] + offsets[1], wm, bw, color=C_WORKER,
+                   edgecolor='#333', linewidth=0.6, hatch='//',
+                   label=_label('MOSAIC Worker'))
+            ax.bar(x[i] + offsets[2], fm, bw, color=C_FASTLANE,
+                   edgecolor='#333', linewidth=0.6,
+                   label=_label('FastLane'))
 
     ax.set_ylabel('Training time [s] (smaller is better)', fontsize=11, fontweight='bold')
     steps_k = total_timesteps // 1000
@@ -152,16 +189,17 @@ def plot_combined(stats, output_path, env_id='CartPole-v1', total_timesteps=1000
     ax.set_xticklabels([DISPLAY.get(w, w) for w in sorted_workers],
                        fontsize=10.5, fontweight='bold')
 
-    # Deduplicate legend entries
+    # Legend with controlled order: Native, Native (New API), Worker, FastLane, ...
     handles, labels = ax.get_legend_handles_labels()
-    seen = set()
-    unique_handles, unique_labels = [], []
-    for h, l in zip(handles, labels):
-        if l not in seen and l:
-            seen.add(l)
-            unique_handles.append(h)
-            unique_labels.append(l)
-    ax.legend(unique_handles, unique_labels, fontsize=9, loc='upper left',
+    label_handle = {l: h for h, l in zip(handles, labels) if l}
+    desired_order = [
+        'Native', 'Native (New API)',
+        'MOSAIC Worker', 'FastLane',
+        'FastLane (gymnax)', 'FastLane (Gymnasium)',
+    ]
+    ordered_handles = [label_handle[l] for l in desired_order if l in label_handle]
+    ordered_labels = [l for l in desired_order if l in label_handle]
+    ax.legend(ordered_handles, ordered_labels, fontsize=9, loc='upper left',
               framealpha=0.9, edgecolor='#ccc', fancybox=False)
 
     ax.grid(axis='y', alpha=0.25, linestyle='--')

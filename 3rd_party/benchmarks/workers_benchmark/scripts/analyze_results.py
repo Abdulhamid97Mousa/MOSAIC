@@ -58,7 +58,7 @@ def analyze(results: List[Dict[str, Any]]):
           f"{'SPS':>10} {'Memory':>8} {'Overhead':>10}")
     print(f"  {'-' * 78}")
 
-    all_scenarios = ["native", "worker", "fastlane", "fastlane_gymnax", "fastlane_gym"]
+    all_scenarios = ["native", "native_new_api", "worker", "fastlane", "fastlane_gymnax", "fastlane_gym"]
 
     for worker in sorted(grouped):
         scenarios = grouped[worker]
@@ -183,14 +183,16 @@ def plot_results(results: List[Dict[str, Any]], output_dir: Path):
     # --- Figure 2: Per-worker overhead charts ---
     # Colors matching plot_publication.py
     C_NATIVE = '#9E9E9E'
+    C_NATIVE_NEW = '#C5C5C5'
     C_WORKER = '#4A90D9'
     C_FASTLANE = '#1B5E9E'
     C_FASTLANE_GYMNAX = '#D4763A'
     C_FASTLANE_GYM = '#1B5E9E'
 
-    all_scenarios = ["native", "worker", "fastlane", "fastlane_gymnax", "fastlane_gym"]
+    all_scenarios = ["native", "native_new_api", "worker", "fastlane", "fastlane_gymnax", "fastlane_gym"]
     scenario_colors = {
         "native": C_NATIVE,
+        "native_new_api": C_NATIVE_NEW,
         "worker": C_WORKER,
         "fastlane": C_FASTLANE,
         "fastlane_gymnax": C_FASTLANE_GYMNAX,
@@ -198,6 +200,7 @@ def plot_results(results: List[Dict[str, Any]], output_dir: Path):
     }
     scenario_labels = {
         "native": "Native",
+        "native_new_api": "Native (New API)",
         "worker": "MOSAIC Worker",
         "fastlane": "FastLane",
         "fastlane_gymnax": "FastLane (gymnax)",
@@ -205,6 +208,7 @@ def plot_results(results: List[Dict[str, Any]], output_dir: Path):
     }
     scenario_hatch = {
         "native": '',
+        "native_new_api": '..',
         "worker": '//',
         "fastlane": '',
         "fastlane_gymnax": '\\\\',
@@ -229,8 +233,9 @@ def plot_results(results: List[Dict[str, Any]], output_dir: Path):
         bar_colors = [scenario_colors.get(s, '#999') for s in labels]
         hatches = [scenario_hatch.get(s, '') for s in labels]
 
-        fig, ax = plt.subplots(figsize=(max(6, len(labels) * 1.5), 5))
-        bars = ax.bar(display, means, color=bar_colors, edgecolor='#333', linewidth=0.6)
+        fig, ax = plt.subplots(figsize=(max(7, len(labels) * 2.0), 5.5))
+        x_pos = np.arange(len(labels))
+        bars = ax.bar(x_pos, means, color=bar_colors, edgecolor='#333', linewidth=0.6)
         for bar, h in zip(bars, hatches):
             bar.set_hatch(h)
 
@@ -240,6 +245,10 @@ def plot_results(results: List[Dict[str, Any]], output_dir: Path):
                 mult = data[s]["mean"] / native_mean
                 ax.text(bar.get_x() + bar.get_width() / 2, bar.get_height() + 0.3,
                         f"{mult:.2f}x", ha="center", va="bottom", fontsize=9, fontweight="bold")
+
+        ax.set_xticks(x_pos)
+        ax.set_xticklabels(display, fontsize=9.5, fontweight='bold',
+                           rotation=25, ha='right')
 
         worker_display = DISPLAY.get(worker, worker.upper())
         ax.set_ylabel("Training time [s] (smaller is better)", fontsize=11, fontweight='bold')
