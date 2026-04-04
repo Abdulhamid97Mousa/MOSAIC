@@ -543,10 +543,14 @@ class FastLaneTelemetryWrapper(gym.Wrapper):
             return None
 
     def _close_writer(self) -> None:
-        """Close FastLane writer."""
+        """Close FastLane writer and unlink shared memory segment."""
         if self._writer is not None:
             try:
                 self._writer.close()
+                try:
+                    self._writer.unlink()
+                except (FileNotFoundError, AttributeError):
+                    pass
             except Exception:
                 pass
             self._writer = None

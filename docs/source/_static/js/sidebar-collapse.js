@@ -15,28 +15,20 @@ document.addEventListener("DOMContentLoaded", function () {
     });
   });
 
-  // ── Expand all nested toctree checkboxes (Furo sub-items) ──
-  // Furo uses hidden checkboxes to toggle sub-trees; check them all
-  // so everything is unfolded by default, but users can still click
-  // the arrow label to fold them.
-  document.querySelectorAll(".sidebar-tree input[type='checkbox']").forEach(function (cb) {
-    cb.checked = true;
-  });
-
-  // ── Scroll the active sidebar link into view ──
+  // ── Only expand the current page's parent chain (like XuanCe) ──
+  // Do NOT expand all checkboxes; only open the path to the active page.
   var currentPage = document.querySelector(".sidebar-tree .current-page > .reference") ||
                     document.querySelector(".sidebar-tree li.current > .reference");
-  var currentLink = currentPage;
-  if (currentLink) {
-    // Ensure all parent <li> checkboxes are checked (expanded)
-    var parent = currentLink.closest("li");
+  if (currentPage) {
+    // Walk up from current link and expand each parent <li> checkbox
+    var parent = currentPage.closest("li");
     while (parent) {
       var cb = parent.querySelector(":scope > input[type='checkbox']");
       if (cb) cb.checked = true;
       parent = parent.parentElement ? parent.parentElement.closest("li") : null;
     }
     // Ensure the parent caption section is not collapsed
-    var ul = currentLink.closest("ul");
+    var ul = currentPage.closest("ul");
     while (ul) {
       var prev = ul.previousElementSibling;
       if (prev && prev.classList.contains("caption")) {
@@ -46,7 +38,7 @@ document.addEventListener("DOMContentLoaded", function () {
     }
     // Scroll into view
     setTimeout(function () {
-      currentLink.scrollIntoView({ block: "center", behavior: "smooth" });
+      currentPage.scrollIntoView({ block: "center", behavior: "smooth" });
     }, 100);
   }
 

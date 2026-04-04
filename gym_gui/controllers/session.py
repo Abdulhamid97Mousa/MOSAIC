@@ -438,17 +438,6 @@ class SessionController(QtCore.QObject, LogConstantMixin):
         )
         self._apply_action(action)
 
-    def handle_native_key(self, key_code: int, pressed: bool) -> bool:
-        """Handle a raw key event for native input (bypassing the step loop).
-
-        Returns:
-            True if the key was handled and should not be processed further.
-        """
-        interaction = getattr(self, "_interaction", None)
-        if interaction and hasattr(interaction, "handle_native_key"):
-            return interaction.handle_native_key(key_code, pressed)
-        return False
-
     def handle_native_mouse(self, dx: int, dy: int) -> bool:
         """Handle a raw mouse delta event for native input (bypassing the step loop).
 

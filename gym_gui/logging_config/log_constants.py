@@ -126,15 +126,6 @@ LOG_SESSION_TIMER_PRECISION_WARNING = _constant(
     tags=_tags("session", "timer"),
 )
 
-LOG_INPUT_CONTROLLER_ERROR = _constant(
-    "LOG405",
-    "ERROR",
-    "Input controller encountered an error",
-    component="Controller",
-    subcomponent="Input",
-    tags=_tags("input", "controller"),
-)
-
 LOG_KEYBOARD_DETECTED = _constant(
     "LOG406",
     "INFO",
@@ -189,49 +180,13 @@ LOG_KEYBOARD_EVDEV_SETUP_FAILED = _constant(
     tags=_tags("keyboard", "evdev", "multi-agent", "error"),
 )
 
-LOG_KEY_RESOLVER_INITIALIZED = _constant(
-    "LOG4075",
-    "INFO",
-    "Key combination resolver initialized for game",
-    component="Controller",
-    subcomponent="Input",
-    tags=_tags("input", "keyboard", "resolver"),
-)
-
-LOG_KEY_RESOLVER_UNAVAILABLE = _constant(
-    "LOG4076",
-    "WARNING",
-    "No key combination resolver available for game",
-    component="Controller",
-    subcomponent="Input",
-    tags=_tags("input", "keyboard", "resolver", "warning"),
-)
-
 LOG_INPUT_MODE_CONFIGURED = _constant(
     "LOG4077",
     "INFO",
-    "Input mode configured for game",
+    "Input mode configured for game (subprocess worker)",
     component="Controller",
-    subcomponent="Input",
-    tags=_tags("input", "keyboard", "mode"),
-)
-
-LOG_EVDEV_KEY_PRESSED = _constant(
-    "LOG4078",
-    "INFO",
-    "Evdev key pressed",
-    component="Controller",
-    subcomponent="Input",
-    tags=_tags("evdev", "keyboard", "key", "multi-agent"),
-)
-
-LOG_EVDEV_KEY_RELEASED = _constant(
-    "LOG4079",
-    "DEBUG",
-    "Evdev key released",
-    component="Controller",
-    subcomponent="Input",
-    tags=_tags("evdev", "keyboard", "key", "multi-agent"),
+    subcomponent="HumanControl",
+    tags=_tags("human_control", "keyboard", "mode"),
 )
 
 # Human Control keyboard worker subprocess events (LOG48xx)
@@ -1036,14 +991,6 @@ LOG_MALMO_NATIVE_KEY_SENT = _constant(
     tags=_tags("malmo", "minecraft", "input", "key", "native"),
 )
 
-LOG_MALMO_NATIVE_KEY_UNMAPPED = _constant(
-    "LOG574",
-    "WARNING",
-    "Malmo native key unmapped — Qt key has no LWJGL equivalent",
-    component="Controller",
-    subcomponent="MalmoInteraction",
-    tags=_tags("malmo", "minecraft", "input", "key", "unmapped"),
-)
 
 LOG_MALMO_NATIVE_MOUSE_SENT = _constant(
     "LOG575",
@@ -5979,18 +5926,13 @@ ALL_LOG_CONSTANTS: Tuple[LogConstant, ...] = (
     LOG_SESSION_STEP_ERROR,
     LOG_SESSION_EPISODE_ERROR,
     LOG_SESSION_TIMER_PRECISION_WARNING,
-    LOG_INPUT_CONTROLLER_ERROR,
     LOG_KEYBOARD_DETECTED,
     LOG_KEYBOARD_ASSIGNED,
     LOG_KEYBOARD_DETECTION_ERROR,
     LOG_KEYBOARD_EVDEV_SETUP_START,
     LOG_KEYBOARD_EVDEV_SETUP_SUCCESS,
     LOG_KEYBOARD_EVDEV_SETUP_FAILED,
-    LOG_KEY_RESOLVER_INITIALIZED,
-    LOG_KEY_RESOLVER_UNAVAILABLE,
     LOG_INPUT_MODE_CONFIGURED,
-    LOG_EVDEV_KEY_PRESSED,
-    LOG_EVDEV_KEY_RELEASED,
     LOG_HUMAN_CONTROL_WORKER_LAUNCH,
     LOG_HUMAN_CONTROL_WORKER_READY,
     LOG_HUMAN_CONTROL_WORKER_ACTION,
@@ -6432,18 +6374,13 @@ __all__ = (
     "LOG_SESSION_STEP_ERROR",
     "LOG_SESSION_EPISODE_ERROR",
     "LOG_SESSION_TIMER_PRECISION_WARNING",
-    "LOG_INPUT_CONTROLLER_ERROR",
     "LOG_KEYBOARD_DETECTED",
     "LOG_KEYBOARD_ASSIGNED",
     "LOG_KEYBOARD_DETECTION_ERROR",
     "LOG_KEYBOARD_EVDEV_SETUP_START",
     "LOG_KEYBOARD_EVDEV_SETUP_SUCCESS",
     "LOG_KEYBOARD_EVDEV_SETUP_FAILED",
-    "LOG_KEY_RESOLVER_INITIALIZED",
-    "LOG_KEY_RESOLVER_UNAVAILABLE",
     "LOG_INPUT_MODE_CONFIGURED",
-    "LOG_EVDEV_KEY_PRESSED",
-    "LOG_EVDEV_KEY_RELEASED",
     "LOG_HUMAN_CONTROL_WORKER_LAUNCH",
     "LOG_HUMAN_CONTROL_WORKER_READY",
     "LOG_HUMAN_CONTROL_WORKER_ACTION",

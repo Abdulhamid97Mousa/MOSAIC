@@ -919,7 +919,12 @@ class HumanKeyboardRuntime:
             if use_tick:
                 remaining = deadline - time.monotonic()
                 if remaining <= 0:
-                    action = noop_action  # Timeout: return NOOP
+                    # Timeout: resolve from held keys (continuous input)
+                    # or return NOOP if nothing held
+                    if self._reader.held_keys:
+                        action = self._resolver.resolve(self._reader.held_keys)
+                    if action is None:
+                        action = noop_action
                     break
                 wait = min(remaining, 0.05)
             else:
@@ -933,14 +938,15 @@ class HumanKeyboardRuntime:
                 mouse_dx += mdx
                 mouse_dy += mdy
 
-            # Read keyboard: drain ALL key events (press + release) for native
-            # forwarding, and resolve press events to game actions.
+            # Read keyboard: drain events (updates reader.held_keys as side effect)
             if kbd_fd is not None and kbd_fd in readable:
                 events = self._reader.drain_key_events()
                 for keycode, pressed in events:
                     raw_keys.append({"keycode": keycode, "pressed": pressed})
-                    if pressed and action is None:
-                        action = self._resolver.resolve({keycode})
+
+                # Resolve from reader's held state (works for tap and hold)
+                if self._reader.held_keys and action is None:
+                    action = self._resolver.resolve(self._reader.held_keys)
 
         response: Dict[str, Any] = {
             "type": "action_selected",

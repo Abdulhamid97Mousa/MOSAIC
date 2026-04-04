@@ -302,3 +302,7 @@ results/
 # Patch and diff files (prevent accidental commits)
 *.diff
 *.patch
+
+# Build / lint caches
+.factory/
+.ruff_cache/

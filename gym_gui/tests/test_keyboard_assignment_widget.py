@@ -78,11 +78,9 @@ class TestKeyboardAssignmentWidget:
         widget = KeyboardAssignmentWidget(parent=None)
         mock_devices = _make_mock_evdev_devices()
 
-        # Inject a mock evdev monitor so _detect_keyboards succeeds
-        widget._evdev_monitor = Mock()
-        widget._evdev_monitor.discover_keyboards.return_value = mock_devices
-        # Patch _HAS_EVDEV at module level is not needed since we set _evdev_monitor
-        with patch("gym_gui.ui.widgets.keyboard_assignment_widget._HAS_EVDEV", True):
+        # Mock the module-level discover function used by the widget
+        with patch("gym_gui.ui.widgets.keyboard_assignment_widget._HAS_EVDEV", True), \
+             patch("gym_gui.ui.widgets.keyboard_assignment_widget._discover_keyboards", return_value=mock_devices):
             widget._detect_keyboards()
 
         assert len(widget._keyboards) == 3
@@ -97,9 +95,8 @@ class TestKeyboardAssignmentWidget:
 
         widget = KeyboardAssignmentWidget(parent=None)
         mock_devices = _make_mock_evdev_devices()
-        widget._evdev_monitor = Mock()
-        widget._evdev_monitor.discover_keyboards.return_value = mock_devices
-        with patch("gym_gui.ui.widgets.keyboard_assignment_widget._HAS_EVDEV", True):
+        with patch("gym_gui.ui.widgets.keyboard_assignment_widget._HAS_EVDEV", True), \
+             patch("gym_gui.ui.widgets.keyboard_assignment_widget._discover_keyboards", return_value=mock_devices):
             widget._detect_keyboards()
 
         # Initially no assignments
@@ -120,9 +117,8 @@ class TestKeyboardAssignmentWidget:
 
         widget = KeyboardAssignmentWidget(parent=None)
         mock_devices = _make_mock_evdev_devices()
-        widget._evdev_monitor = Mock()
-        widget._evdev_monitor.discover_keyboards.return_value = mock_devices
-        with patch("gym_gui.ui.widgets.keyboard_assignment_widget._HAS_EVDEV", True):
+        with patch("gym_gui.ui.widgets.keyboard_assignment_widget._HAS_EVDEV", True), \
+             patch("gym_gui.ui.widgets.keyboard_assignment_widget._discover_keyboards", return_value=mock_devices):
             widget._detect_keyboards()
 
         assert widget.get_agent_keyboard("agent_0") is None
@@ -158,13 +154,12 @@ class TestKeyboardAssignmentWidget:
 
         widget = KeyboardAssignmentWidget(parent=None)
         mock_devices = _make_mock_evdev_devices()
-        widget._evdev_monitor = Mock()
-        widget._evdev_monitor.discover_keyboards.return_value = mock_devices
 
         detected_counts = []
         widget.keyboards_detected.connect(lambda count: detected_counts.append(count))
 
-        with patch("gym_gui.ui.widgets.keyboard_assignment_widget._HAS_EVDEV", True):
+        with patch("gym_gui.ui.widgets.keyboard_assignment_widget._HAS_EVDEV", True), \
+             patch("gym_gui.ui.widgets.keyboard_assignment_widget._discover_keyboards", return_value=mock_devices):
             widget._detect_keyboards()
 
         assert len(detected_counts) == 1
@@ -196,9 +191,8 @@ class TestKeyboardAssignmentWidget:
 
         widget = KeyboardAssignmentWidget(parent=None)
         mock_devices = _make_mock_evdev_devices()
-        widget._evdev_monitor = Mock()
-        widget._evdev_monitor.discover_keyboards.return_value = mock_devices
-        with patch("gym_gui.ui.widgets.keyboard_assignment_widget._HAS_EVDEV", True):
+        with patch("gym_gui.ui.widgets.keyboard_assignment_widget._HAS_EVDEV", True), \
+             patch("gym_gui.ui.widgets.keyboard_assignment_widget._discover_keyboards", return_value=mock_devices):
             widget._detect_keyboards()
 
         keyboards = widget.get_detected_keyboards()

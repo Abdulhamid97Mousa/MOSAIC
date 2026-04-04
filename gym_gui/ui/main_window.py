@@ -3259,31 +3259,12 @@ class MainWindow(QtWidgets.QMainWindow, LogConstantMixin):
             self._on_parallel_human_actions_submitted
         )
 
-        # Bridge evdev keyboard input to parallel step state
-        # When evdev is active, physical key presses on assigned keyboards
-        # directly submit actions for the corresponding human agent.
-        if self._human_input._use_evdev:
-            # Disconnect previous connection if any (avoid duplicates)
-            try:
-                self._human_input.agent_action_selected.disconnect(
-                    self._on_evdev_agent_action
-                )
-            except (TypeError, RuntimeError):
-                pass
-            self._human_input.agent_action_selected.connect(
-                self._on_evdev_agent_action
-            )
-            _OP_LOGGER.info(
-                "Evdev bridge active: keyboard input will submit actions for %s",
-                human_agents,
-            )
-
         # Embed the action panel in the render container (right below the environment)
         self._embed_parallel_action_panel(self._parallel_action_panel)
         _OP_LOGGER.info(
             f"Waiting for human actions from {len(human_agents)} agents"
         )
-        input_method = "keyboard + buttons" if self._human_input._use_evdev else "action buttons"
+        input_method = "keyboard (subprocess)" if self._keyboard_worker_bridge.is_active else "action buttons"
         self._status_bar.showMessage(
             f"Select actions for {len(human_agents)} human agent(s) ({input_method})",
             10000
@@ -3439,23 +3420,8 @@ class MainWindow(QtWidgets.QMainWindow, LogConstantMixin):
             # Embed panel in the render container (right below the environment)
             self._embed_parallel_action_panel(self._parallel_action_panel)
 
-            # Bridge evdev keyboard input for AEC human turns
-            if self._human_input._use_evdev:
-                try:
-                    self._human_input.agent_action_selected.disconnect(
-                        self._on_evdev_aec_agent_action
-                    )
-                except (TypeError, RuntimeError):
-                    pass
-                self._human_input.agent_action_selected.connect(
-                    self._on_evdev_aec_agent_action
-                )
-                _OP_LOGGER.info(
-                    "AEC evdev bridge active for %s", current_agent
-                )
-
             _OP_LOGGER.info("AEC: waiting for human %s to act", current_agent)
-            input_method = "keyboard + buttons" if self._human_input._use_evdev else "buttons"
+            input_method = "keyboard (subprocess)" if self._keyboard_worker_bridge.is_active else "buttons"
             self._status_bar.showMessage(
                 f"AEC: select action for {current_agent} ({input_method})", 10000
             )
@@ -4854,7 +4820,7 @@ class MainWindow(QtWidgets.QMainWindow, LogConstantMixin):
         self._game_paused = False
         self._awaiting_human = False
         self._latest_fps = None
-        # Get overrides to pass input_mode setting to human input controller
+        # Get overrides for game configuration (passed to human input controller)
         current_game = self._session.game_id
         overrides = None
         if current_game is not None:
@@ -5065,10 +5031,6 @@ class MainWindow(QtWidgets.QMainWindow, LogConstantMixin):
         if self._keyboard_worker_bridge.is_active:
             self._keyboard_worker_bridge.stop()
 
-        # Stop old main-thread evdev if active
-        if self._human_input._use_evdev:
-            self._human_input.stop_evdev_monitoring()
-
         # Discover devices
         import sys
 
@@ -5266,23 +5228,17 @@ class MainWindow(QtWidgets.QMainWindow, LogConstantMixin):
         """Route mouse delta from keyboard worker subprocess to native mouse handler."""
         self._session.handle_native_mouse(dx, dy)
 
+    _raw_key_no_handler_warned = False
+
     def _on_keyboard_worker_raw_key(self, agent_id: str, keycode: int, pressed: bool) -> None:
         """Route raw key event from worker subprocess to native key handler.
 
-        Linux evdev keycodes are identical to LWJGL scan codes, so Malmo's
-        TCP side-channel can receive them directly without Qt key translation.
+        Only Malmo environments have a native handler (TCP to Minecraft).
+        For all other environments, raw keys are silently ignored.
         """
-        from gym_gui.logging_config.log_constants import LOG_HUMAN_CONTROL_RAW_KEY_NO_HANDLER
-
         interaction = getattr(self._session, '_interaction', None)
         if interaction is not None and hasattr(interaction, 'handle_native_key_evdev'):
             interaction.handle_native_key_evdev(keycode, pressed)
-        else:
-            self.log_constant(
-                LOG_HUMAN_CONTROL_RAW_KEY_NO_HANDLER,
-                message=f"Raw key from {agent_id} (code={keycode}, pressed={pressed}) dropped: no native handler",
-                extra={"agent_id": agent_id, "keycode": keycode, "pressed": pressed},
-            )
 
     def _on_status_message(self, message: str) -> None:
         self._status_bar.showMessage(message, 5000)

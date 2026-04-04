@@ -394,6 +394,7 @@ chat = [
 ray-rllib = [
     "ray[rllib]>=2.9.0",
     "ray[tune]>=2.9.0",
+    "opentelemetry-api>=1.28.0",
     "torch>=2.0.0",
     "tensorboard>=2.11.0",
     "dm-tree>=0.1.8",

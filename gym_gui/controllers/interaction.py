@@ -32,10 +32,6 @@ class InteractionController(ABC):
         """Fixed simulation dt if applicable (physics), else 0.0."""
         raise NotImplementedError
 
-    def handle_native_key(self, key_code: int, pressed: bool) -> bool:
-        """Handle a raw key event. Return True if handled."""
-        return False
-
     def handle_native_mouse(self, dx: int, dy: int) -> bool:
         """Handle a raw mouse delta event. Return True if handled."""
         return False
