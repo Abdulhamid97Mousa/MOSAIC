@@ -1701,15 +1701,6 @@ class ControlPanelWidget(QtWidgets.QWidget):
             self._config_layout.addRow("", label)
             return
 
-        # -------- Input Mode (common to ALL games) --------
-        self._build_input_mode_controls()
-
-        # Add a separator line
-        separator = QtWidgets.QFrame(self._config_group)
-        separator.setFrameShape(QtWidgets.QFrame.Shape.HLine)
-        separator.setFrameShadow(QtWidgets.QFrame.Shadow.Sunken)
-        self._config_layout.addRow(separator)
-
         if self._current_game == GameId.FROZEN_LAKE:
             overrides = self._game_overrides.setdefault(GameId.FROZEN_LAKE, {})
             checkbox = build_frozenlake_controls(
