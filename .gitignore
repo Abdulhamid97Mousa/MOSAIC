@@ -306,3 +306,12 @@ results/
 # Build / lint caches
 .factory/
 .ruff_cache/
+
+
+3rd_party/benchmarks/workers_benchmark/papers/*
+
+3rd_party/environments/RPM_Generalizable_Behaviors_in_Multi_Agent_Reinforcement_Learning
+
+3rd_party/benchmarks/*
+
+3rd_party/benchmarks

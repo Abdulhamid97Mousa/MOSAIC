@@ -175,7 +175,7 @@ babaisai = [
 # Features: Gymnasium 1.0+ API, competitive/cooperative, ball passing/stealing, wrappers, PettingZoo API
 # NOTE: Now installs from local dev: pip install -e 3rd_party/environments/mosaic_multigrid/
 mosaic_multigrid = [
-    "mosaic-multigrid==6.3.0",
+    "mosaic-multigrid==6.5.0",
 ]
 
 # malmoenv - Microsoft Malmo Minecraft RL environments (13 missions)
@@ -502,6 +502,23 @@ mctx = [
     "tensorboard>=2.11.0",
 ]
 
+# Google Research Football (GRF) multi-agent football (soccer) environment
+# Paper: Kurach et al. (2020). "Google Research Football: A Novel RL Environment"
+# Install: pip install -e 3rd_party/environments/football/
+gfootball = [
+    "gfootball>=2.10.0",
+    "pygame>=1.9.6",
+    "opencv-python",
+]
+
+# Jidi Olympics Wrestling (sumo) competitive 2-player physics environment
+# Two elastic ball agents on a circular arena, push opponent off to win.
+# Install: pip install -e 3rd_party/environments/Competition_Olympics-Wrestling/
+olympics_wrestling = [
+    "pygame>=1.9.6",
+    "numpy>=1.21.0",
+]
+
 # =============================================================================
 # Development & Testing
 # =============================================================================
@@ -535,7 +552,7 @@ all-gymnasium = [
 
 # All environment families (single + multi-agent)
 all-envs = [
-    "mosaic[box2d,mujoco,atari,minigrid,pettingzoo,vizdoom,nethack,crafter,procgen,textworld,babaisai,mosaic_multigrid,multigrid_ini,jumanji,pybullet-drones,openspiel,meltingpot,overcooked,smac,smacv2,rware,griddly,hemac]",
+    "mosaic[box2d,mujoco,atari,minigrid,pettingzoo,vizdoom,nethack,crafter,procgen,textworld,babaisai,mosaic_multigrid,multigrid_ini,jumanji,pybullet-drones,openspiel,meltingpot,overcooked,smac,smacv2,rware,griddly,hemac,gfootball,olympics_wrestling]",
 ]
 
 # Full development setup
