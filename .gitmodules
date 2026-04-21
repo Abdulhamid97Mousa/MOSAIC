@@ -61,6 +61,19 @@
 [submodule "tianshou"]
 	path = 3rd_party/workers/tianshou_worker/tianshou
 	url = https://github.com/thu-ml/tianshou.git
+
 [submodule "3rd_party/workers/sample_factory_worker/sample-factory"]
 	path = 3rd_party/workers/sample_factory_worker/sample-factory
 	url = https://github.com/alex-petrenko/sample-factory.git
+
+[submodule "football"]
+  path = 3rd_party/environments/football
+  url = https://github.com/google-research/football.git
+
+[submodule "Competition_Olympics-Wrestling"]
+  path = 3rd_party/environments/Competition_Olympics-Wrestling
+  url = https://github.com/jidiai/Competition_Olympics-Wrestling.git
+
+[submodule "JaxMARL"]
+  path = 3rd_party/workers/jaxmarl_worker/JaxMARL
+  url = https://github.com/FLAIROx/JaxMARL.git
