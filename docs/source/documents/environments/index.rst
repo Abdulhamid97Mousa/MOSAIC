@@ -80,4 +80,5 @@ dependency; install only the ones you need.
    smac/index
    smacv2/index
    rware/index
+   hemac/index
    gfootball/index

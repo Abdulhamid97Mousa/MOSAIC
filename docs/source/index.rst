@@ -445,6 +445,12 @@ reproducible head-to-head evaluation.
          <td><span class="cmp-no">&#10007;</span></td><td><span class="cmp-no">&#10007;</span></td>
        </tr>
        <tr>
+         <td>HeMAC <a href="#ref25">[25]</a></td>
+         <td><span class="cmp-yes">&#10003;</span></td><td><span class="cmp-no">&#10007;</span></td><td><span class="cmp-no">&#10007;</span></td><td><span class="cmp-no">&#10007;</span></td>
+         <td><span class="cmp-yes">&#10003;</span></td>
+         <td><span class="cmp-no">&#10007;</span></td><td><span class="cmp-no">&#10007;</span></td>
+       </tr>
+       <tr>
          <td>Overcooked-AI <a href="#ref26">[26]</a></td>
          <td><span class="cmp-yes">&#10003;</span></td><td><span class="cmp-no">&#10007;</span></td><td><span class="cmp-no">&#10007;</span></td><td><span class="cmp-yes">&#10003;</span></td>
          <td><span class="cmp-yes">&#10003;</span></td>
@@ -1034,6 +1040,12 @@ installation instructions, environment lists, and academic citations.
      - | Human-Control: ✅
        | Single-Agent: ❌
        | Multi-Agent: ✅
+   * - :doc:`HeMAC <documents/environments/hemac/index>`
+     - Heterogeneous multi-agent challenge (Quadcopters, Observers, Provisioners)
+     -
+     - | Human-Control: 📋
+       | Single-Agent: 📋
+       | Multi-Agent: ✅
    * - **MuJoCo**
      - Continuous-control robotics tasks
      - .. image:: images/envs/mujoco/ant.gif
@@ -1174,6 +1186,7 @@ References
      <span id="ref22">[22]</span> Cipolina et al., "Game Reasoning Arena: A Comprehensive Evaluation Framework for Large Language Models," <em>arXiv:2501.00363</em>, 2025.<br>
      <span id="ref23">[23]</span> Y. Wang et al., "CREW: A Benchmark for Collaborative Multi-Step Reasoning and Planning," <em>NeurIPS</em>, 2024.<br>
      <span id="ref24">[24]</span> X. Ma et al., "LLM-PySC2: A Benchmark for Large Language Models in StarCraft II," <em>arXiv:2412.19668</em>, 2024.
+     <span id="ref25">[25]</span> C. Dansereau et al., "The Heterogeneous Multi-Agent Challenge," <em>arXiv:2509.19512</em>, 2025.<br>
      <span id="ref26">[26]</span> M. Carroll et al., "On the Utility of Learning about Humans for Human-AI Coordination," <em>NeurIPS</em>, 2019.
    </p>
 
