@@ -29,12 +29,18 @@ MOSAIC
 
    <br>
 
-**A Unified Platform for Cross-Paradigm Agent-Mixing and Human-AI Collaboration**
+**A Universal Agent-Level Interface for Cross-Paradigm Agent Mixing and Human-AI Collaboration**
 
-MOSAIC is a visual-first platform that enables researchers to configure, run, and
-compare experiments across RL, LLM, VLM, and human decision-makers in the same
-multi-agent environment.  Different paradigms like tiles in a mosaic come
-together to form a complete picture of agent performance.
+MOSAIC is a visual-first platform for cross-paradigm multi-agent systems, where
+RL policies, LLMs, VLMs, and human operators act in the same environment.  It
+enables cross-paradigm agent mixing: each agent slot can be assigned to any
+decision-maker.  This is made possible by an
+:doc:`operator <documents/architecture/operators/index>` abstraction that forms
+a universal agent-level interface by mapping
+:doc:`workers <documents/architecture/workers/index>` to agent slots: each
+operator, whether backed by an RL policy, an LLM, a VLM, or a human, conforms
+to the same minimal interface.  Like tiles in a mosaic, different paradigms
+come together to form a complete picture of agent performance.
 
 
 .. figure:: _static/figures/A_Full_Architecture.png
@@ -152,10 +158,10 @@ under a unified, visual-first interface.
 
 **MOSAIC provides:**
 
-- **Visual-First Design**: Configure experiments through an intuitive PyQt6 interface, **Almost no code required**.
-- **Heterogeneous Agents Cooperation**: Deploy Human(Agent),  RL, and LLM agents in the same environment
+- **Visual-First Design**: Configure experiments through an intuitive PyQt6 interface, **almost no code required**.
+- **Cross-Paradigm Agent Mixing**: To study cross-paradigm multi-agent systems, MOSAIC enables different types of decision-makers (RL policies, LLMs, VLMs, and humans) to interact with one another inside one environment.
 - **Resource Management & Quotas**: GPU allocation, queue limits, credit-based backpressure, health monitoring.
-- **Per-Agent Policy Binding**: Route each agent to different workers via ``PolicyMappingService``.
+- **Per-Agent Policy Binding**: Route each agent slot to its own worker, or share one policy across slots via link groups (:doc:`PolicyMappingService <documents/architecture/policy_mapping>`).
 - **Worker Lifecycle Orchestration**: Subprocess management with heartbeat monitoring and graceful termination.
 
 .. raw:: html
