@@ -26,9 +26,9 @@
 
 # MOSAIC
 
-**A Unified Platform for Cross-Paradigm Agent-Mixing and Human-AI Collaboration**
+**A Universal Agent-Level Interface for Cross-Paradigm Agent Mixing and Human-AI Collaboration**
 
-MOSAIC is a visual-first platform that enables researchers to configure, run, and compare experiments across RL, LLM, VLM, and human decision-makers in the same multi-agent environment. Different paradigms like tiles in a mosaic come together to form a complete picture of agent performance.
+MOSAIC is a [visual-first platform](https://mosaic-platform.readthedocs.io/en/latest/) for cross-paradigm multi-agent systems, where RL policies, LLMs, VLMs, and human operators act in the same environment. It enables cross-paradigm agent mixing: each agent slot can be assigned to any decision-maker. This is made possible by an [operator](https://mosaic-platform.readthedocs.io/en/latest/documents/architecture/operators/index.html) abstraction that forms a universal agent-level interface by mapping [workers](https://mosaic-platform.readthedocs.io/en/latest/documents/architecture/workers/index.html) to agent slots: each operator, whether backed by an RL policy, an LLM, a VLM, or a human, conforms to the same minimal interface. Like tiles in a mosaic, different paradigms come together to form a complete picture of agent performance.
 
 
 | **Documentation**: [mosaic-platform.readthedocs.io](https://mosaic-platform.readthedocs.io/en/latest/) | **GitHub**: [github.com/Abdulhamid97Mousa/mosaic](https://github.com/Abdulhamid97Mousa/mosaic) |
@@ -87,9 +87,9 @@ Today's AI landscape offers powerful but **fragmented** tools: RL frameworks ([C
 **MOSAIC provides:**
 
 - **Visual-First Design**: Configure experiments through an intuitive PyQt6 interface, **almost no code required**.
-- **Heterogeneous Agent Cooperation**: Deploy Human, RL, and LLM agents in the same environment.
+- **Cross-Paradigm Agent Mixing**: To study cross-paradigm multi-agent systems, MOSAIC enables different types of decision-makers (RL policies, LLMs, VLMs, and humans) to interact with one another inside one environment.
 - **Resource Management & Quotas**: GPU allocation, queue limits, credit-based backpressure, health monitoring.
-- **Per-Agent Policy Binding**: Route each agent to different workers via `PolicyMappingService`.
+- **Per-Agent Policy Binding**: Route each agent slot to its own worker, or share one policy across slots via link groups ([`PolicyMappingService`](https://mosaic-platform.readthedocs.io/en/latest/documents/architecture/policy_mapping.html)).
 - **Worker Lifecycle Orchestration**: Subprocess management with heartbeat monitoring and graceful termination.
 
 **1. Human vs Human:** Two human players competing via dedicated USB keyboards.
