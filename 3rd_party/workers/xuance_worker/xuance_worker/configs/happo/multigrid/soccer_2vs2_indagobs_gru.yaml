@@ -1,0 +1,86 @@
+# MAPPO + GRU configuration for mosaic_multigrid 2v2 Soccer (IndAgObs)
+# Environment: SoccerGame4HIndAgObsEnv16x11N2
+# Gymnasium ID: MosaicMultiGrid-Soccer-2vs2-IndAgObs-v0
+# Teams: Green (agent_0, agent_1) vs Blue (agent_2, agent_3)
+#
+# IndAgObs: each agent sees a 7x7 egocentric view → (7,7,3) = 147 flattened
+#   (with view_size=7 via MOSAIC_VIEW_SIZE env var)
+# 8 discrete actions, max_steps=200, zero_sum=True
+#
+# GRU memory enables navigation under partial observability (POMDP).
+# Architecture: MLP(obs) → GRU(64) → action_head
+#
+# References:
+#   - Yu et al. (2022) "The Surprising Effectiveness of PPO in Cooperative
+#     Multi-Agent Games" — NeurIPS 2022, uses GRU with MAPPO on SMAC
+#   - Phan et al. (2023) "Attention-Based Recurrence for Multi-Agent RL
+#     under Stochastic Partial Observability" — ICML 2023
+#   - Omidshafiei et al. (2017) "Deep Decentralized Multi-task Multi-Agent
+#     RL under Partial Observability" — ICML 2017
+
+agent: "HAPPO"
+env_name: "multigrid"
+env_id: "soccer_2vs2_indagobs"
+env_seed: 1
+continuous_action: False
+learner: "HAPPO_Learner"
+policy: "Categorical_MAAC_Policy"
+representation: "Basic_RNN"
+vectorize: "DummyVecMultiAgentEnv"
+runner: "MARL"
+
+use_rnn: True
+rnn: "GRU"
+fc_hidden_sizes: [128, 128]
+recurrent_hidden_size: 64
+N_recurrent_layers: 1
+dropout: 0
+normalize: "LayerNorm"
+initialize: "orthogonal"
+gain: 0.01
+
+# GRU output feeds directly into action/value heads — no additional MLP layers
+actor_hidden_size: []
+critic_hidden_size: []
+activation: "relu"
+activation_action: "softmax"
+
+# 4 agents, 2 teams — separate policy per agent
+use_parameter_sharing: True  # FXP: sharing for symmetric games
+use_actions_mask: False
+
+seed: 1
+parallels: 8
+buffer_size: 200
+n_epochs: 10
+n_minibatch: 1
+learning_rate: 0.0007
+weight_decay: 0
+
+vf_coef: 0.5
+ent_coef: 0.01
+target_kl: 0.25
+clip_range: 0.2
+clip_type: 1
+gamma: 0.99
+
+use_linear_lr_decay: True
+end_factor_lr_decay: 0.1
+use_global_state: True  # MAPPO uses centralized value function with global state
+use_value_clip: True
+value_clip_range: 0.2
+use_value_norm: True
+use_huber_loss: True
+huber_delta: 10.0
+use_advnorm: True
+use_gae: True
+gae_lambda: 0.95
+use_grad_clip: True
+grad_clip_norm: 10.0
+
+running_steps: 5000000
+eval_interval: 100000
+test_episode: 5
+
+log_dir: "./logs/happo/"
+model_dir: "./models/happo/"

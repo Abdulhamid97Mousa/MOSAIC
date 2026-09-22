@@ -46,13 +46,13 @@ _METHOD_NAME_MAP: dict[str, str] = {
     "DDPG": "ddpg",
     "TD3": "td3",
     "TD3BC": "td3bc",
-    # Parameterized action
-    "PDQN": "pdqn",
+    # Parameterized action                                                                             
+    "PDQN": "pdqn",                                   
     "MPDQN": "mpdqn",
     "SPDQN": "spdqn",
     # Model-based
     "DreamerV2": "dreamerv2",
-    "DreamerV3": "dreamerv3",
+    "DreamerV3": "dreamerv3",            
     # Multi-agent
     "MAPPO_Clip": "mappo",
     "MAPPO_KL": "mappo",
@@ -122,29 +122,44 @@ _WORKER_CONFIGS_DIR = Path(__file__).resolve().parent / "configs"
 
 # Gymnasium ID → XuanCe short env_id mapping.
 # The GUI uses full gymnasium IDs; XuanCe configs/environments use short names.
-# Covers all MosaicMultiGrid and IniMultiGrid registered environments.
+# Covers the v7 MosaicMultiGrid environments for which this worker ships a
+# matching XuanCe YAML architecture.  Keep the public Gymnasium ID here (not
+# the removed pre-v7 ``MultiGridSports-*`` namespace) and translate only at
+# the XuanCe boundary.
 _GYMNASIUM_TO_XUANCE: dict[str, str] = {
-    # MosaicMultiGrid — legacy (no IndAgObs)
-    "MosaicMultiGrid-Soccer-v0": "soccer",
-    "MosaicMultiGrid-Collect-v0": "collect",
-    "MosaicMultiGrid-Collect-2vs2-v0": "collect_2vs2",
-    "MosaicMultiGrid-Collect-1vs1-v0": "collect_1vs1",
-    # MosaicMultiGrid — IndAgObs
-    "MosaicMultiGrid-Soccer-2vs2-IndAgObs-v0": "soccer_2vs2_indagobs",
-    "MosaicMultiGrid-Soccer-1vs1-IndAgObs-v0": "soccer_1vs1",
-    "MosaicMultiGrid-Collect-IndAgObs-v0": "collect_indagobs",
-    "MosaicMultiGrid-Collect-2vs2-IndAgObs-v0": "collect_2vs2_indagobs",
-    "MosaicMultiGrid-Collect-1vs1-IndAgObs-v0": "collect_1vs1",
-    "MosaicMultiGrid-Basketball-3vs3-IndAgObs-v0": "basketball_3vs3_indagobs",
-    # MosaicMultiGrid — TeamObs
-    "MosaicMultiGrid-Soccer-2vs2-TeamObs-v0": "soccer_2vs2_teamobs",
-    "MosaicMultiGrid-Collect-2vs2-TeamObs-v0": "collect_2vs2_teamobs",
-    "MosaicMultiGrid-Basketball-3vs3-TeamObs-v0": "basketball_3vs3_teamobs",
-    # MosaicMultiGrid — Solo (v6.0.0, single-agent, no opponent)
-    "MosaicMultiGrid-Soccer-Solo-Green-IndAgObs-v0": "soccer_solo_green",
-    "MosaicMultiGrid-Soccer-Solo-Blue-IndAgObs-v0": "soccer_solo_blue",
-    "MosaicMultiGrid-Basketball-Solo-Green-IndAgObs-v0": "basketball_solo_green",
-    "MosaicMultiGrid-Basketball-Solo-Blue-IndAgObs-v0": "basketball_solo_blue",
+    # Soccer (S)
+    "MosaicMultiGrid-S-G-1v0-v1": "soccer_g_1v0",
+    "MosaicMultiGrid-S-B-0v1-v1": "soccer_b_0v1",
+    "MosaicMultiGrid-S-1v1-IndAgObs-v1": "soccer_1v1_indagobs",
+    "MosaicMultiGrid-S-2v2-IndAgObs-v1": "soccer_2v2_indagobs",
+    "MosaicMultiGrid-S-3v3-IndAgObs-v1": "soccer_3v3_indagobs",
+    "MosaicMultiGrid-S-G-2v0-IndAgObs-v1": "soccer_g_2v0_indagobs",
+    "MosaicMultiGrid-S-G-3v0-IndAgObs-v1": "soccer_g_3v0_indagobs",
+    "MosaicMultiGrid-S-B-0v2-IndAgObs-v1": "soccer_b_0v2_indagobs",
+    "MosaicMultiGrid-S-B-0v3-IndAgObs-v1": "soccer_b_0v3_indagobs",
+    # Basketball (BB)
+    "MosaicMultiGrid-BB-G-1v0-v1": "basketball_g_1v0",
+    "MosaicMultiGrid-BB-B-0v1-v1": "basketball_b_0v1",
+    "MosaicMultiGrid-BB-1v1-IndAgObs-v1": "basketball_1v1_indagobs",
+    "MosaicMultiGrid-BB-2v2-IndAgObs-v1": "basketball_2v2_indagobs",
+    "MosaicMultiGrid-BB-3v3-IndAgObs-v1": "basketball_3v3_indagobs",
+    "MosaicMultiGrid-BB-G-2v0-IndAgObs-v1": "basketball_g_2v0_indagobs",
+    "MosaicMultiGrid-BB-G-3v0-IndAgObs-v1": "basketball_g_3v0_indagobs",
+    "MosaicMultiGrid-BB-B-0v2-IndAgObs-v1": "basketball_b_0v2_indagobs",
+    "MosaicMultiGrid-BB-B-0v3-IndAgObs-v1": "basketball_b_0v3_indagobs",
+    # American Football (AF)
+    "MosaicMultiGrid-AF-G-1v0-v1": "af_g_1v0",
+    "MosaicMultiGrid-AF-B-0v1-v1": "af_b_0v1",
+    "MosaicMultiGrid-AF-1v1-IndAgObs-v1": "af_1v1_indagobs",
+    "MosaicMultiGrid-AF-2v2-IndAgObs-v1": "af_2v2_indagobs",
+    "MosaicMultiGrid-AF-3v3-IndAgObs-v1": "af_3v3_indagobs",
+    "MosaicMultiGrid-AF-G-2v0-IndAgObs-v1": "af_g_2v0_indagobs",
+    "MosaicMultiGrid-AF-G-3v0-IndAgObs-v1": "af_g_3v0_indagobs",
+    "MosaicMultiGrid-AF-B-0v2-IndAgObs-v1": "af_b_0v2_indagobs",
+    "MosaicMultiGrid-AF-B-0v3-IndAgObs-v1": "af_b_0v3_indagobs",
+    # Collect (C)
+    "MosaicMultiGrid-C-1v1-IndAgObs-v1": "collect_1vs1",
+    "MosaicMultiGrid-C-2v2-IndAgObs-v1": "collect_2vs2_indagobs",
 }
 
 
@@ -182,7 +197,8 @@ def _resolve_custom_config_path(
     yaml_path = _WORKER_CONFIGS_DIR / method / env / f"{env_id}.yaml"
     if not yaml_path.exists():
         # Fallback: convert gymnasium ID to XuanCe short env_id.
-        # The GUI passes full gymnasium IDs (e.g. "MosaicMultiGrid-Collect-1vs1-v0")
+        # The GUI passes full Gymnasium IDs (for example
+        # ``MosaicMultiGrid-C-1v1-IndAgObs-v1``).
         # but YAML config files use XuanCe's short names (e.g. "collect_1vs1").
         short_id = _gymnasium_to_xuance_env_id(env_id)
         if short_id:
@@ -389,6 +405,16 @@ class XuanCeWorkerRuntime:
         args.parallels = self._config.parallels
         args.running_steps = self._config.running_steps
 
+        # Test-vs-train switch. RunnerFootball.run() (and other runners in
+        # xuance's SC2/football family) branch on self.config.test_mode
+        # without a default, so we must supply it explicitly here. Also
+        # supply model_dir_load for the test branch — RunnerFootball reads
+        # it to load a pretrained checkpoint before evaluating.
+        args.test_mode = bool(self._config.test_mode)
+        if args.test_mode:
+            pretrained = self._config.extras.get("pretrained_model_dir", "")
+            args.model_dir_load = str(pretrained) if pretrained else ""
+
         # IMPORTANT: Include env_id in parser_args to override config file defaults
         # XuanCe's get_runner() only uses the env_id parameter if it's NOT in the config,
         # so we must pass it via parser_args to ensure our env_id is used
@@ -399,9 +425,23 @@ class XuanCeWorkerRuntime:
             args.seed = self._config.seed
             args.env_seed = self._config.seed
 
-        # Apply extras
+        # Apply extras (flat infra/tracking keys only).
+        # Skip "algo_params" here — it is a nested dict of UI widget values
+        # and must NOT be dumped as-is onto parser_args, because XuanCe's config
+        # merge treats every attr on parser_args as a potential YAML override.
+        # For multigrid the dict is flattened below; for all other envs
+        # (gfootball/GRF, mpe, smac, …) the YAML defines all hyperparameters.
         for key, value in self._config.extras.items():
+            if key == "algo_params":
+                continue
             setattr(args, key, value)
+
+        # Flatten algo_params only for multigrid (Soccer, Basketball, American
+        # Football team games), where form widgets are the authoritative source
+        # of hyperparameters — no per-env YAML template exists for multigrid.
+        if self._config.env == "multigrid":
+            for k, v in self._config.extras.get("algo_params", {}).items():
+                setattr(args, k, v)
 
         return args
 
@@ -588,6 +628,37 @@ class XuanCeWorkerRuntime:
             )
             LOGGER.info("DEBUG: resolved_config_path = %s", resolved_config_path)
 
+            # Snap buffer_size to the nearest multiple of parallels.
+            # XuanCe's on-policy memory buffers assert buffer_size % n_envs == 0
+            # at construction time. When the YAML's buffer_size doesn't divide
+            # evenly into the user-chosen parallels count, we override it here
+            # via parser_args (which wins over YAML defaults in get_arguments).
+            try:
+                import yaml as _yaml
+                _snap_yaml = None
+                if resolved_config_path and not isinstance(resolved_config_path, list):
+                    _snap_yaml = Path(resolved_config_path)
+                elif not resolved_config_path:
+                    # Fall back to xuance's built-in YAML lookup path.
+                    _xuance_root = Path(__file__).resolve().parent / "xuance"
+                    _snap_yaml = (
+                        _xuance_root / "xuance" / "configs"
+                        / normalized_method / self._config.env / f"{self._config.env_id}.yaml"
+                    )
+                if _snap_yaml and _snap_yaml.is_file():
+                    _raw = _yaml.safe_load(_snap_yaml.read_text())
+                    _buf = _raw.get("buffer_size") if isinstance(_raw, dict) else None
+                    _p = self._config.parallels
+                    if _buf is not None and _p > 0 and _buf % _p != 0:
+                        _snapped = ((_buf + _p - 1) // _p) * _p
+                        parser_args.buffer_size = _snapped
+                        LOGGER.info(
+                            "buffer_size auto-snapped %d → %d (parallels=%d)",
+                            _buf, _snapped, _p,
+                        )
+            except Exception as _exc:
+                LOGGER.debug("buffer_size snap skipped (non-fatal): %s", _exc)
+
             LOGGER.info("DEBUG: Calling get_runner() now...")
             LOGGER.info("=" * 60)
 
@@ -661,9 +732,17 @@ class XuanCeWorkerRuntime:
                         "pretrained_model_dir does not exist: %s",
                         pretrained_path,
                     )
-            # Execute training (xuance >= 1.3 requires explicit mode argument)
+            # Execute training. Most xuance runners accept `mode=` (base
+            # RunnerBasic.run signature), but a few (e.g. RunnerFootball)
+            # override run() without the mode parameter. Introspect first
+            # so we don't crash on runners with the narrower signature.
             run_mode = "test" if self._config.test_mode else "train"
-            runner.run(mode=run_mode)
+            import inspect as _inspect
+            _run_sig = _inspect.signature(runner.run)
+            if "mode" in _run_sig.parameters:
+                runner.run(mode=run_mode)
+            else:
+                runner.run()
 
             LOGGER.info(
                 "XuanCe training completed | method=%s runner=%s",
@@ -847,6 +926,12 @@ class InteractiveRuntime:
         policy_file = Path(self._policy_path).expanduser()
         if not policy_file.exists():
             raise FileNotFoundError(f"Policy checkpoint not found: {policy_file}")
+        if policy_file.is_file() and policy_file.suffix.lower() not in {".pt", ".pth"}:
+            raise ValueError(
+                "XuanCe requires a PyTorch .pt or .pth checkpoint; "
+                f"got {policy_file.name!r}. JaxMARL .npz checkpoints must use "
+                "jaxmarl_worker."
+            )
 
         LOGGER.info("Loading XuanCe policy from %s (action_selector=%s)", policy_file, action_selector)
 
@@ -864,11 +949,35 @@ class InteractiveRuntime:
             except ImportError:
                 LOGGER.warning("minigrid package not installed")
 
+        # mosaic_multigrid registers its environments lazily on first import.
+        # gym.make() will fail with NameNotFound if called before the package
+        # is imported. Pre-import here so all MosaicMultiGrid-* IDs are in the
+        # gymnasium registry before SyncVectorEnv is created below.
+        if env_id.startswith("MosaicMultiGrid") or env_id.startswith("IniMultiGrid"):
+            try:
+                import mosaic_multigrid.envs  # noqa: F401 — side effect: registers envs
+                LOGGER.debug("Registered mosaic_multigrid environments")
+            except ImportError:
+                LOGGER.warning("mosaic_multigrid package not installed")
+
+        # Determine view_size for mosaic_multigrid envs.
+        # MOSAIC_VIEW_SIZE is respected by MultiGrid_Env (XuanCe training wrapper)
+        # but must be passed explicitly to gym.make() for interactive mode.
+        _is_mosaic = env_id.startswith("MosaicMultiGrid") or env_id.startswith("IniMultiGrid")
+        _mosaic_view_size: int | None = None
+        if _is_mosaic:
+            _vs = os.environ.get("MOSAIC_VIEW_SIZE", "")
+            _mosaic_view_size = int(_vs) if _vs else None
+
         if not action_selector:
             # Own-environment mode: create SyncVectorEnv for _handle_step
             # Not used in action-selector mode — the GUI manages the shared env.
             def make_env():
-                env = gym.make(env_id, render_mode="rgb_array")
+                import numpy as _np
+                _kwargs: dict = {"render_mode": "rgb_array"}
+                if _is_mosaic and _mosaic_view_size is not None:
+                    _kwargs["view_size"] = _mosaic_view_size
+                env = gym.make(env_id, **_kwargs)
                 if is_minigrid:
                     try:
                         from minigrid.wrappers import ImgObsWrapper
@@ -876,6 +985,40 @@ class InteractiveRuntime:
                         env = gym.wrappers.FlattenObservation(env)
                     except ImportError:
                         pass
+                elif _is_mosaic:
+                    # mosaic_multigrid returns {agent_id: {image, direction, mission}}.
+                    # SyncVectorEnv can't concatenate scalar direction or string mission.
+                    # Wrap to expose a flat Box(obs_dim,) space by extracting agent 0 image.
+                    from gymnasium import spaces as _spaces
+
+                    class _FlatImageWrapper(gym.Wrapper):
+                        def __init__(self, inner):
+                            super().__init__(inner)
+                            img_sp = inner.observation_space[0]["image"]
+                            flat_dim = int(_np.prod(img_sp.shape))
+                            self.observation_space = _spaces.Box(
+                                0, 255, shape=(flat_dim,), dtype=_np.float32
+                            )
+                            # Flatten multi-agent action space {0: Discrete(n)} → Discrete(n)
+                            # so SyncVectorEnv passes plain int actions (not dict).
+                            self.action_space = inner.action_space[0]
+
+                        def _flat(self, obs):
+                            return obs[0]["image"].flatten().astype(_np.float32)
+
+                        def reset(self, **kw):
+                            obs, info = self.env.reset(**kw)
+                            return self._flat(obs), info
+
+                        def step(self, action):
+                            obs, r, term, trunc, info = self.env.step({0: int(action)})
+                            # Multi-agent envs return dicts; extract scalar for agent 0
+                            r_s    = float(r[0])    if isinstance(r, dict)    else float(r)
+                            term_s = bool(term[0])  if isinstance(term, dict) else bool(term)
+                            trunc_s = bool(trunc[0]) if isinstance(trunc, dict) else bool(trunc)
+                            return self._flat(obs), r_s, term_s, trunc_s, info
+
+                    env = _FlatImageWrapper(env)
                 env = gym.wrappers.RecordEpisodeStatistics(env)
                 return env
 
@@ -944,7 +1087,7 @@ class InteractiveRuntime:
             ]
 
             # Add fallback: search for ANY config file matching the method pattern
-            # This handles env_id variants (e.g., indagobs vs teamobs)
+            # This handles env_id variants (e.g., different indagobs matchups)
             config_dir = checkpoint_dir / "config"
             if config_dir.exists():
                 for config_file_path in config_dir.glob(f"{self._method}_*.json"):
@@ -1119,7 +1262,27 @@ class InteractiveRuntime:
             raise RuntimeError("Agent not loaded. Send reset or init_agent first.")
 
         if hasattr(self._agent, 'action'):
-            action = self._agent.action(obs)
+            # XuanCe MARL agents (MAPPO, IPPO, etc.) expect obs as a list of
+            # per-env dicts: [{"agent_0": array(obs_dim,), ...}].
+            # SyncVectorEnv returns a flat numpy array (n_envs, obs_dim).
+            # Convert before passing to avoid IndexError in _build_inputs.
+            import numpy as _np
+            if (hasattr(self._agent, 'agent_keys')
+                    and isinstance(obs, _np.ndarray)
+                    and obs.ndim == 2):
+                agent_keys = self._agent.agent_keys
+                obs = [{k: obs[i] for k in agent_keys} for i in range(obs.shape[0])]
+            raw = self._agent.action(obs)
+            # XuanCe MARL action() returns a dict:
+            #   {"actions": [{agent_key: scalar_array}, ...], "log_pi": ..., ...}
+            # Extract the scalar action for env 0, agent 0.
+            if isinstance(raw, dict) and "actions" in raw:
+                actions_list = raw["actions"]   # list of per-env dicts
+                per_env = actions_list[0]       # dict for env 0
+                agent_key = self._agent.agent_keys[0]
+                action = per_env[agent_key]     # 0-d or 1-d numpy array
+            else:
+                action = raw
         elif hasattr(self._agent, 'act'):
             action = self._agent.act(obs)
         elif hasattr(self._agent, 'policy'):
@@ -1135,12 +1298,13 @@ class InteractiveRuntime:
                 f"Type: {type(self._agent).__name__}"
             )
 
-        # Extract scalar if needed
-        if hasattr(action, '__len__'):
-            if len(action) == 1:
+        # Unwrap any remaining numpy/list nesting to a Python int
+        import numpy as _np
+        if isinstance(action, _np.ndarray):
+            action = action.item()   # works for any shape: (), (1,), (1,1), etc.
+        elif isinstance(action, list):
+            while isinstance(action, list) and len(action) == 1:
                 action = action[0]
-            elif len(action) > 1 and hasattr(action[0], '__len__'):
-                action = action[0][0]
 
         return int(action)
 

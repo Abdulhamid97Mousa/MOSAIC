@@ -73,6 +73,13 @@ try:  # pragma: no cover - gym optional
                 except ImportError:
                     pass
 
+        # mosaic_multigrid v7 registers environments when envs is imported.
+        if isinstance(env_id, str) and env_id.startswith("MosaicMultiGrid"):
+            try:
+                import mosaic_multigrid.envs  # noqa: F401
+            except ImportError:
+                pass
+
         # CRITICAL: Force rgb_array for FastLane telemetry
         # XuanCe defaults to render_mode="human" but FastLane needs rgb_array
         # We must OVERRIDE whatever render_mode was passed, not just add if missing

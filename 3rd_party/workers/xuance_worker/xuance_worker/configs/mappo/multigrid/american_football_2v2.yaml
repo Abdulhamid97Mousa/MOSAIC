@@ -1,0 +1,82 @@
+# MAPPO configuration for mosaic_multigrid 2v2 American Football
+# Environment: AmericanFootball2v2Env16x11
+# Gymnasium ID: MosaicMultiGrid-AmericanFootball-2v2-v0
+# Teams: Green (agent_0, agent_1) vs Blue (agent_2, agent_3)
+#
+# Key details:
+# - 4 agents (2 per team), 16x11 grid (14x9 playable)
+# - Observations: (3,3,3) = 27 flattened per agent
+# - 7 discrete actions
+# - Touchdown scoring: walk into opponent's end zone while carrying ball
+# - Passing via 'drop' action to teammate (teleport pass)
+# - Stealing via 'pickup' action on opponent
+# - Episode ends at first-to-2 touchdowns or 300 max_steps
+# - zero_sum=True: +1 scoring team, -1 opposing team
+
+agent: "MAPPO"
+env_name: "multigrid"
+env_id: "american_football_2v2"
+env_seed: 1
+continuous_action: False
+learner: "MAPPO_Clip_Learner"
+policy: "Categorical_MAAC_Policy"
+representation: "Basic_MLP"
+vectorize: "DummyVecMultiAgentEnv"
+runner: "MARL"
+
+use_rnn: False
+rnn: "GRU"
+fc_hidden_sizes: [64, 64]
+recurrent_hidden_size: 64
+N_recurrent_layers: 1
+dropout: 0
+normalize: "LayerNorm"
+initialize: "orthogonal"
+gain: 0.01
+
+# Network architecture -- (7,7,3) = 147 flattened features (MOSAIC_VIEW_SIZE=7)
+representation_hidden_size: [128, 128]
+actor_hidden_size: [128, 128]
+critic_hidden_size: [128, 128]
+activation: "relu"
+activation_action: "softmax"
+
+# Multi-agent: 4 agents, 2 teams -- separate policy per agent
+use_parameter_sharing: True  # FXP paper: separate policies get stuck in local NE; sharing eliminates this for symmetric games
+use_actions_mask: False
+
+seed: 1
+parallels: 4
+buffer_size: 300  # Match max_steps (300) for full-episode buffers
+n_epochs: 10
+n_minibatch: 1  # MAPPO paper: full buffer training, no mini-batching
+learning_rate: 0.0007
+weight_decay: 0
+
+vf_coef: 0.5
+ent_coef: 0.05
+target_kl: 0.25
+clip_range: 0.2
+clip_type: 1
+gamma: 0.99
+
+use_linear_lr_decay: True
+end_factor_lr_decay: 0.1
+use_global_state: True  # MAPPO centralized value function with global state
+use_value_clip: True
+value_clip_range: 0.2
+use_value_norm: True
+use_huber_loss: True
+huber_delta: 10.0
+use_advnorm: True
+use_gae: True
+gae_lambda: 0.95
+use_grad_clip: True
+grad_clip_norm: 10.0
+
+running_steps: 5000000
+eval_interval: 100000
+test_episode: 5
+
+log_dir: "./logs/mappo/"
+model_dir: "./models/mappo/"

@@ -89,13 +89,13 @@ if gymnasium is not None:
     except ImportError as _import_err:  # pragma: no cover
         _log.warning(
             "mosaic_multigrid import failed (package not installed): %s. "
-            "Install with: pip install mosaic_multigrid>=6.8.0",
+            "Install with: pip install mosaic_multigrid>=7.0.0",
             _import_err,
         )
 
 
 # MOSAIC multigrid action names (8 actions — noop=0 for AEC compatibility)
-# Used by: Soccer, Basketball, American Football, Collect (PyPI: mosaic_multigrid v6.8.0+)
+# Used by: Soccer, Basketball, American Football, Collect (PyPI: mosaic_multigrid v7.0.0+)
 # Inspired by MeltingPot NOOP=0 convention (Google DeepMind)
 MOSAIC_MULTIGRID_ACTIONS: List[str] = [
     "NOOP",     # 0 - No operation (AEC: non-acting agents wait)
@@ -169,7 +169,7 @@ class MultiGridAdapter(EnvironmentAdapter[List[np.ndarray], List[int]]):
         env_types=("gym", "mosaic_multigrid"),
         action_spaces=("discrete",),
         observation_spaces=("box",),
-        max_agents=6,  # Basketball uses 6 agents (3v3), Soccer uses 4 (2v2)
+        max_agents=8,  # v7 supports symmetric 4v4 variants
         supports_self_play=True,
         supports_record=True,
     )
@@ -219,7 +219,7 @@ class MultiGridAdapter(EnvironmentAdapter[List[np.ndarray], List[int]]):
         if not _MOSAIC_MULTIGRID_AVAILABLE:
             raise RuntimeError(
                 "mosaic_multigrid not installed. "
-                "Install with: pip install mosaic_multigrid>=6.8.0"
+                "Install with: pip install mosaic_multigrid>=7.0.0"
             )
 
         # Build optional kwargs (view_size override from config panel)

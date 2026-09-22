@@ -1,0 +1,98 @@
+# MAPPO configuration for MeltingPot Paintball: Capture the Flag (4v4).
+#
+# Substrate:  paintball__capture_the_flag
+# Players:    8 (4 red vs 4 blue, even-odd team assignment from substrate)
+# Observation: 88x88x3 uint8 RGB egocentric view per agent (11x11 cell window
+#              at spriteSize=8 pixels/cell; forward-biased, not centered).
+# Action:     Discrete(8)
+# Episode:    1000 frames max
+#
+# Pipeline notes:
+# - Representation is the upstream xuance Basic_CNN (see
+#   xuance/torch/representations/cnn.py). Basic_CNN normalizes to [0,1] and
+#   permutes HWC->CHW internally, so the env wrapper returns raw uint8.
+# - The conv stack below is tuned for 88x88 input:
+#     layer 1: 88 -> (88 - 8)/4 + 1 = 21
+#     layer 2: 21 -> (21 - 4)/2 + 1 = 9
+#     layer 3:  9 -> ( 9 - 3)/1 + 1 = 7
+#   followed by AdaptiveMaxPool2d((1,1)) -> 64 features -> MLP heads.
+# - use_parameter_sharing: True. The 4v4 substrate is symmetric (red/blue
+#   roles differ only in spawn location and flag target), so one shared
+#   policy network serves all 8 agents.
+# - Dense reward shaping is configured in the env wrapper itself via
+#   _DEFAULT_SHAPING_KWARGS (values from Melting Pot 2.0 tech report). The
+#   shaping_kwargs YAML block below is optional and only needed to override.
+
+agent: "MAPPO"
+env_name: "meltingpot_paintball__capture_the_flag"
+env_id: "paintball__capture_the_flag"
+env_seed: 1
+continuous_action: False
+learner: "MAPPO_Clip_Learner"
+policy: "Categorical_MAAC_Policy"
+representation: "Basic_CNN"
+vectorize: "DummyVecMultiAgentEnv"
+runner: "MARL"
+
+# CNN representation (Basic_CNN). See cnn.py:8-46.
+use_cnn: True
+filters: [32, 64, 64]
+kernels: [8, 4, 3]
+strides: [4, 2, 1]
+
+# Recurrent (not used; we start feed-forward for simplicity and speed).
+use_rnn: False
+rnn: "GRU"
+fc_hidden_sizes: [128, 128]
+recurrent_hidden_size: 128
+N_recurrent_layers: 1
+dropout: 0
+normalize: "LayerNorm"
+initialize: "orthogonal"
+gain: 0.01
+
+# MLP heads sit on top of the 64-feature CNN output.
+representation_hidden_size: [128, ]
+actor_hidden_size: [128, 128]
+critic_hidden_size: [128, 128]
+activation: "relu"
+activation_action: "softmax"
+
+use_parameter_sharing: True
+use_actions_mask: False
+
+seed: 1
+parallels: 8                # 8 parallel envs * 8 agents = 64 policy rollouts
+buffer_size: 256            # on-policy rollout length per env
+n_epochs: 10                # standard MAPPO
+n_minibatch: 4              # batch = (parallels * buffer_size) / n_minibatch
+learning_rate: 0.0005
+weight_decay: 0
+
+vf_coef: 0.5
+ent_coef: 0.01
+target_kl: 0.25
+clip_range: 0.2
+clip_type: 1
+gamma: 0.99                 # matches Melting Pot 2.0 baseline hyperparameters
+
+use_linear_lr_decay: True
+end_factor_lr_decay: 0.1
+use_global_state: False     # critic uses per-agent obs, matching atari.yaml
+use_value_clip: True
+value_clip_range: 0.2
+use_value_norm: True
+use_huber_loss: True
+huber_delta: 10.0
+use_advnorm: True
+use_gae: True
+gae_lambda: 0.95
+use_grad_clip: True
+grad_clip_norm: 10.0
+
+running_steps: 10000000     # 10M env steps (~100 iterations at buffer=256, parallels=8)
+eval_interval: 100000       # 10 evenly-spaced evals per 1M steps -> checkpoints every ~12 min on 4090 Laptop
+test_episode: 5
+
+log_dir: "./logs/mappo/"
+model_dir: "./models/mappo/"

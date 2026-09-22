@@ -165,6 +165,8 @@ ml-agents/
 3rd_party/workers/marllib_worker/marllib_worker/__pycache__
 3rd_party/workers/marllib_worker/**/__pycache__/
 
+3rd_party/workers/jaxmarl_worker/JaxMARL
+
 # =============================================================================
 # Deprecated / Legacy Directories
 # =============================================================================

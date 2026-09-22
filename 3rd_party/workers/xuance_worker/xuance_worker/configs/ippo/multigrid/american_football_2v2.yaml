@@ -1,0 +1,89 @@
+# IPPO configuration for mosaic_multigrid 2v2 American Football
+# Environment: AmericanFootball2v2Env16x11
+# Gymnasium ID: MosaicMultiGrid-AmericanFootball-2v2-v0
+# Teams: Green (agent_0, agent_1) vs Blue (agent_2, agent_3)
+#
+# IPPO 2v2: 4 fully independent policies, no information sharing.
+# Each agent has its own actor AND critic. Coordination emerges
+# purely from shared team rewards.
+#
+# Why IPPO for 2v2 agent mixing:
+# - IPPO-trained policies generalize better to novel partners
+#   (HeMAC, ECAI 2025: IPPO learns general coordination protocols)
+# - Each policy is self-contained (no critic that expects global state)
+# - Clean deployment: load any checkpoint as any agent slot
+#
+# American Football specifics:
+# - Touchdown scoring: walk into opponent's end zone while carrying ball
+# - Passing: drop toward teammate = teleport pass
+# - Stealing: pickup on opponent = take ball
+# - Episode ends at first-to-2 touchdowns or 300 max_steps
+# - zero_sum=True: +1 scoring team, -1 opponent team
+
+agent: "IPPO"
+env_name: "multigrid"
+env_id: "american_football_2v2"
+env_seed: 1
+continuous_action: False
+learner: "IPPO_Learner"
+policy: "Categorical_MAAC_Policy"
+representation: "Basic_MLP"
+vectorize: "DummyVecMultiAgentEnv"
+runner: "MARL"
+
+use_rnn: False
+rnn: "GRU"
+fc_hidden_sizes: [64, 64]
+recurrent_hidden_size: 64
+N_recurrent_layers: 1
+dropout: 0
+normalize: "LayerNorm"
+initialize: "orthogonal"
+gain: 0.01
+
+# Network architecture -- (7,7,3) = 147 flattened features (MOSAIC_VIEW_SIZE=7)
+representation_hidden_size: [128, 128]
+actor_hidden_size: [128, 128]
+critic_hidden_size: [128, 128]
+activation: "relu"
+activation_action: "softmax"
+
+# Multi-agent: 4 agents, 2 teams -- separate policy per agent
+use_parameter_sharing: False
+use_actions_mask: False
+
+seed: 1
+parallels: 4
+buffer_size: 300  # Match max_steps (300) for full-episode buffers
+n_epochs: 10
+n_minibatch: 1  # MAPPO paper: full buffer training, no mini-batching
+learning_rate: 0.0007
+weight_decay: 0
+
+vf_coef: 0.5
+ent_coef: 0.05
+target_kl: 0.25
+clip_range: 0.2
+clip_type: 1
+gamma: 0.99
+
+use_linear_lr_decay: True
+end_factor_lr_decay: 0.1
+use_global_state: False  # IPPO: fully decentralized
+use_value_clip: True
+value_clip_range: 0.2
+use_value_norm: True
+use_huber_loss: True
+huber_delta: 10.0
+use_advnorm: True
+use_gae: True
+gae_lambda: 0.95
+use_grad_clip: True
+grad_clip_norm: 10.0
+
+running_steps: 5000000
+eval_interval: 100000
+test_episode: 5
+
+log_dir: "./logs/ippo/"
+model_dir: "./models/ippo/"

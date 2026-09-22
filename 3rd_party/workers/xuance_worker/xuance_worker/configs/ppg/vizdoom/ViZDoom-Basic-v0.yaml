@@ -1,0 +1,78 @@
+# PPG configuration for ViZDoom Basic scenario.
+# Environment: ViZDoom_Env (single-agent) wrapping vizdoom.DoomGame
+# Gymnasium ID: ViZDoom-Basic-v0
+#
+# Basic scenario: shoot a stationary target with MOVE_LEFT/MOVE_RIGHT/ATTACK.
+# 3 discrete actions, 240x320x3 uint8 RGB pixel obs (RES_320X240).
+#
+# PPG (Phasic Policy Gradient, Cobbe et al. 2020) alternates a policy phase
+# and an auxiliary phase where value distillation happens on a separate
+# auxiliary head. Xuance's Categorical_PPG policy + PPG_Learner support
+# any representation module including CNN, but xuance ships no PPG YAML
+# for pixel envs; this file fills the gap for ViZDoom.
+#
+# Structure combines:
+#   PPG-specific fields (policy_nepoch, value_nepoch, aux_nepoch, kl_beta)
+#     copied from xuance/configs/ppg/classic_control/CartPole-v1.yaml
+#   CNN architecture (AC_CNN_Atari + filters/kernels/strides)
+#     copied from xuance/configs/ppo/atari.yaml
+#
+# env_name is lowercase to match the REGISTRY_ENV key added by
+# xuance_worker/environments/__init__.py.
+
+agent: "PPG"
+vectorize: "DummyVecEnv"
+env_name: "vizdoom"
+env_id: "ViZDoom-Basic-v0"
+env_seed: 1
+representation: "AC_CNN_Atari"
+policy: "Categorical_PPG"
+learner: "PPG_Learner"
+runner: "DRL"
+
+# CNN architecture (matches AC_CNN_Atari expected shape)
+filters: [32, 64, 64]
+kernels: [8, 4, 3]
+strides: [4, 2, 1]
+fc_hidden_sizes: [512]
+actor_hidden_size: []
+critic_hidden_size: []
+activation: "relu"
+
+# Training hyperparameters
+seed: 1
+parallels: 4
+running_steps: 1000000
+horizon_size: 256
+n_epochs: 1
+policy_nepoch: 4
+value_nepoch: 8
+aux_nepoch: 6
+n_minibatch: 8
+learning_rate: 0.0005
+
+# PPG-specific
+ent_coef: 0.01
+vf_coef: 0.5
+clip_range: 0.2
+kl_beta: 1.0
+gamma: 0.99
+use_gae: True
+gae_lambda: 0.95
+use_advnorm: True
+
+# Training tricks
+use_grad_clip: True
+clip_type: 1
+grad_clip_norm: 0.5
+use_actions_mask: False
+use_obsnorm: False
+use_rewnorm: False
+obsnorm_range: 5
+rewnorm_range: 5
+
+# Evaluation and logging (log_dir overridden by xuance_worker runtime)
+eval_interval: 50000
+test_episode: 3
+log_dir: "./logs/ppg/"
+model_dir: "./models/ppg/"

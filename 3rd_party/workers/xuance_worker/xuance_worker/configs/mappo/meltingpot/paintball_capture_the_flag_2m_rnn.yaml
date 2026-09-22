@@ -1,0 +1,102 @@
+# MAPPO + GRU configuration for MeltingPot Paintball: Capture the Flag (4v4).
+#
+# Variant: 2M steps, RNN enabled, flat learning rate.
+#
+# Key differences from paintball_capture_the_flag.yaml:
+#   - use_rnn: True  (GRU 128 — matches MP2.0 paper's LSTM 128 spec)
+#   - use_linear_lr_decay: False  (flat LR — previous 2M run died because
+#     LR decayed to ~0.00005 before agents could learn the flag-capture chain)
+#   - running_steps: 2000000  (will be overridden by --running-steps CLI arg)
+#
+# Why RNN matters for Paintball CTF:
+#   The flag-carrier is not always in the egocentric 88x88 view. Without
+#   memory, agents cannot track who has the flag or where the enemy flag
+#   zone is once it leaves the field of view. The GRU hidden state provides
+#   a compressed memory of recent observations — critical for multi-step
+#   coordination like "pick up flag → reach base → score".
+
+agent: "MAPPO"
+env_name: "meltingpot_paintball__capture_the_flag"
+env_id: "paintball__capture_the_flag"
+env_seed: 1
+continuous_action: False
+learner: "MAPPO_Clip_Learner"
+policy: "Categorical_MAAC_Policy"
+representation: "CNN_GRU"
+vectorize: "DummyVecMultiAgentEnv"
+runner: "MARL"
+
+# CNN representation (Basic_CNN). See cnn.py:8-46.
+use_cnn: True
+filters: [32, 64, 64]
+kernels: [8, 4, 3]
+strides: [4, 2, 1]
+
+# Recurrent: GRU enabled (MP2.0 paper uses LSTM 128; GRU is xuance's
+# stable equivalent and matches the recurrent_hidden_size below).
+use_rnn: True
+rnn: "GRU"
+fc_hidden_sizes: [128, 128]
+recurrent_hidden_size: 128
+N_recurrent_layers: 1
+dropout: 0
+normalize: "LayerNorm"
+initialize: "orthogonal"
+gain: 0.01
+
+# MLP heads sit on top of the 64-feature CNN output.
+representation_hidden_size: [128, ]
+actor_hidden_size: [128, 128]
+critic_hidden_size: [128, 128]
+activation: "relu"
+activation_action: "softmax"
+
+use_parameter_sharing: True
+use_actions_mask: False
+
+seed: 1
+parallels: 8                # 8 parallel envs * 8 agents = 64 policy rollouts
+episode_length: 200         # caps env episodes + RNN buffer sequence length.
+                            # RNN buffer pre-allocates (buffer_size, episode_length, H, W, C) per
+                            # agent. At episode_length=1000 (substrate default) and buffer_size=8:
+                            #   data: (8, 1000, 88, 88, 3) × 8 = 5.5 GB
+                            #   episode_data: (8, 1000, 88, 88, 3) × 8 = 5.5 GB → OOM
+                            # At episode_length=200:
+                            #   data: (8, 200, 88, 88, 3) × 8 = 1.13 GB ✓
+                            #   episode_data: (8, 200, 88, 88, 3) × 8 = 1.13 GB ✓
+buffer_size: 8              # RNN mode: number of complete episodes in ring buffer.
+                            # 8 eps × 200 steps × 8 agents × 90 KB/frame = 1.13 GB data
+n_epochs: 10                # standard MAPPO
+n_minibatch: 4              # batch_size = buffer_size // n_minibatch = 8 // 4 = 2 eps/minibatch
+                            # critic CNN input: reshape (2*8=16, 200, 88, 88, 24) → (3200, 88, 88, 24)
+                            # = 2.38 GB float32 on GPU — fits in 16 GB VRAM
+learning_rate: 0.0005       # flat — no decay (previous run hit ~0.00005 at 2M)
+weight_decay: 0
+
+vf_coef: 0.5
+ent_coef: 0.01
+target_kl: 0.25
+clip_range: 0.2
+clip_type: 1
+gamma: 0.99                 # matches Melting Pot 2.0 baseline hyperparameters
+
+use_linear_lr_decay: False  # FLAT LR — critical fix from previous run analysis
+end_factor_lr_decay: 1.0    # safety net: if decay is re-enabled, keep LR at 100%
+use_global_state: False     # critic uses per-agent obs, matching atari.yaml
+use_value_clip: True
+value_clip_range: 0.2
+use_value_norm: True
+use_huber_loss: True
+huber_delta: 10.0
+use_advnorm: True
+use_gae: True
+gae_lambda: 0.95
+use_grad_clip: True
+grad_clip_norm: 10.0
+
+running_steps: 2000000      # overridden by --running-steps CLI arg
+eval_interval: 100000       # eval every 100k steps
+test_episode: 5
+
+log_dir: "./logs/mappo/"
+model_dir: "./models/mappo/"

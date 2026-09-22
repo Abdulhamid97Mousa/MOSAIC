@@ -1,0 +1,21 @@
+[build-system]
+requires = ["setuptools>=65", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "mosaic-jaxmarl"
+version = "0.1.0"
+description = "JaxMARL-based fast IPPO worker for multigrid_sports environments"
+requires-python = ">=3.10"
+license = {text = "MIT"}
+dependencies = []
+
+[project.scripts]
+jaxmarl-worker = "jaxmarl_worker.cli:main"
+
+[project.entry-points."mosaic.workers"]
+jaxmarl = "jaxmarl_worker:get_worker_metadata"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["jaxmarl_worker*"]

@@ -86,7 +86,7 @@ except ImportError:
 class GymToGymnasiumWrapper(_gymnasium.Env if _HAS_GYMNASIUM else object):
     """Compatibility wrapper: normalises Gym/Gymnasium API differences.
 
-    mosaic_multigrid v4.4.0 uses Gymnasium API natively, but this wrapper
+    mosaic_multigrid v7.0.0 uses Gymnasium API natively, but this wrapper
     still handles both old Gym (4-tuple step, single-value reset) and
     Gymnasium (5-tuple step, 2-tuple reset) transparently so older env
     classes continue to work.
@@ -299,19 +299,12 @@ def _get_env_class(env_id: str) -> Optional[Type]:
 
 
 def get_available_environments() -> List[str]:
-    """Return list of available MultiGrid environment IDs."""
+    """Return short IDs backed by mosaic_multigrid v7 environments."""
     available = []
     for env_id in [
-        "soccer", 
-        "soccer_1vs1", 
-        "collect", "collect_1vs1",
+        "soccer_1vs1", "collect_1vs1",
         "soccer_2vs2_indagobs", "collect_2vs2_indagobs",
         "basketball_3vs3_indagobs",
-        "soccer_2vs2_teamobs", "collect_2vs2_teamobs",
-        "basketball_3vs3_teamobs",
-        # Solo (v6.0.0)
-        "soccer_solo_green", "soccer_solo_blue",
-        "basketball_solo_green", "basketball_solo_blue",
     ]:
         if _get_env_class(env_id) is not None:
             available.append(env_id)

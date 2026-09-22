@@ -1,0 +1,14 @@
+n_envs: 256
+n_steps: 256
+n_epochs: 4
+n_minibatches: 4
+hidden_dim: 256
+lr: 3e-4
+gamma: 0.99
+gae_lambda: 0.95
+clip_eps: 0.2
+vf_coef: 0.5
+ent_coef: 0.005
+mixer: QMIX
+mix_hidden: 32
+hyper_hidden: 32

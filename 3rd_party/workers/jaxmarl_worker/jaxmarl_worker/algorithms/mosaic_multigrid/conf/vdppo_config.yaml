@@ -1,0 +1,22 @@
+defaults:
+  - env: bb
+  - vdppo_ppo@ppo: default
+  - training_reward: cooperative_no_opponent
+  - agent_id: 'off'
+  - _self_
+
+total_updates: 20000
+seed: 1
+log_every: 50
+save_every: 500
+tensorboard: true
+run_dir: "???"
+
+hydra:
+  job:
+    chdir: false
+  run:
+    dir: var/trainer/mosaic_multigrid/.hydra_runs/${now:%Y-%m-%d_%H-%M-%S}
+  sweep:
+    dir: var/trainer/mosaic_multigrid/.hydra_runs/multirun/${now:%Y-%m-%d_%H-%M-%S}
+    subdir: ${env.family}_${env.variant}_agentid-${agent_id.enabled}

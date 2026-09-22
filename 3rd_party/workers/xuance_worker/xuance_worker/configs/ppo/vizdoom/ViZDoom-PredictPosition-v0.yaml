@@ -1,0 +1,67 @@
+# PPO configuration for ViZDoom PredictPosition scenario.
+# Environment: ViZDoom_Env (single-agent) wrapping vizdoom.DoomGame
+# Gymnasium ID: ViZDoom-PredictPosition-v0
+#
+# Scenario: Predict Position: lead a moving target with a rocket. 3 discrete actions (TURN_LEFT/TURN_RIGHT/ATTACK). Timing-based, projectile physics matter.
+#
+# Architecture: AC_CNN_Atari + Categorical_AC (pixel obs + discrete actions,
+# same shape as Atari). Hyperparameters copied from xuance/configs/ppo/atari.yaml
+# with env_name switched to "vizdoom" (lowercase, matches REGISTRY_ENV key
+# added by xuance_worker/environments/__init__.py) and env_id set to ViZDoom-PredictPosition-v0.
+# Per-scenario tuning (learning rate, ent_coef) can happen post-hoc if
+# learning stalls. Starting from Atari defaults is a defensible baseline.
+
+agent: "PPO_Clip"
+vectorize: "DummyVecEnv"
+env_name: "vizdoom"
+env_id: "ViZDoom-PredictPosition-v0"
+env_seed: 1
+representation: "AC_CNN_Atari"
+policy: "Categorical_AC"
+learner: "PPOCLIP_Learner"
+runner: "DRL"
+
+# CNN architecture (matches AC_CNN_Atari expected shape)
+filters: [32, 64, 64]
+kernels: [8, 4, 3]
+strides: [4, 2, 1]
+fc_hidden_sizes: [512]
+actor_hidden_size: []
+critic_hidden_size: []
+activation: "relu"
+
+# Training hyperparameters (Atari-tuned defaults)
+seed: 1
+parallels: 4
+running_steps: 1000000
+horizon_size: 128
+n_epochs: 4
+n_minibatch: 4
+learning_rate: 0.00025
+
+# PPO-specific
+vf_coef: 0.25
+ent_coef: 0.01
+target_kl: 0.25
+kl_coef: 1.0
+clip_range: 0.2
+gamma: 0.99
+use_gae: True
+gae_lambda: 0.95
+use_advnorm: True
+
+# Training tricks
+use_grad_clip: True
+clip_type: 1
+grad_clip_norm: 0.5
+use_actions_mask: False
+use_obsnorm: False
+use_rewnorm: False
+obsnorm_range: 5
+rewnorm_range: 5
+
+# Evaluation and logging (log_dir overridden by xuance_worker runtime)
+eval_interval: 100000
+test_episode: 3
+log_dir: "./logs/ppo/"
+model_dir: "./models/ppo/"
