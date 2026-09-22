@@ -1,0 +1,80 @@
+# MAPPO configuration for MeltingPot Prisoner's Dilemma in the Matrix: Repeated
+# Environment: prisoners_dilemma_in_the_matrix__repeated (via shimmy)
+# Players: 2 (general-sum social dilemma)
+#
+# Observation: flattened RGB(40x40x3=4800) + INVENTORY(2) + READY_TO_SHOOT(1)
+#              + INTERACTION_INVENTORIES(4) = 4807 features
+# Actions: 8 discrete (NOOP, FORWARD, BACKWARD, STEP_LEFT, STEP_RIGHT,
+#          TURN_LEFT, TURN_RIGHT, INTERACT)
+#
+# NePPO (Kalanther et al., 2025) shows IPPO exhibits DNC at alpha=0.4-0.8.
+# PD is general-sum (alpha~0.5), so MAPPO is preferred.
+# Parameter sharing: True (both players same role, symmetric game)
+
+agent: "MAPPO"
+env_name: "meltingpot"
+env_id: "prisoners_dilemma_in_the_matrix__repeated"
+env_seed: 1
+continuous_action: False
+learner: "MAPPO_Clip_Learner"
+policy: "Categorical_MAAC_Policy"
+representation: "Basic_MLP"
+vectorize: "DummyVecMultiAgentEnv"
+runner: "MARL"
+
+use_rnn: False
+rnn: "GRU"
+fc_hidden_sizes: [256, 256]
+recurrent_hidden_size: 128
+N_recurrent_layers: 1
+dropout: 0
+normalize: "LayerNorm"
+initialize: "orthogonal"
+gain: 0.01
+
+# Network: 4807 input features need larger hidden layers
+representation_hidden_size: [256, 256]
+actor_hidden_size: [256, 256]
+critic_hidden_size: [256, 256]
+activation: "relu"
+activation_action: "softmax"
+
+# Parameter sharing: True (symmetric PD, both players same role)
+use_parameter_sharing: True
+use_actions_mask: False
+
+seed: 1
+parallels: 4
+buffer_size: 500
+n_epochs: 5       # Lower than sports (10) - general-sum more unstable
+n_minibatch: 1    # MAPPO paper: full buffer
+learning_rate: 0.0003  # Lower than sports (0.0005) - non-stationarity higher
+weight_decay: 0
+
+vf_coef: 0.5
+ent_coef: 0.05   # High entropy to explore cooperation
+target_kl: 0.25
+clip_range: 0.1  # Tighter clipping for stability
+clip_type: 1
+gamma: 0.99
+
+use_linear_lr_decay: True
+end_factor_lr_decay: 0.1
+use_global_state: False
+use_value_clip: True
+value_clip_range: 0.1
+use_value_norm: True
+use_huber_loss: True
+huber_delta: 10.0
+use_advnorm: True
+use_gae: True
+gae_lambda: 0.95
+use_grad_clip: True
+grad_clip_norm: 10.0
+
+running_steps: 5000000
+eval_interval: 100000
+test_episode: 5
+
+log_dir: "./logs/mappo/"
+model_dir: "./models/mappo/"

@@ -1,0 +1,97 @@
+# MAPPO + GRU configuration for MeltingPot Paintball: Capture the Flag (4v4).
+#
+# Variant: v14 — fixed episode_length to match actual substrate episode (1000 steps).
+#
+# Root cause of v13 failure (episode_length=200):
+#   The MARL_OnPolicyBuffer_RNN pre-allocates (buffer_size, episode_length, H, W, C)
+#   per agent. At episode_length=1000, buffer_size=8: 5.5 GB × 2 (data+episode_data)
+#   = 11 GB → OOM. v13 used episode_length=200 to avoid OOM, but this capped env
+#   episodes at 200 steps — too short for flag-carry chains to complete. Result:
+#   rewards ≈ 0 throughout, entropy stuck at ln(9)=2.197, zero learning.
+#
+# Fix strategy — halve parallels and buffer_size to reclaim memory:
+#   parallels=4, buffer_size=4, episode_length=1000:
+#     (4, 1000, 88, 88, 3) × 8 agents × float32 = 2.75 GB  ← fits in 16 GB VRAM
+#   Training: 4 envs × 1 episode/env × 1000 steps = 4,000 steps/update
+#   n_minibatch=2 → batch_size = buffer_size/n_minibatch = 4/2 = 2 eps/minibatch
+#
+# Other fixes vs v13:
+#   - use_linear_lr_decay: True   (was False — flat LR at 5e-4 too aggressive for RNN)
+#   - end_factor_lr_decay: 0.1    (was 1.0 — decays LR to 5e-5 over 2M steps)
+
+agent: "MAPPO"
+env_name: "meltingpot_paintball__capture_the_flag"
+env_id: "paintball__capture_the_flag"
+env_seed: 1
+continuous_action: False
+learner: "MAPPO_Clip_Learner"
+policy: "Categorical_MAAC_Policy"
+representation: "CNN_GRU"
+vectorize: "DummyVecMultiAgentEnv"
+runner: "MARL"
+
+use_cnn: True
+filters: [32, 64, 64]
+kernels: [8, 4, 3]
+strides: [4, 2, 1]
+
+use_rnn: True
+rnn: "GRU"
+fc_hidden_sizes: [128, 128]
+recurrent_hidden_size: 128
+N_recurrent_layers: 1
+dropout: 0
+normalize: "LayerNorm"
+initialize: "orthogonal"
+gain: 0.01
+
+representation_hidden_size: [128, ]
+actor_hidden_size: [128, 128]
+critic_hidden_size: [128, 128]
+activation: "relu"
+activation_action: "softmax"
+
+use_parameter_sharing: True
+use_actions_mask: False
+
+seed: 1
+parallels: 4                # v13=8 → 4: halved to fit episode_length=1000 in memory.
+                            # Memory: (4, 1000, 88, 88, 3) × 8 agents = 2.75 GB ✓
+episode_length: 1000        # v13=200 → 1000: CRITICAL FIX. Match actual substrate
+                            # episode length so agents experience full flag-carry chains.
+                            # v13's 200-step cap caused reward ≈ 0 (no CTF completions).
+buffer_size: 4              # v13=8 → 4: must equal parallels so n_size=buffer_size/n_envs=1.
+                            # 1 complete 1000-step episode stored per env per update cycle.
+n_epochs: 10
+n_minibatch: 2              # v13=4 → 2: batch_size = buffer_size/n_minibatch = 4/2 = 2.
+                            # 2 episodes per minibatch × 10 epochs = 20 gradient updates.
+learning_rate: 0.0005
+weight_decay: 0
+
+vf_coef: 0.5
+ent_coef: 0.01
+target_kl: 0.25
+clip_range: 0.2
+clip_type: 1
+gamma: 0.99
+
+use_linear_lr_decay: True   # v13=False → True: decay LR 5e-4→5e-5 over training.
+end_factor_lr_decay: 0.1    # v13=1.0 → 0.1: matches working non-RNN runs.
+use_global_state: False
+use_value_clip: True
+value_clip_range: 0.2
+use_value_norm: True
+use_huber_loss: True
+huber_delta: 10.0
+use_advnorm: True
+use_gae: True
+gae_lambda: 0.95
+use_grad_clip: True
+grad_clip_norm: 10.0
+
+running_steps: 2000000
+eval_interval: 100000
+test_episode: 5
+
+log_dir: "./logs/mappo/"
+model_dir: "./models/mappo/"

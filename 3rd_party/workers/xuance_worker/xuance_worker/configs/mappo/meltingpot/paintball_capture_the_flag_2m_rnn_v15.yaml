@@ -1,0 +1,97 @@
+# MAPPO + GRU configuration for MeltingPot Paintball: Capture the Flag (4v4).
+#
+# Variant: v15 — memory-safe fix with episode_length=700.
+#
+# v13 failure: episode_length=200 capped env episodes too short for CTF chains.
+#   Rewards ≈ 0 throughout; entropy stayed at ln(9)=2.197; zero learning.
+#
+# v14 failure: episode_length=1000 caused OOM during critic CNN forward.
+#   Critic input: (8 agents × 1000 steps, 88, 88, 24ch) → 5.93 GB allocation.
+#   GPU had 4.3 GB free at that point → OOM.
+#
+# v15 fix: episode_length=700.
+#   Buffer memory:  (4envs, 700steps, 88, 88, 3) × 8agents × float32 × 2 = 4.16 GB
+#   Critic forward: (8×700, 88, 88, 24) × float32                         = 4.16 GB
+#   Model/overhead: ~3.2 GB (from observed crash telemetry)
+#   Total estimate: ~10.9 GB vs 13.7 GB free on GPU → 2.8 GB safety margin ✓
+#
+#   700-step episodes = 70% of the full 1000-step substrate horizon.
+#   Flag-carry chains (pickup → carry → score) can realistically complete in
+#   ~200-400 steps, so 700 gives agents 1-2 full scoring opportunities per episode.
+
+agent: "MAPPO"
+env_name: "meltingpot_paintball__capture_the_flag"
+env_id: "paintball__capture_the_flag"
+env_seed: 1
+continuous_action: False
+learner: "MAPPO_Clip_Learner"
+policy: "Categorical_MAAC_Policy"
+representation: "CNN_GRU"
+vectorize: "DummyVecMultiAgentEnv"
+runner: "MARL"
+
+use_cnn: True
+filters: [32, 64, 64]
+kernels: [8, 4, 3]
+strides: [4, 2, 1]
+
+use_rnn: True
+rnn: "GRU"
+fc_hidden_sizes: [128, 128]
+recurrent_hidden_size: 128
+N_recurrent_layers: 1
+dropout: 0
+normalize: "LayerNorm"
+initialize: "orthogonal"
+gain: 0.01
+
+representation_hidden_size: [128, ]
+actor_hidden_size: [128, 128]
+critic_hidden_size: [128, 128]
+activation: "relu"
+activation_action: "softmax"
+
+use_parameter_sharing: True
+use_actions_mask: False
+
+seed: 1
+parallels: 4                # halved from v13=8 to reduce buffer memory footprint
+episode_length: 700         # Chunked CNN forward (128 frames/chunk) eliminates the
+                            # 3.3 GB contiguous alloc bottleneck. Now ep_len=700 fits:
+                            # stacked critic obs (8×700×88×88×24) stays on GPU as-is,
+                            # CNN sees it 128 frames at a time (58 MB/chunk peak).
+buffer_size: 4              # = parallels, so n_size = buffer_size/n_envs = 1.
+                            # 1 complete 700-step episode stored per env per update.
+n_epochs: 10
+n_minibatch: 4              # batch_size = buffer_size/n_minibatch = 4/4 = 1 ep/batch.
+                            # 1 ep × 700 steps × 8 agents = 5,600 samples per update.
+learning_rate: 0.0005
+weight_decay: 0
+
+vf_coef: 0.5
+ent_coef: 0.01
+target_kl: 0.25
+clip_range: 0.2
+clip_type: 1
+gamma: 0.99
+
+use_linear_lr_decay: True   # v13=False → True: decay 5e-4 → 5e-5 over training.
+end_factor_lr_decay: 0.1    # matches working non-RNN runs (v1, 10m).
+use_global_state: False
+use_value_clip: True
+value_clip_range: 0.2
+use_value_norm: True
+use_huber_loss: True
+huber_delta: 10.0
+use_advnorm: True
+use_gae: True
+gae_lambda: 0.95
+use_grad_clip: True
+grad_clip_norm: 10.0
+
+running_steps: 2000000
+eval_interval: 100000
+test_episode: 5
+
+log_dir: "./logs/mappo/"
+model_dir: "./models/mappo/"

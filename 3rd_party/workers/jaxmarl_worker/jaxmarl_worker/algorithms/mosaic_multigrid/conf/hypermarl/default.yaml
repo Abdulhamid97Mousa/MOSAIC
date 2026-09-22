@@ -1,0 +1,15 @@
+n_envs: 256
+n_steps: 256
+n_epochs: 4
+n_minibatches: 4
+actor_hidden: 64
+critic_hidden: 64
+hypernet_hidden: 64
+lr: 3e-4
+gamma: 0.99
+gae_lambda: 0.95
+clip_eps: 0.2
+vf_coef: 0.5
+ent_coef: 0.005
+use_learned_embeddings: false
+embedding_dim: 4

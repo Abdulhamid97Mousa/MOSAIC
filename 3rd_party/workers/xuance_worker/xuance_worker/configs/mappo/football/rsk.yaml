@@ -1,0 +1,72 @@
+# MAPPO on gfootball academy_run_to_score_with_keeper (1 attacker vs keeper, must run and shoot).
+
+agent: "MAPPO"
+env_name: "Football"
+scenario: "academy_run_to_score_with_keeper"
+env_seed: 1
+use_stacked_frames: False
+num_agent: 1
+num_adversary: 0
+obs_type: "simple115v2"
+rewards_type: "scoring,checkpoints"
+smm_width: 96
+smm_height: 72
+fps: 15
+max_episode_steps: 400
+learner: "MAPPO_Clip_Learner"
+policy: "Categorical_MAAC_Policy"
+representation: "Basic_RNN"
+vectorize: "Subproc_Football"
+runner: "RunnerFootball"
+
+use_rnn: True
+rnn: "GRU"
+N_recurrent_layers: 1
+fc_hidden_sizes: [64]
+recurrent_hidden_size: 64
+dropout: 0
+normalize: "LayerNorm"
+initialize: "orthogonal"
+gain: 0.01
+
+actor_hidden_size: [64, 64]
+critic_hidden_size: [64, 64]
+activation: "relu"
+use_parameter_sharing: True
+use_actions_mask: False
+
+seed: 1
+parallels: 50
+buffer_size: 400
+n_epochs: 15
+n_minibatch: 2
+learning_rate: 5.0e-4
+weight_decay: 0
+
+vf_coef: 1.0
+ent_coef: 0.01
+clip_range: 0.2
+clip_type: 1
+gamma: 0.99
+
+use_linear_lr_decay: False
+end_factor_lr_decay: 0.5
+use_global_state: True
+use_value_clip: True
+value_clip_range: 0.2
+use_value_norm: True
+use_huber_loss: True
+huber_delta: 10.0
+use_advnorm: True
+use_gae: True
+gae_lambda: 0.95
+use_grad_clip: True
+grad_clip_norm: 10.0
+
+running_steps: 10000000
+eval_interval: 100000
+test_episode: 50
+
+log_dir: "logs/mappo/"
+model_dir: "models/mappo/"
+videos_dir: "./videos/mappo/"

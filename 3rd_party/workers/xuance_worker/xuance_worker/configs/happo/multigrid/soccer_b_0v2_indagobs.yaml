@@ -1,0 +1,67 @@
+# JaxMARL-converted checkpoint config — Soccer Blue 0v2 IndAgObs (MAPPO)
+# Architecture matches JaxMARL MAPPO ActorCritic:
+#   representation_hidden_size: [256, 256] tanh, no normalization
+#   actor_hidden_size: []  (single Linear head)
+#   critic_hidden_size: [] (single Linear head)
+#   use_parameter_sharing: True  (model_key = agent_0)
+agent: "HAPPO"
+env_name: "multigrid"
+env_id: "soccer_b_0v2_indagobs"
+continuous_action: False
+learner: "HAPPO_Learner"
+policy: "Categorical_MAAC_Policy"
+representation: "Basic_MLP"
+vectorize: "DummyVecMultiAgentEnv"
+runner: "MARL"
+
+use_rnn: False
+rnn: "GRU"
+fc_hidden_sizes: [256, 256]
+recurrent_hidden_size: 256
+N_recurrent_layers: 1
+dropout: 0
+initialize: "orthogonal"
+gain: 0.01
+
+representation_hidden_size: [256, 256]
+actor_hidden_size: []
+critic_hidden_size: []
+activation: "tanh"
+activation_action: "softmax"
+
+use_parameter_sharing: True
+use_global_state: False
+use_actions_mask: False
+
+seed: 1
+parallels: 1
+buffer_size: 200
+n_epochs: 10
+n_minibatch: 1
+learning_rate: 0.0005
+weight_decay: 0
+vf_coef: 0.5
+ent_coef: 0.01
+target_kl: 0.25
+clip_range: 0.2
+clip_type: 1
+gamma: 0.99
+use_linear_lr_decay: False
+end_factor_lr_decay: 0.5
+use_value_clip: True
+value_clip_range: 0.2
+use_value_norm: True
+use_huber_loss: True
+huber_delta: 10.0
+use_advnorm: True
+use_gae: True
+gae_lambda: 0.95
+use_grad_clip: True
+grad_clip_norm: 10.0
+
+running_steps: 1
+eval_interval: 100000
+test_episode: 1
+
+log_dir: "./logs/happo/"
+model_dir: "./models/happo/"

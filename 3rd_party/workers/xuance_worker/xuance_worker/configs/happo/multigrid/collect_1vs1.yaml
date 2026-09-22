@@ -1,0 +1,91 @@
+# MAPPO configuration for mosaic_multigrid 1vs1 Collect (IndAgObs)
+# Environment: CollectGame2HIndAgObsEnv10x10N2
+# Gymnasium ID: MosaicMultiGrid-Collect-1vs1-IndAgObs-v0
+# Teams: Green (agent_0) vs Red (agent_1) -- 1 agent per team
+#
+# Used as Phase 1 in the collect -> soccer curriculum.
+# Network architecture MUST match soccer_1vs1.yaml exactly for weight transfer.
+#
+# Observation/action space identical to soccer_1vs1:
+# - IndAgObs: (3,3,3) = 27 flattened
+# - 7 discrete actions
+# - 2 agents, max_steps=200
+#
+# Collect vs Soccer:
+# - Collect: 3 balls on 10x10 grid, +1 per ball, natural termination
+# - Soccer: 16x11 grid, score goals, sparse reward
+# - Collect is much easier (denser rewards) and teaches navigation + ball pickup
+
+agent: "HAPPO"
+env_name: "multigrid"
+env_id: "collect_1vs1"
+env_seed: 1
+continuous_action: False
+learner: "HAPPO_Learner"
+policy: "Categorical_MAAC_Policy"
+representation: "Basic_MLP"
+vectorize: "DummyVecMultiAgentEnv"
+runner: "MARL"
+
+# Recurrent settings (disabled)
+use_rnn: False
+rnn: "GRU"
+fc_hidden_sizes: [64, 64]
+recurrent_hidden_size: 64
+N_recurrent_layers: 1
+dropout: 0
+normalize: "LayerNorm"
+initialize: "orthogonal"
+gain: 0.01
+
+# Network architecture -- MUST match soccer_1vs1 for weight transfer
+representation_hidden_size: [128, 128]
+actor_hidden_size: [128, 128]
+critic_hidden_size: [128, 128]
+activation: "relu"
+activation_action: "softmax"
+
+# Multi-agent settings
+use_parameter_sharing: True  # Both agents share one policy (symmetric game, prevents collapse)
+use_actions_mask: False
+
+# Training hyperparameters
+seed: 1
+parallels: 4
+buffer_size: 200
+n_epochs: 10
+n_minibatch: 1  # MAPPO paper: full buffer, no mini-batching
+learning_rate: 0.0005
+weight_decay: 0
+
+# PPO-specific
+vf_coef: 0.5
+ent_coef: 0.05  # High entropy to encourage exploration
+target_kl: 0.25
+clip_range: 0.2
+clip_type: 1
+gamma: 0.99
+
+# Training tricks
+use_linear_lr_decay: True
+end_factor_lr_decay: 0.1
+use_global_state: False
+use_value_clip: True
+value_clip_range: 0.2
+use_value_norm: True
+use_huber_loss: True
+huber_delta: 10.0
+use_advnorm: True
+use_gae: True
+gae_lambda: 0.95
+use_grad_clip: True
+grad_clip_norm: 10.0
+
+# Training duration
+running_steps: 1000000
+eval_interval: 100000
+test_episode: 5
+
+# Logging (overridden by runtime)
+log_dir: "./logs/happo/"
+model_dir: "./models/happo/"

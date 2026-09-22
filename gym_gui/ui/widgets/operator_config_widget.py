@@ -24,6 +24,10 @@ from gym_gui.constants.constants_operator import (
 from gym_gui.logging_config.helpers import log_constant
 from gym_gui.logging_config.log_constants import LOG_OPERATOR_VIEW_SIZE_CONFIGURED
 from gym_gui.services.operator import LinkGroup, OperatorConfig, WorkerAssignment
+from gym_gui.services.operator_environment_catalog import (
+    MOSAIC_MULTIGRID_ENVIRONMENTS,
+    get_mosaic_multigrid_environments,
+)
 from gym_gui.ui.widgets.multi_agent_action_panel import (
     COLOR_PALETTE,
     DEFAULT_AGENT_COLOR_NAMES,
@@ -202,46 +206,9 @@ ENV_FAMILIES: Dict[str, Tuple[str, ...]] = {
         "draughts/russian_checkers",     # Custom: 8x8, men capture backward, flying kings
         "draughts/international_draughts",  # Custom: 10x10, backward captures, flying kings
     ),
-    # mosaic_multigrid: competitive team sports (view_size=7, simultaneous stepping)
+    # mosaic_multigrid v7.0.0: competitive team sports (simultaneous stepping).
     # PyPI: https://pypi.org/project/mosaic_multigrid/
-    # IDs follow GameId enum in gym_gui/core/enums.py — do NOT hardcode display names here;
-    # _mosaic_display_name() maps abbreviations to human-readable sport names at render time.
-    "mosaic_multigrid": (
-        # ── Soccer (S) ──────────────────────────────────────────────────────
-        "MultiGridSports-S-G-1v0-v1",
-        "MultiGridSports-S-B-0v1-v1",
-        "MultiGridSports-S-1v1-IndAgObs-v1",
-        "MultiGridSports-S-2v2-IndAgObs-v1",
-        "MultiGridSports-S-3v3-IndAgObs-v1",
-        "MultiGridSports-S-G-2v0-IndAgObs-v1",
-        "MultiGridSports-S-G-3v0-IndAgObs-v1",
-        "MultiGridSports-S-B-0v2-IndAgObs-v1",
-        "MultiGridSports-S-B-0v3-IndAgObs-v1",
-        # ── Basketball (BB) ─────────────────────────────────────────────────
-        "MultiGridSports-BB-G-1v0-v1",
-        "MultiGridSports-BB-B-0v1-v1",
-        "MultiGridSports-BB-1v1-IndAgObs-v1",
-        "MultiGridSports-BB-2v2-IndAgObs-v1",
-        "MultiGridSports-BB-3v3-IndAgObs-v1",
-        "MultiGridSports-BB-G-2v0-IndAgObs-v1",
-        "MultiGridSports-BB-G-3v0-IndAgObs-v1",
-        "MultiGridSports-BB-B-0v2-IndAgObs-v1",
-        "MultiGridSports-BB-B-0v3-IndAgObs-v1",
-        # ── American Football (AF) ──────────────────────────────────────────
-        "MultiGridSports-AF-G-1v0-v1",
-        "MultiGridSports-AF-B-0v1-v1",
-        "MultiGridSports-AF-1v1-IndAgObs-v1",
-        "MultiGridSports-AF-2v2-IndAgObs-v1",
-        "MultiGridSports-AF-3v3-IndAgObs-v1",
-        "MultiGridSports-AF-G-2v0-IndAgObs-v1",
-        "MultiGridSports-AF-G-3v0-IndAgObs-v1",
-        "MultiGridSports-AF-B-0v2-IndAgObs-v1",
-        "MultiGridSports-AF-B-0v3-IndAgObs-v1",
-        # ── Collect (C) ─────────────────────────────────────────────────────
-        "MultiGridSports-C-IndAgObs-v1",
-        "MultiGridSports-C-1v1-IndAgObs-v1",
-        "MultiGridSports-C-2v2-IndAgObs-v1",
-    ),
+    "mosaic_multigrid": MOSAIC_MULTIGRID_ENVIRONMENTS,
     # ini_multigrid: cooperative exploration environments (view_size=7, simultaneous stepping)
     # GitHub: https://github.com/ini/multigrid
     "ini_multigrid": (
@@ -305,7 +272,7 @@ def _auto_detect_agent_count(env_family: str, env_id: str) -> int:
 
     Args:
         env_family: Environment family (e.g., "pettingzoo", "mosaic_multigrid")
-        env_id: Environment ID (e.g., "chess_v6", "MultiGridSports-Soccer-v0")
+        env_id: Environment ID (e.g., "chess_v6", "MosaicMultiGrid-S-2v2-IndAgObs-v1")
 
     Returns:
         Number of agents, or 0 if detection fails or single-agent
@@ -1705,7 +1672,7 @@ class PlayerAssignmentPanel(QtWidgets.QWidget):
 
         Args:
             env_family: Environment family ("pettingzoo", "mosaic_multigrid", etc.)
-            env_id: Environment ID (e.g., "chess_v6", "MultiGridSports-Soccer-v0")
+            env_id: Environment ID (e.g., "chess_v6", "MosaicMultiGrid-S-2v2-IndAgObs-v1")
             num_agents: Number of agents in the environment
             agent_ids: Optional list of agent IDs (e.g., ["player_0", "player_1"])
                       If None, auto-generates ["agent_0", "agent_1", ...]
@@ -3291,7 +3258,7 @@ class OperatorConfigRow(QtWidgets.QWidget):
         env_id = self._task_combo.currentText()
 
         # Only create role selectors for MultiGrid Soccer
-        if env_family != "mosaic_multigrid" or not ("Soccer" in env_id or "MultiGridSports-S-" in env_id):
+        if env_family != "mosaic_multigrid" or not env_id.startswith("MosaicMultiGrid-S-"):
             return
 
         # Get number of agents
@@ -3601,6 +3568,8 @@ class OperatorConfigRow(QtWidgets.QWidget):
                     envs = ["meltingpot/clean_up", "meltingpot/prisoners_dilemma_in_the_matrix__arena"]
             except Exception:
                 envs = ["meltingpot/clean_up", "meltingpot/prisoners_dilemma_in_the_matrix__arena"]
+        elif env_family == "mosaic_multigrid":
+            envs = list(get_mosaic_multigrid_environments())
         elif env_family in ENV_FAMILIES:
             # Use static list from ENV_FAMILIES
             envs = list(ENV_FAMILIES[env_family])

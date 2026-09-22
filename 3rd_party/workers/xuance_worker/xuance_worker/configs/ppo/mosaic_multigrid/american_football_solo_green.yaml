@@ -1,0 +1,76 @@
+# PPO configuration for mosaic_multigrid Solo American Football (Green)
+# Environment: AmericanFootballSoloGreenEnv16x11
+# Gymnasium ID: MosaicMultiGrid-AmericanFootball-Solo-Green-v0
+#
+# Solo variant: Single agent, no opponent.
+# Green agent (team_index=0) must carry the ball and walk into
+# Blue's end zone (column 14) to score a touchdown.
+# Used for curriculum pre-training before adversarial 1v1/2v2.
+#
+# Standard PPO (single-agent) with RunnerDRL.
+# view_size=7 via MOSAIC_VIEW_SIZE env var.
+# reward_shaping=True by default (v6.4.0).
+#
+# Observation: (7,7,3) = 147 flattened features
+# Actions: 8 discrete
+
+agent: "PPO_Clip"
+env_name: "mosaic_multigrid"
+env_id: "american_football_solo_green"
+env_seed: 1
+continuous_action: False
+learner: "PPOCLIP_Learner"
+policy: "Categorical_AC"
+representation: "Basic_MLP"
+vectorize: "DummyVecEnv"
+runner: "DRL"
+
+# Network: (7,7,3) = 147 input features
+representation_hidden_size: [128, 128]
+actor_hidden_size: [128, 128]
+critic_hidden_size: [128, 128]
+activation: "relu"
+activation_action: "softmax"
+normalize: "LayerNorm"
+initialize: "orthogonal"
+gain: 0.01
+
+seed: 1
+parallels: 4
+horizon_size: 300
+n_epochs: 10
+n_minibatch: 1  # MAPPO paper: full buffer
+learning_rate: 0.0005
+weight_decay: 0
+
+vf_coef: 0.5
+ent_coef: 0.05
+target_kl: 0.25
+clip_range: 0.2
+clip_type: 1
+gamma: 0.99
+
+use_linear_lr_decay: True
+end_factor_lr_decay: 0.1
+use_value_clip: True
+value_clip_range: 0.2
+use_value_norm: True
+use_huber_loss: True
+huber_delta: 10.0
+use_advnorm: True
+use_gae: True
+gae_lambda: 0.95
+use_grad_clip: True
+grad_clip_norm: 10.0
+use_obsnorm: False
+obsnorm_range: 5
+use_rewnorm: False
+rewnorm_range: 5
+
+running_steps: 2000000
+eval_interval: 50000
+test_episode: 5
+test_steps: 10000
+
+log_dir: "./logs/ppo/"
+model_dir: "./models/ppo/"

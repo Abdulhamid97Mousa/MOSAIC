@@ -1,0 +1,86 @@
+# MAPPO + GRU configuration for MeltingPot Prisoner's Dilemma
+# Environment: prisoners_dilemma_in_the_matrix__repeated (via shimmy)
+# Players: 2 (general-sum social dilemma)
+#
+# WHY GRU: The repeated PD requires MEMORY to implement reciprocity strategies.
+# Without memory, the agent cannot condition on past interactions:
+#   - Tit-for-tat: "cooperate if opponent cooperated last round"
+#   - Grim trigger: "cooperate until opponent defects, then always defect"
+#   - Pavlov: "repeat action if rewarded, switch if punished"
+#
+# GRU hidden state h_t = GRU(h_{t-1}, o_t) accumulates interaction history.
+# The agent can learn temporal patterns like "opponent loaded red resources
+# 3 steps ago, so they will defect -> I should also defect."
+#
+# MeltingPot baseline (ACB) uses LSTM(128) for the same reason.
+# MAPPO paper (Yu et al., 2022) uses GRU(64) on all SMAC maps.
+#
+# Architecture: obs(4807) -> FC(256,256) -> GRU(128) -> action(8) / value(1)
+
+agent: "MAPPO"
+env_name: "meltingpot"
+env_id: "prisoners_dilemma_in_the_matrix__repeated"
+env_seed: 1
+continuous_action: False
+learner: "MAPPO_Clip_Learner"
+policy: "Categorical_MAAC_Policy"
+representation: "Basic_RNN"
+vectorize: "DummyVecMultiAgentEnv"
+runner: "MARL"
+
+# GRU memory for reciprocity strategies
+use_rnn: True
+rnn: "GRU"
+fc_hidden_sizes: [256, 256]
+recurrent_hidden_size: 128
+N_recurrent_layers: 1
+dropout: 0
+normalize: "LayerNorm"
+initialize: "orthogonal"
+gain: 0.01
+
+# GRU output feeds into action/value heads
+actor_hidden_size: []
+critic_hidden_size: []
+activation: "relu"
+activation_action: "softmax"
+
+# Parameter sharing: True (symmetric PD, both players same role)
+use_parameter_sharing: True
+use_actions_mask: False
+
+seed: 1
+parallels: 2
+buffer_size: 100
+n_epochs: 5
+n_minibatch: 1
+learning_rate: 0.0003
+weight_decay: 0
+
+vf_coef: 0.5
+ent_coef: 0.05
+target_kl: 0.25
+clip_range: 0.1
+clip_type: 1
+gamma: 0.99
+
+use_linear_lr_decay: True
+end_factor_lr_decay: 0.1
+use_global_state: False
+use_value_clip: True
+value_clip_range: 0.1
+use_value_norm: True
+use_huber_loss: True
+huber_delta: 10.0
+use_advnorm: True
+use_gae: True
+gae_lambda: 0.95
+use_grad_clip: True
+grad_clip_norm: 10.0
+
+running_steps: 5000000
+eval_interval: 100000
+test_episode: 5
+
+log_dir: "./logs/mappo/"
+model_dir: "./models/mappo/"

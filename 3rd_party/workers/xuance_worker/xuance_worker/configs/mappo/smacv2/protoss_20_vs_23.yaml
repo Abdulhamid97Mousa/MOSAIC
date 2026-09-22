@@ -1,0 +1,66 @@
+# MAPPO configuration for SMACv2 protoss_20_vs_23
+# Asymmetric: 20 allied Protoss units vs 23 enemy Protoss units.
+# Very hard — 20-agent coordination with a 3-unit deficit.
+
+agent: "MAPPO"
+env_name: "StarCraft2v2"
+env_id: "protoss_20_vs_23"
+env_seed: 1
+fps: 15
+learner: "MAPPO_Clip_Learner"
+policy: "Categorical_MAAC_Policy"
+representation: "Basic_RNN"
+vectorize: "Subproc_StarCraft2"
+runner: "RunnerStarCraft2"
+
+use_rnn: True
+rnn: "GRU"
+N_recurrent_layers: 1
+fc_hidden_sizes: [64, 64, 64]
+recurrent_hidden_size: 64
+dropout: 0
+normalize: "LayerNorm"
+initialize: "orthogonal"
+gain: 0.01
+
+actor_hidden_size: []
+critic_hidden_size: []
+activation: "relu"
+use_parameter_sharing: True
+use_actions_mask: True
+
+seed: 1
+parallels: 4
+buffer_size: 256
+n_epochs: 15
+n_minibatch: 2
+learning_rate: 0.0005
+weight_decay: 0
+
+vf_coef: 1.0
+ent_coef: 0.01
+target_kl: 0.25
+clip_range: 0.2
+clip_type: 1
+gamma: 0.99
+
+use_linear_lr_decay: False
+end_factor_lr_decay: 0.5
+use_global_state: False
+use_value_clip: True
+value_clip_range: 0.2
+use_value_norm: True
+use_huber_loss: True
+huber_delta: 10.0
+use_advnorm: True
+use_gae: True
+gae_lambda: 0.95
+use_grad_clip: True
+grad_clip_norm: 10.0
+
+running_steps: 20000000
+eval_interval: 10000
+test_episode: 16
+
+log_dir: "./logs/mappo/"
+model_dir: "./models/mappo/"

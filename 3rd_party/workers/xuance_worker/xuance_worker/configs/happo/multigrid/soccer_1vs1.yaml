@@ -1,0 +1,88 @@
+# MAPPO configuration for mosaic_multigrid 1vs1 Soccer (IndAgObs)
+# Environment: SoccerGame2HIndAgObsEnv16x11N2
+# Gymnasium ID: MosaicMultiGrid-Soccer-1vs1-IndAgObs-v0
+# Teams: Green (agent_0) vs Blue (agent_1) -- 1 agent per team
+#
+# Key differences from 2v2 soccer config:
+# - 2 agents instead of 4 (1 per team)
+# - IndAgObs observations: (3,3,3) = 27 flattened (vs (7,7,6) = 294)
+# - 7 discrete actions
+# - Short episodes: 200 max_steps (vs 10,000)
+# - Positive-only rewards (zero_sum=False)
+# - No teleport pass (no teammates in 1v1)
+# - Smaller networks sufficient for lower-dimensional input
+
+agent: "HAPPO"
+env_name: "multigrid"
+env_id: "soccer_1vs1"
+env_seed: 1
+continuous_action: False  # MultiGrid uses 7 discrete actions
+learner: "HAPPO_Learner"
+policy: "Categorical_MAAC_Policy"  # Categorical for discrete actions
+representation: "Basic_MLP"
+vectorize: "DummyVecMultiAgentEnv"
+runner: "MARL"  # Registry key for RunnerMARL -- shared policy (use_parameter_sharing=True)
+
+# Recurrent settings (disabled by default)
+use_rnn: False
+rnn: "GRU"
+fc_hidden_sizes: [64, 64]
+recurrent_hidden_size: 64
+N_recurrent_layers: 1
+dropout: 0
+normalize: "LayerNorm"
+initialize: "orthogonal"
+gain: 0.01
+
+# Network architecture
+# IndAgObs observations: (3,3,3) = 27 flattened -- smaller than 2v2
+representation_hidden_size: [128, 128]
+actor_hidden_size: [128, 128]
+critic_hidden_size: [128, 128]
+activation: "relu"
+activation_action: "softmax"
+
+# Multi-agent settings
+use_parameter_sharing: True  # Both agents share one policy (symmetric game)
+use_actions_mask: False  # All actions always available
+
+# Training hyperparameters
+seed: 1
+parallels: 4
+buffer_size: 200  # Match max_steps (200) for full-episode buffers
+n_epochs: 10
+n_minibatch: 1  # MAPPO paper: full buffer, no mini-batching
+learning_rate: 0.0005  # Slightly higher LR for simpler task
+weight_decay: 0
+
+# PPO-specific
+vf_coef: 0.5
+ent_coef: 0.05  # High entropy to prevent premature convergence in sparse-reward soccer
+target_kl: 0.25
+clip_range: 0.2
+clip_type: 1
+gamma: 0.99  # High discount factor
+
+# Training tricks
+use_linear_lr_decay: True
+end_factor_lr_decay: 0.1
+use_global_state: False
+use_value_clip: True
+value_clip_range: 0.2
+use_value_norm: True
+use_huber_loss: True
+huber_delta: 10.0
+use_advnorm: True
+use_gae: True
+gae_lambda: 0.95
+use_grad_clip: True
+grad_clip_norm: 10.0
+
+# Training duration (overridden by shell script via jq)
+running_steps: 2000000
+eval_interval: 100000
+test_episode: 5
+
+# Logging (overridden by runtime)
+log_dir: "./logs/happo/"
+model_dir: "./models/happo/"
