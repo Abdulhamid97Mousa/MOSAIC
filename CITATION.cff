@@ -1,0 +1,59 @@
+cff-version: 1.2.0
+message: "If you use MOSAIC in your research, please cite the paper below."
+title: "MOSAIC: A Universal Agent-Level Interface for Cross-Paradigm Agent Mixing and Human-AI Collaboration"
+authors:
+  - family-names: Mousa
+    given-names: Abdulhamid M.
+  - family-names: Liu
+    given-names: Ming
+  - family-names: Khajiev
+    given-names: Rakhmonberdi
+  - family-names: Azzabi
+    given-names: Jalaledin M.
+  - family-names: Mousa
+    given-names: Abdulkarim M.
+  - family-names: Yong
+    given-names: Peng
+  - family-names: Haruna
+    given-names: Yunusa
+  - family-names: Pang
+    given-names: Jinhui
+version: 1.0.1
+date-released: 2026-09-22
+license: MIT
+repository-code: "https://github.com/Abdulhamid97Mousa/MOSAIC"
+url: "https://arxiv.org/abs/2603.01260"
+keywords:
+  - reinforcement-learning
+  - multi-agent
+  - gymnasium
+  - pettingzoo
+  - meltingpot
+  - pyqt6
+  - human-ai-collaboration
+  - agent-interface
+preferred-citation:
+  type: article
+  title: "MOSAIC: A Universal Agent-Level Interface for Cross-Paradigm Agent Mixing and Human-AI Collaboration"
+  authors:
+    - family-names: Mousa
+      given-names: Abdulhamid M.
+    - family-names: Liu
+      given-names: Ming
+    - family-names: Khajiev
+      given-names: Rakhmonberdi
+    - family-names: Azzabi
+      given-names: Jalaledin M.
+    - family-names: Mousa
+      given-names: Abdulkarim M.
+    - family-names: Yong
+      given-names: Peng
+    - family-names: Haruna
+      given-names: Yunusa
+    - family-names: Pang
+      given-names: Jinhui
+  year: 2026
+  url: "https://arxiv.org/abs/2603.01260"
+  identifiers:
+    - type: url
+      value: "https://doi.org/10.48550/arXiv.2603.01260"
